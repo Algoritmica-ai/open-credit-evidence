@@ -1,0 +1,48 @@
+{
+  "case_id": "LOAN-2026-09-001",
+  "case_type": "referred_loan_application",
+  "created_at": "2026-09-05T10:30:45+05:30",
+  "documents": [
+    {
+      "name": "application.md",
+      "type": "loan_application",
+      "description": "Primary loan application form"
+    },
+    {
+      "name": "bureau_report.md",
+      "type": "credit_bureau_report",
+      "description": "CIBIL TransUnion credit report"
+    }
+  ],
+  "critical_facts": [
+    {
+      "id": "cf_001",
+      "category": "credit_score",
+      "fact": "CIBIL score is 682, at boundary of minimum threshold 680",
+      "severity": "high",
+      "source": "bureau_report.md"
+    },
+    {
+      "id": "cf_002",
+      "category": "delinquency",
+      "fact": "30-day late payment on SBI credit card in June 2026",
+      "severity": "high",
+      "source": "bureau_report.md"
+    },
+    {
+      "id": "cf_003",
+      "category": "enquiry_pattern",
+      "fact": "Recent loan enquiry from Kotak Mahindra Bank 7 days prior suggests credit shopping or prior decline",
+      "severity": "high",
+      "source": "bureau_report.md"
+    },
+    {
+      "id": "cf_004",
+      "category": "debt_to_income",
+      "fact": "Existing debt-to-income ratio is 38% (₹37,200 EMI against ₹98,500 net salary)",
+      "severity": "medium",
+      "source": "application.md, bureau_report.md"
+    }
+  ],
+  "referral_reason": "Score at boundary threshold with multiple warning indicators"
+}
