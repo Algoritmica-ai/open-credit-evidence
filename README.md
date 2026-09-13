@@ -69,6 +69,7 @@ python -m open_credit_evidence.cli verify reports/case_001_report.json
 
 ```
 open-credit-evidence/
+├── BUILD.md                  # Detailed technical spec
 ├── cases/                    # Sample referred loan application cases
 │   ├── sample_case_001/     # Application form + bureau report
 │   └── sample_case_002/
@@ -88,6 +89,8 @@ open-credit-evidence/
 ```
 
 ## Architecture Overview
+
+**Docs / architecture.** Detailed technical spec: BUILD.md.
 
 ```
 ┌─────────────┐    ┌──────────────┐    ┌─────────────────┐
