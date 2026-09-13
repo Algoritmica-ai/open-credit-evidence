@@ -1,6 +1,6 @@
 # OpenCredit Evidence
 
-**Credit Evidence Engine** (4-week plan) — OpenCredit Evidence Hackathon
+**Credit Evidence Engine** (4-week plan) — OpenCredit Evidence Hackathon. Runs locally (venv or Docker Compose). Inference is hosted NVIDIA Build. Axis/Curiosity are optional GPU/Jupyter only — not an app host.
 
 A credit decision evidence verification system that ensures AI-generated loan summaries include all decision-critical facts from source documents.
 
@@ -65,6 +65,16 @@ python -m open_credit_evidence.cli process cases/sample_case_001/
 python -m open_credit_evidence.cli verify reports/case_001_report.json
 ```
 
+### Docker Compose (same CLI, no HTTP port)
+
+```bash
+docker compose up --build          # builds image, prints `oce --help`, exits
+docker compose run --rm app pytest -v
+docker compose run --rm app oce process cases/sample_case_001/
+```
+
+Full run/runtime notes: [`docs/runtime.md`](docs/runtime.md).
+
 ## Project Structure
 
 ```
@@ -73,9 +83,12 @@ open-credit-evidence/
 ├── cases/                    # Sample referred loan application cases
 │   ├── sample_case_001/     # Application form + bureau report
 │   └── sample_case_002/
+├── docker-compose.yml        # Local CLI container (no published ports)
+├── Dockerfile                # Image for Compose; default CMD is oce --help
 ├── docs/
+│   ├── runtime.md           # How to run: venv, Compose, NVIDIA env; Axis is not a host
 │   ├── design-note.md       # System design (models, RAG, safety)
-│   └── deploy-axis.md       # Axis portal deployment guide
+│   └── week1-design-outline.md
 ├── src/open_credit_evidence/
 │   ├── loader.py            # Case loading with fingerprint verification
 │   ├── runner.py            # Nemotron assistant interface
@@ -90,7 +103,7 @@ open-credit-evidence/
 
 ## Architecture Overview
 
-**Docs / architecture.** Detailed technical spec: BUILD.md.
+**Docs / architecture.** Detailed technical spec: BUILD.md. How to run: [`docs/runtime.md`](docs/runtime.md).
 
 ```
 ┌─────────────┐    ┌──────────────┐    ┌─────────────────┐
@@ -122,12 +135,14 @@ open-credit-evidence/
 2. **Start small** — Twenty cases end-to-end first
 3. **Use RAG** — Not fine-tuned models on critical path
 4. **NVIDIA Build** — Hosted Nemotron + RAG blueprints (no self-hosted models)
-5. **Eventual deploy** — Target: `https://axis-raplabhackathon.axisportal.io/apps`
+5. **Runtime** — Local machine + Docker Compose. Hosted NVIDIA Build for Nemotron. Origin is source control only. After Algoritmica GitHub upstream, CI can be GitHub Actions (pytest) — not in this repo yet.
 
 ## What This Is NOT
 
-This is the **4-week plan**: Credit Evidence Engine (RAG, hosted Nemotron, omission/tamper, Axis). Stretch is the **pitch architecture**: OpenShift DataMesh+CFM deploy design — not this repo's path.
+This is the **4-week plan**: Credit Evidence Engine (RAG, hosted Nemotron, omission/tamper). Stretch is the **pitch architecture**: OpenShift DataMesh+CFM deploy design — not this repo's path.
 No Iceberg, Trino, Hive, Airflow, or Kustomize here.
+
+**Axis portal / Curiosity** are optional GPU, Jupyter, Slurm, or private Kubernetes pods for experiments. They do **not** host this Evidence Engine as an HTTP app. There is no `axis deploy` and no `/apps/open-credit-evidence/health` URL.
 
 ## License
 
@@ -137,4 +152,4 @@ Copyright holders: Algoritmica GmbH + ZAGA Open Source (pending confirmation fro
 
 ## Future: GitHub Upstream
 
-This repository is temporarily hosted on Origin. Clyde will migrate upstream to Algoritmica GitHub after the hackathon.
+This repository is temporarily hosted on Origin (source control only, not a deploy target). Clyde will migrate upstream to Algoritmica GitHub after the hackathon; pytest CI via GitHub Actions can follow there.

@@ -1,8 +1,8 @@
 # BUILD.md — Credit Evidence Engine technical spec
 
-This is the **detailed technical spec** for the 4-week plan (Credit Evidence Engine: RAG, hosted Nemotron, omission/tamper, Axis). It is not the schedule. Who does what and week dates live in the Google Doc only.
+This is the **detailed technical spec** for the 4-week plan (Credit Evidence Engine: RAG, hosted Nemotron, omission/tamper). It is not the schedule. Who does what and week dates live in the Google Doc only.
 
-Related: [`docs/design-note.md`](docs/design-note.md) (system design stub), [`docs/week1-design-outline.md`](docs/week1-design-outline.md) (Week 1 outline).
+Related: [`docs/design-note.md`](docs/design-note.md) (system design stub), [`docs/week1-design-outline.md`](docs/week1-design-outline.md) (Week 1 outline), [`docs/runtime.md`](docs/runtime.md) (how to run).
 
 ---
 
@@ -26,7 +26,7 @@ If a decision-critical fact is missing, the package **fails by fact id**, not by
 Out of scope for this repo and for the 4-week plan:
 
 - **Pitch architecture** — OpenShift DataMesh + CFM deploy design (Iceberg, Trino, Hive, Airflow, Kustomize, in-cluster Nemotron ServingRuntime, Marquez, CFM score API). Do not build that stack here.
-- **Curiosity / Axis HPC** — optional GPU experiments only (Slurm, Jupyter, Enroot). Not on the critical path. Hosted NVIDIA Build remains the Nemotron path.
+- **Curiosity / Axis HPC** — optional GPU, Jupyter, Slurm, private K8s pods for experiments only. **Not** an application host. Not the system of record. Hosted NVIDIA Build remains the Nemotron path.
 - **LLM-as-judge for Week 1 omission** — Week 1 omission check is **deterministic** (keyword/pattern match against named facts). Do not gate Week 1 DoD on a second model scoring the summary.
 - Live production PII. Demo cases are synthetic.
 - Fine-tuned or self-hosted models on the critical path.
@@ -152,11 +152,17 @@ Verify recomputes the chain; mismatch raises tamper error.
 
 ## 5. Runtime
 
-**Local machine (primary Week 1):** Python 3.11+, editable install from `pyproject.toml`. No database. Cases are files.
+**Primary runtime:** local machine (Python 3.11+ venv) or **Docker Compose** (`docker-compose.yml`, `app` service only). CLI — no published ports, no HTTP health URL. Details: [`docs/runtime.md`](docs/runtime.md).
 
-**Docker:** `Dockerfile` at repo root (Python 3.11-slim, `pytest` default CMD). **Docker Compose** is the intended local packaging (app + optional future vector store). A compose file is not in the repo yet; add it when RAG/local services need a second container. Do not require OpenShift for Week 1.
+**Model inference:** hosted NVIDIA Build only (`NEMOTRON_*` in `.env.example`). Not self-hosted. Not Curiosity.
 
-**Nemotron:** NVIDIA Build hosted API only. Default base URL `https://integrate.api.nvidia.com/v1`. Env (see `.env.example`):
+**Origin:** source control only, not a deploy target.
+
+**CI later:** GitHub Actions (pytest) after Algoritmica GitHub upstream. No workflow in this repo yet.
+
+**Axis / Curiosity:** optional compute for experiments. They do **not** host this engine as an HTTP app.
+
+**Nemotron env** (see `.env.example`):
 
 | Variable | Purpose |
 |----------|---------|
@@ -167,8 +173,6 @@ Verify recomputes the chain; mismatch raises tamper error.
 | `LOG_LEVEL` | Logging |
 
 Without `NEMOTRON_API_KEY`, the runner returns a stub summary (omission will fail). Copy `.env.example` → `.env`.
-
-Axis portal deploy is later (`docs/deploy-axis.md`); not required to run this spec locally.
 
 ---
 
@@ -213,7 +217,12 @@ python -m open_credit_evidence.cli verify reports/case_001_report.json
 
 Equivalent: `oce load|process|verify` after install. `--skip-api` on `process` skips Nemotron (placeholder text; omission fails). Omission pass/fail for the demo is proven in `pytest`, not by the stub CLI summary.
 
-Optional container: `docker build -t open-credit-evidence . && docker run --rm open-credit-evidence` (runs pytest).
+Optional container:
+
+```bash
+docker compose up --build
+docker compose run --rm app pytest -v
+```
 
 ---
 
@@ -227,9 +236,9 @@ Optional container: `docker build -t open-credit-evidence . && docker run --rm o
 | Critical-fact taxonomy and demo `fact_id`s | Sriram | Sample JSON is a stand-in |
 | Live NVIDIA Build wiring / model id | Sriram + Clyde | Client stub exists; key + model pick open |
 | Assistant vs search vs (later) judge models | Sriram | Hosted Nemotron family only; no Week 1 judge |
-| Axis contract / deploy surface | Clyde | Beyond Curiosity HPC docs |
+| Optional Axis/Curiosity GPU jobs | Clyde | Experiments only — not an app host |
 | Evidence package storage | Clyde | Local JSON artifacts → later object store |
-| Docker Compose services | Clyde | Dockerfile only today |
+| Docker Compose extra services | Clyde | `app` CLI service exists; vector store later |
 
 ---
 
@@ -239,8 +248,8 @@ Optional container: `docker build -t open-credit-evidence . && docker run --rm o
 |-----|---------|
 | **This file (`BUILD.md`)** | Technical spec — contracts, components, DoD, how to run |
 | [`docs/design-note.md`](docs/design-note.md) | Two-pager system design (models, RAG, safety, data flow) — outlines |
-| [`docs/week1-design-outline.md`](docs/week1-design-outline.md) | Week 1 outline (problem, safety, Axis slice, open calls) |
-| [`docs/deploy-axis.md`](docs/deploy-axis.md) | Axis portal deploy stub |
+| [`docs/week1-design-outline.md`](docs/week1-design-outline.md) | Week 1 outline (problem, safety, optional compute, open calls) |
+| [`docs/runtime.md`](docs/runtime.md) | How to run: venv, Compose, NVIDIA env; Axis is not a host |
 | **Google Doc 4-week plan** | Schedule and who does what **only** — not the spec |
 
 Stretch (not this spec): **pitch architecture** / OpenShift DataMesh+CFM deploy design. If a hardened cluster bar is needed later, that is the **data-product OpenShift bar** — out of this file.

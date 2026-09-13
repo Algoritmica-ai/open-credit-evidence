@@ -143,18 +143,20 @@ When summarizing referred loan applications, AI systems may:
 
 ---
 
-## 8. Deployment Architecture
+## 8. Runtime
 
-### 8.1 Week 1: Local Development
+### 8.1 Primary: local machine + Docker Compose
 
-- Python CLI tool
+- Python CLI (`oce` / `python -m open_credit_evidence.cli`)
 - Local file-based case storage
-- Direct NVIDIA API calls
+- Hosted NVIDIA Build API (`NEMOTRON_*` env)
+- See `docs/runtime.md`
 
-### 8.2 Week 2+: Axis Portal
+### 8.2 Optional: Axis / Curiosity compute
 
-- See `deploy-axis.md` for deployment guide
-- Target: `https://axis-raplabhackathon.axisportal.io/apps`
+- GPU, Jupyter, Slurm, private pods for experiments only
+- **Not** an application host; no public Ingress/Service/Route for this engine
+- Origin is source control only. GitHub Actions CI after Algoritmica upstream.
 
 ---
 

@@ -1,6 +1,6 @@
 # Week 1 design note outline — Credit Evidence Engine (4-week plan)
 
-Status: outline for Clyde's two-pager. Axis cluster claimed: `omc-termh`. Curiosity v2 docs = HPC only (Slurm/K8s/Jupyter); hosted NVIDIA Build remains the Nemotron path.
+Status: outline for Clyde's two-pager. Primary runtime is local + Docker Compose; inference is hosted NVIDIA Build. Axis cluster `omc-termh` / Curiosity v2 = optional HPC (Slurm/K8s/Jupyter) only — not an application host.
 
 ## 1. Problem / DoD
 - Input: referred loan application the bank's rules could not decide.
@@ -29,12 +29,13 @@ Status: outline for Clyde's two-pager. Axis cluster claimed: `omc-termh`. Curios
 ## 5. Data flow
 `Case files → loader (fingerprint) → RAG → hosted Nemotron → omission_check → evidence report → tamper verify`
 
-Optional later: Axis / Curiosity GPU job for local experiments only — not required for Week 1 DoD.
+Optional later: Axis / Curiosity GPU or Jupyter job for experiments only — not required for Week 1 DoD, and **not** where this engine is deployed as an HTTP app.
 
-## 6. Axis one-screen slice
-- Portal: https://axis-raplabhackathon.axisportal.io/apps (Event `omc-2026`, cluster `omc-termh`).
-- Apps visible: Curiosity v2 Doc, Curiosity Hub, Curiosity-v2-login.
-- Curiosity docs: https://curioisty-v2-doc-raplabhackathon.axisapps.io/ — HPC (Slurm, Enroot, Apptainer, rootless Docker, K8s `$USER-restricted`, JupyterHub). No app-push / Nemotron API docs there.
+## 6. Axis / Curiosity (optional compute, not a host)
+
+- Portal catalog (Event `omc-2026`, cluster `omc-termh`) lists Curiosity docs/hub/login. That is **HPC access**, not an Evidence Engine deploy target.
+- Curiosity docs (typo in hostname as published): HPC (Slurm, Enroot, Apptainer, rootless Docker, K8s `$USER-restricted`, JupyterHub). No app-push / Nemotron API / public Ingress for this CLI.
+- Do not document `axis deploy` or `/apps/open-credit-evidence/health`. This repo has no such URL.
 
 ## 7. Non-goals → pitch architecture / OpenShift DataMesh+CFM deploy design (stretch)
 - OpenShift DataMesh (Iceberg/Trino/Hive), CFM score API, in-cluster Nemotron ServingRuntime, Marquez, Airflow.
@@ -46,7 +47,7 @@ Optional later: Axis / Curiosity GPU job for local experiments only — not requ
 | Embeddings model | Sriram | By Fri 11 Sep per plan |
 | Vector store | Clyde | Local first; defer managed |
 | Omission checklist content | Luca | Blocks Sriram marking |
-| Axis contract / deploy surface | Clyde | Beyond HPC docs |
+| Optional Axis/Curiosity GPU jobs | Clyde | Experiments only; not an app host |
 | Evidence package storage | Clyde | Local artifacts → later object store |
 | Assistant / judge / search model picks | Sriram | Hosted Nemotron family |
 

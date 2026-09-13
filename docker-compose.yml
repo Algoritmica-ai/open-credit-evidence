@@ -1,0 +1,14 @@
+# Local / demo runtime. CLI only — no published ports.
+# See docs/runtime.md. Axis/Curiosity are not hosts for this service.
+# Compose reads repo-root .env for ${NEMOTRON_*} substitution (file is optional).
+
+services:
+  app:
+    build: .
+    image: open-credit-evidence:local
+    environment:
+      NEMOTRON_BASE_URL: ${NEMOTRON_BASE_URL:-https://integrate.api.nvidia.com/v1}
+      NEMOTRON_API_KEY: ${NEMOTRON_API_KEY:-}
+      NEMOTRON_MODEL: ${NEMOTRON_MODEL:-nvidia/nemotron-4-340b-instruct}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    command: ["oce", "--help"]
