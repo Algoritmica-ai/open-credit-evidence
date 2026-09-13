@@ -46,7 +46,7 @@ pip install -e ".[dev]"
 
 ```bash
 cp .env.example .env
-# Set NVIDIA_API_KEY (or NEMOTRON_API_KEY) for live NVIDIA Build calls
+# Set NVIDIA_API_KEY for live NVIDIA Build calls
 ```
 
 ### Running Tests

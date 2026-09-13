@@ -167,8 +167,7 @@ Verify recomputes the chain; mismatch raises tamper error.
 | Variable | Purpose |
 |----------|---------|
 | `NEMOTRON_BASE_URL` | Default `https://integrate.api.nvidia.com/v1` |
-| `NVIDIA_API_KEY` | Preferred secret (NVIDIA Build) |
-| `NEMOTRON_API_KEY` | Alias if `NVIDIA_API_KEY` unset |
+| `NVIDIA_API_KEY` | Secret — never commit |
 | `NEMOTRON_MODEL` | Default `nvidia/nemotron-3.5-lightning-30b-a3b` |
 | `NEMOTRON_ENABLE_THINKING` | Default off — thinking tokens can muddy omission checks |
 | `OCE_STUB_NEMOTRON` | Force stub (pytest sets this) |

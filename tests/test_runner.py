@@ -30,15 +30,13 @@ class _AsyncMockTransport(httpx.AsyncBaseTransport):
 
 
 class TestResolveApiKey:
-    def test_prefers_nvidia_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_reads_nvidia_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("NVIDIA_API_KEY", "nvidia-key")
-        monkeypatch.setenv("NEMOTRON_API_KEY", "legacy-key")
         assert resolve_api_key() == "nvidia-key"
 
-    def test_falls_back_to_nemotron_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_empty_when_unset(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
-        monkeypatch.setenv("NEMOTRON_API_KEY", "legacy-key")
-        assert resolve_api_key() == "legacy-key"
+        assert resolve_api_key() == ""
 
 
 class TestBuildContext:
@@ -63,7 +61,6 @@ class TestNemotronClient:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
-        monkeypatch.delenv("NEMOTRON_API_KEY", raising=False)
         client = NemotronClient(api_key="")
         assert client.is_configured is False
 
@@ -73,9 +70,8 @@ class TestNemotronClient:
 
     def test_client_uses_environment_defaults(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("NEMOTRON_BASE_URL", "https://test.api.com")
-        monkeypatch.setenv("NEMOTRON_API_KEY", "env-key")
+        monkeypatch.setenv("NVIDIA_API_KEY", "env-key")
         monkeypatch.setenv("NEMOTRON_MODEL", "test-model")
-        monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
 
         client = NemotronClient()
 

@@ -17,7 +17,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 cp .env.example .env
-# Edit .env — set NVIDIA_API_KEY (or NEMOTRON_API_KEY) for live NVIDIA Build calls
+# Edit .env — set NVIDIA_API_KEY for live NVIDIA Build calls
 
 pytest
 
@@ -76,8 +76,7 @@ From [`.env.example`](../.env.example). Secrets stay in `.env` (gitignored). Nev
 | Variable | Required | Meaning |
 |----------|----------|---------|
 | `NEMOTRON_BASE_URL` | No (has default) | `https://integrate.api.nvidia.com/v1` |
-| `NVIDIA_API_KEY` | For live calls | NVIDIA Build key (preferred) |
-| `NEMOTRON_API_KEY` | For live calls | Alias if `NVIDIA_API_KEY` unset |
+| `NVIDIA_API_KEY` | For live calls | NVIDIA Build key |
 | `NEMOTRON_MODEL` | No | Default `nvidia/nemotron-3.5-lightning-30b-a3b` |
 | `NEMOTRON_ENABLE_THINKING` | No | Default off |
 | `OCE_STUB_NEMOTRON` | No | Force stub (pytest uses this) |

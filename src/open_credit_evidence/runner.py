@@ -47,13 +47,10 @@ def _env_truthy(name: str, default: str = "") -> bool:
 
 
 def resolve_api_key(explicit: str | None = None) -> str:
-    """NVIDIA_API_KEY (Build) or NEMOTRON_API_KEY (legacy alias)."""
+    """Read NVIDIA_API_KEY from the explicit arg or environment."""
     if explicit is not None and explicit != "":
         return explicit
-    return (
-        os.getenv("NVIDIA_API_KEY", "").strip()
-        or os.getenv("NEMOTRON_API_KEY", "").strip()
-    )
+    return os.getenv("NVIDIA_API_KEY", "").strip()
 
 
 def resolve_base_url(explicit: str | None = None) -> str:
@@ -260,7 +257,7 @@ class NemotronClient:
 
 [STUB SUMMARY - NVIDIA Build not called]
 
-Set NVIDIA_API_KEY or NEMOTRON_API_KEY for live summarization.
+Set NVIDIA_API_KEY for live summarization.
 Unset OCE_STUB_NEMOTRON if that flag is forcing the stub.
 
 Case ID: {case_id}
