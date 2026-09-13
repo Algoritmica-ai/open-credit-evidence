@@ -15,7 +15,7 @@ A credit decision evidence verification system that ensures AI-generated loan su
 - [ ] Twenty referred loan application cases run end-to-end
 - [ ] System catches a deliberately bad summary that omits decision-critical facts
 - [ ] Evidence verification pipeline with tamper detection
-- [ ] Basic RAG retrieval working via NVIDIA Build / Nemotron
+- [ ] Basic whole-file summarization via hosted NVIDIA Build (embeddings later)
 
 ## Quick Start
 
@@ -46,7 +46,7 @@ pip install -e ".[dev]"
 
 ```bash
 cp .env.example .env
-# Edit .env with your NVIDIA API credentials
+# Set NVIDIA_API_KEY (or NEMOTRON_API_KEY) for live NVIDIA Build calls
 ```
 
 ### Running Tests
@@ -58,8 +58,11 @@ pytest
 ### Running the Pipeline (Week 1)
 
 ```bash
-# Process a single case
+# Whole-file summarization via NVIDIA Build (stub if no key)
 python -m open_credit_evidence.cli process cases/sample_case_001/
+
+# With a key in .env — live Build call:
+#   NVIDIA_API_KEY=... python -m open_credit_evidence.cli process cases/sample_case_001/ -o reports/case_001_report.json
 
 # Verify evidence report integrity
 python -m open_credit_evidence.cli verify reports/case_001_report.json
@@ -134,7 +137,7 @@ open-credit-evidence/
 1. **Design before coding** — See `docs/design-note.md`
 2. **Start small** — Twenty cases end-to-end first
 3. **Use RAG** — Not fine-tuned models on critical path
-4. **NVIDIA Build** — Hosted Nemotron + RAG blueprints (no self-hosted models)
+4. **NVIDIA Build** — Hosted `nvidia/nemotron-3.5-lightning-30b-a3b`; whole-file context first, embeddings later. No self-hosted models.
 5. **Runtime** — Local machine + Docker Compose. Hosted NVIDIA Build for Nemotron. Origin is source control only. After Algoritmica GitHub upstream, CI can be GitHub Actions (pytest) — not in this repo yet.
 
 ## What This Is NOT

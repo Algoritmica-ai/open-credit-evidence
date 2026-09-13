@@ -6,12 +6,12 @@ and verifying evidence reports.
 
 import asyncio
 import json
-import sys
 from pathlib import Path
 from typing import Annotated, Optional
 
 import structlog
 import typer
+from dotenv import load_dotenv
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -25,8 +25,14 @@ from open_credit_evidence.evidence import (
 )
 from open_credit_evidence.loader import CaseLoadError, TamperDetectedError, load_case
 from open_credit_evidence.omission_check import OmissionChecker
-from open_credit_evidence.runner import NemotronClient, run_case
+from open_credit_evidence.runner import (
+    NemotronClientError,
+    build_context,
+    run_case,
+)
 from open_credit_evidence.schemas import Summary
+
+load_dotenv()
 
 structlog.configure(
     processors=[
@@ -90,16 +96,23 @@ def process(
         console.print(f"[red]TAMPER DETECTED:[/red] {e}")
         raise typer.Exit(2)
 
-    console.print("\nGenerating summary...")
+    context = build_context(case)
+    console.print(f"  Whole-file context: {len(context)} chars")
+
+    console.print("\nGenerating summary (hosted NVIDIA Build, whole-file)...")
     if skip_api:
         summary = Summary(
             case_id=case.metadata.case_id,
             text="[Skipped - use test fixtures for omission testing]",
             model="skipped",
         )
-        console.print("  [yellow]Skipped API call[/yellow]")
+        console.print("  [yellow]Skipped API call (--skip-api)[/yellow]")
     else:
-        summary = asyncio.run(run_case(case))
+        try:
+            summary = asyncio.run(run_case(case))
+        except NemotronClientError as e:
+            console.print(f"[red]NVIDIA Build error:[/red] {e}")
+            raise typer.Exit(3)
         console.print(f"  Model: {summary.model}")
         console.print(f"  Length: {len(summary.text)} chars")
 

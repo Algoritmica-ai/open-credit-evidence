@@ -17,7 +17,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 cp .env.example .env
-# Edit .env — set NEMOTRON_API_KEY for live NVIDIA Build calls
+# Edit .env — set NVIDIA_API_KEY (or NEMOTRON_API_KEY) for live NVIDIA Build calls
 
 pytest
 
@@ -28,7 +28,14 @@ python -m open_credit_evidence.cli verify reports/case_001_report.json
 
 After install, `oce` is the same CLI (`oce --help`, `oce version`, `oce load|process|verify`).
 
-Without `NEMOTRON_API_KEY`, `process` uses a stub summary; omission check will fail. That is expected. Named-fact omission is proven by `pytest` fixtures, not by the stub.
+Without a key, `process` uses a stub summary; omission check will fail. That is expected. Named-fact omission is proven by `pytest` fixtures, not by the stub.
+
+Live NVIDIA Build (whole-file, no embeddings):
+
+```bash
+# .env contains NVIDIA_API_KEY=...
+python -m open_credit_evidence.cli process cases/sample_case_001/ -o reports/case_001_report.json
+```
 
 ---
 
@@ -68,13 +75,16 @@ From [`.env.example`](../.env.example). Secrets stay in `.env` (gitignored). Nev
 
 | Variable | Required | Meaning |
 |----------|----------|---------|
-| `NEMOTRON_BASE_URL` | Yes (has default) | Hosted NVIDIA API, default `https://integrate.api.nvidia.com/v1` |
-| `NEMOTRON_API_KEY` | For live calls | NVIDIA Build key |
-| `NEMOTRON_MODEL` | No | Default in code: `nvidia/nemotron-4-340b-instruct` |
+| `NEMOTRON_BASE_URL` | No (has default) | `https://integrate.api.nvidia.com/v1` |
+| `NVIDIA_API_KEY` | For live calls | NVIDIA Build key (preferred) |
+| `NEMOTRON_API_KEY` | For live calls | Alias if `NVIDIA_API_KEY` unset |
+| `NEMOTRON_MODEL` | No | Default `nvidia/nemotron-3.5-lightning-30b-a3b` |
+| `NEMOTRON_ENABLE_THINKING` | No | Default off |
+| `OCE_STUB_NEMOTRON` | No | Force stub (pytest uses this) |
 | `EVIDENCE_VERIFICATION_MODE` | No | Declared `strict` / `permissive` (not fully wired yet) |
 | `LOG_LEVEL` | No | Logging |
 
-Inference is **always** this hosted API (or the stub). Not self-hosted Nemotron. Not Curiosity GPUs on the critical path.
+Week 1 sends **whole-file** application + bureau text to that model. Embeddings later. Inference is **this hosted API** (or the stub). Not self-hosted. Not Curiosity GPUs on the critical path.
 
 ---
 

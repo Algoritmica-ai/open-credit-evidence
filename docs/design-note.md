@@ -63,8 +63,8 @@ When summarizing referred loan applications, AI systems may:
 ### 4.1 Primary Model: NVIDIA Nemotron
 
 - **Endpoint:** NVIDIA Build hosted API
-- **Model:** nemotron-4-340b-instruct (or latest available)
-- **Use Case:** Summary generation and fact extraction
+- **Model:** nvidia/nemotron-3.5-lightning-30b-a3b (NVIDIA Build hosted)
+- **Use Case:** Whole-file summary generation (embeddings / RAG later)
 - **Constraint:** No self-hosted models on critical path (Mentor guidance)
 
 ### 4.2 RAG Pipeline

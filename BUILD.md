@@ -38,7 +38,7 @@ Out of scope for this repo and for the 4-week plan:
 | Component | Path | Role today |
 |-----------|------|------------|
 | **loader** | `src/open_credit_evidence/loader.py` | Read a case directory; SHA-256 each file; combined fingerprint; refuse hash mismatch |
-| **runner** | `src/open_credit_evidence/runner.py` | Send case text to hosted Nemotron (`NEMOTRON_*` env); stub summary if no API key |
+| **runner** | `src/open_credit_evidence/runner.py` | Whole-file context + hosted Nemotron (`nvidia/nemotron-3.5-lightning-30b-a3b`); stub if no API key |
 | **omission_check** | `src/open_credit_evidence/omission_check.py` | Match `critical_facts` against summary; fail if any fact missing (and if any `critical` severity omitted) |
 | **evidence** | `src/open_credit_evidence/evidence.py` | Chain fingerprint over case + summary + marking; save/load JSON; re-verify |
 | **schemas** | `src/open_credit_evidence/schemas.py` | Pydantic types: `Case`, `CriticalFact`, `Summary`, `MarkingResult`, `EvidenceReport` |
@@ -46,11 +46,11 @@ Out of scope for this repo and for the 4-week plan:
 | **cases** | `cases/sample_case_001/`, `cases/sample_case_002/` | Referred application + bureau markdown + `metadata.json` |
 | **fixtures** | `tests/fixtures/summaries.py` | Engineering good/bad summaries for pytest |
 
-There is **no RAG module yet**. Retrieval is planned; the runner currently concatenates whole documents into the prompt (whole-file fallback).
+There is **no RAG module yet**. Week 1 uses `build_context(case)` (full application + bureau in the prompt). Embeddings / vector search come later.
 
 Data flow:
 
-`Case files → loader (fingerprint) → [RAG later / whole-file now] → hosted Nemotron → omission_check → evidence report → tamper verify`
+`Case files → loader (fingerprint) → build_context (whole-file) → hosted Nemotron → omission_check → evidence report → tamper verify`
 
 ---
 
@@ -107,7 +107,7 @@ After load, the in-memory `Case` adds:
 |-------|------|--------|
 | `case_id` | string | Must match the case |
 | `text` | string | Free-text summary (not JSON today) |
-| `model` | string | e.g. `nvidia/nemotron-4-340b-instruct`, or `stub` / `skipped` |
+| `model` | string | e.g. `nvidia/nemotron-3.5-lightning-30b-a3b`, or `stub` / `skipped` |
 | `generated_at` | datetime | UTC |
 | `prompt_tokens` / `completion_tokens` | int, optional | From API usage if present |
 
@@ -154,7 +154,7 @@ Verify recomputes the chain; mismatch raises tamper error.
 
 **Primary runtime:** local machine (Python 3.11+ venv) or **Docker Compose** (`docker-compose.yml`, `app` service only). CLI — no published ports, no HTTP health URL. Details: [`docs/runtime.md`](docs/runtime.md).
 
-**Model inference:** hosted NVIDIA Build only (`NEMOTRON_*` in `.env.example`). Not self-hosted. Not Curiosity.
+**Model inference:** hosted NVIDIA Build, OpenAI-compatible `POST /chat/completions`. Model: `nvidia/nemotron-3.5-lightning-30b-a3b`. Context is **whole-file** (`build_context`). Not self-hosted. Not Curiosity. Embeddings later.
 
 **Origin:** source control only, not a deploy target.
 
@@ -162,17 +162,25 @@ Verify recomputes the chain; mismatch raises tamper error.
 
 **Axis / Curiosity:** optional compute for experiments. They do **not** host this engine as an HTTP app.
 
-**Nemotron env** (see `.env.example`):
+**NVIDIA Build env** (see `.env.example`):
 
 | Variable | Purpose |
 |----------|---------|
-| `NEMOTRON_BASE_URL` | Hosted endpoint |
-| `NEMOTRON_API_KEY` | Secret — never commit |
-| `NEMOTRON_MODEL` | Default in code: `nvidia/nemotron-4-340b-instruct` (reference family may change; Sriram owns pick) |
+| `NEMOTRON_BASE_URL` | Default `https://integrate.api.nvidia.com/v1` |
+| `NVIDIA_API_KEY` | Preferred secret (NVIDIA Build) |
+| `NEMOTRON_API_KEY` | Alias if `NVIDIA_API_KEY` unset |
+| `NEMOTRON_MODEL` | Default `nvidia/nemotron-3.5-lightning-30b-a3b` |
+| `NEMOTRON_ENABLE_THINKING` | Default off — thinking tokens can muddy omission checks |
+| `OCE_STUB_NEMOTRON` | Force stub (pytest sets this) |
 | `EVIDENCE_VERIFICATION_MODE` | Declared; `strict` vs `permissive` — not yet wired in checker |
 | `LOG_LEVEL` | Logging |
 
-Without `NEMOTRON_API_KEY`, the runner returns a stub summary (omission will fail). Copy `.env.example` → `.env`.
+Without a key, the runner returns a stub summary (omission will fail). Live call:
+
+```bash
+cp .env.example .env   # set NVIDIA_API_KEY
+python -m open_credit_evidence.cli process cases/sample_case_001/ -o reports/case_001_report.json
+```
 
 ---
 
@@ -183,7 +191,7 @@ Ends **Wed 16 Sep 2026**. Technical bar (not the Google Doc roster):
 1. **Twenty cases** in `cases/` run loader → summary → omission → evidence end-to-end (CLI or batch). Two samples exist today; remaining eighteen are Sriram/Clyde intake.
 2. **Deliberately bad summary fails by named fact** — deterministic: pytest asserts omitted `fact_id` (e.g. `cf_002` delinquency, `cf_003` enquiry). Not an LLM judge.
 3. **Evidence fingerprints** — load refuses tampered inputs; `verify` refuses a mutated report.
-4. **RAG preferred**, **whole-file fallback allowed** — if retrieval is not wired, concatenating application + bureau into the Nemotron prompt is acceptable for Week 1 DoD.
+4. **Whole-file context** — concatenate application + bureau into the Nemotron prompt. Embeddings / RAG later.
 
 ---
 
@@ -201,14 +209,14 @@ Ends **Wed 16 Sep 2026**. Technical bar (not the Google Doc roster):
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-cp .env.example .env   # add NEMOTRON_API_KEY for live calls
+cp .env.example .env   # add NVIDIA_API_KEY for live NVIDIA Build calls
 
 pytest
 
 # Inspect fingerprints and facts
 python -m open_credit_evidence.cli load cases/sample_case_001/
 
-# Full pipeline (stub summary if no API key → omission FAIL expected)
+# Full pipeline with NVIDIA Build (set NVIDIA_API_KEY). Stub if no key → omission FAIL expected.
 python -m open_credit_evidence.cli process cases/sample_case_001/ -o reports/case_001_report.json
 
 # Recompute chain hashes
@@ -230,11 +238,11 @@ docker compose run --rm app pytest -v
 
 | Decision | Owner | Status |
 |----------|--------|--------|
-| Embeddings model | Sriram | Open — pick one; no in-cluster model |
-| Vector store | Clyde | Local first; defer managed |
+| Embeddings model | Sriram | Later — Week 1 is whole-file |
+| Vector store | Clyde | Later; local first when RAG starts |
 | Omission checklist content (what must appear) | Luca | Blocks Sriram marking |
 | Critical-fact taxonomy and demo `fact_id`s | Sriram | Sample JSON is a stand-in |
-| Live NVIDIA Build wiring / model id | Sriram + Clyde | Client stub exists; key + model pick open |
+| Live NVIDIA Build wiring / model id | Clyde | Whole-file client: `nvidia/nemotron-3.5-lightning-30b-a3b` |
 | Assistant vs search vs (later) judge models | Sriram | Hosted Nemotron family only; no Week 1 judge |
 | Optional Axis/Curiosity GPU jobs | Clyde | Experiments only — not an app host |
 | Evidence package storage | Clyde | Local JSON artifacts → later object store |

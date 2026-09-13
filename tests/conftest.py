@@ -18,6 +18,15 @@ from open_credit_evidence.schemas import (
 )
 
 
+@pytest.fixture(autouse=True)
+def stub_nemotron_offline(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest) -> None:
+    """Keep pytest offline unless a test opts into mocked/live HTTP."""
+    if request.node.get_closest_marker("nvidia_http"):
+        monkeypatch.delenv("OCE_STUB_NEMOTRON", raising=False)
+        return
+    monkeypatch.setenv("OCE_STUB_NEMOTRON", "1")
+
+
 @pytest.fixture
 def cases_dir() -> Path:
     """Path to the cases directory."""

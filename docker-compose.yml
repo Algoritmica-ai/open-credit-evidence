@@ -8,7 +8,9 @@ services:
     image: open-credit-evidence:local
     environment:
       NEMOTRON_BASE_URL: ${NEMOTRON_BASE_URL:-https://integrate.api.nvidia.com/v1}
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
       NEMOTRON_API_KEY: ${NEMOTRON_API_KEY:-}
-      NEMOTRON_MODEL: ${NEMOTRON_MODEL:-nvidia/nemotron-4-340b-instruct}
+      NEMOTRON_MODEL: ${NEMOTRON_MODEL:-nvidia/nemotron-3.5-lightning-30b-a3b}
+      NEMOTRON_ENABLE_THINKING: ${NEMOTRON_ENABLE_THINKING:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     command: ["oce", "--help"]

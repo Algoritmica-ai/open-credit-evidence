@@ -27,9 +27,9 @@ Status: outline for Clyde's two-pager. Primary runtime is local + Docker Compose
 - Tamper hashes on evidence package (scaffold `evidence.py`).
 
 ## 5. Data flow
-`Case files → loader (fingerprint) → RAG → hosted Nemotron → omission_check → evidence report → tamper verify`
+`Case files → loader (fingerprint) → build_context (whole-file) → hosted Nemotron → omission_check → evidence report → tamper verify`
 
-Optional later: Axis / Curiosity GPU or Jupyter job for experiments only — not required for Week 1 DoD, and **not** where this engine is deployed as an HTTP app.
+Embeddings / RAG later. Optional Axis / Curiosity GPU or Jupyter job for experiments only — not required for Week 1 DoD, and **not** where this engine is deployed as an HTTP app.
 
 ## 6. Axis / Curiosity (optional compute, not a host)
 
