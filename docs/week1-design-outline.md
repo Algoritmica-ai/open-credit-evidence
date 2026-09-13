@@ -1,4 +1,4 @@
-# Week 1 design note outline — Credit Evidence Engine (Track B)
+# Week 1 design note outline — Credit Evidence Engine (4-week plan)
 
 Status: outline for Clyde's two-pager. Axis cluster claimed: `omc-termh`. Curiosity v2 docs = HPC only (Slurm/K8s/Jupyter); hosted NVIDIA Build remains the Nemotron path.
 
@@ -36,7 +36,7 @@ Optional later: Axis / Curiosity GPU job for local experiments only — not requ
 - Apps visible: Curiosity v2 Doc, Curiosity Hub, Curiosity-v2-login.
 - Curiosity docs: https://curioisty-v2-doc-raplabhackathon.axisapps.io/ — HPC (Slurm, Enroot, Apptainer, rootless Docker, K8s `$USER-restricted`, JupyterHub). No app-push / Nemotron API docs there.
 
-## 7. Non-goals → ADR-002 / Track A stretch
+## 7. Non-goals → pitch architecture / OpenShift DataMesh+CFM deploy design (stretch)
 - OpenShift DataMesh (Iceberg/Trino/Hive), CFM score API, in-cluster Nemotron ServingRuntime, Marquez, Airflow.
 - Repo archive: `zaga-products/opencredit-evidence` (frozen).
 

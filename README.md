@@ -1,6 +1,6 @@
 # OpenCredit Evidence
 
-**Track B: Credit Evidence Engine** — OpenCredit Evidence Hackathon
+**Credit Evidence Engine** (4-week plan) — OpenCredit Evidence Hackathon
 
 A credit decision evidence verification system that ensures AI-generated loan summaries include all decision-critical facts from source documents.
 
@@ -123,7 +123,7 @@ open-credit-evidence/
 
 ## What This Is NOT
 
-This is **Track B: Credit Evidence Engine**, not Track A (OpenShift DataMesh/CFM).
+This is the **4-week plan**: Credit Evidence Engine (RAG, hosted Nemotron, omission/tamper, Axis). Stretch is the **pitch architecture**: OpenShift DataMesh+CFM deploy design — not this repo's path.
 No Iceberg, Trino, Hive, Airflow, or Kustomize here.
 
 ## License

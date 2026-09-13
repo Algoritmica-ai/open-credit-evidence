@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "open-credit-evidence"
 version = "0.1.0"
-description = "Credit decision evidence verification system for OpenCredit Evidence Hackathon Track B"
+description = "Credit decision evidence verification system for OpenCredit Evidence Hackathon (4-week plan: Credit Evidence Engine)"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.11"
