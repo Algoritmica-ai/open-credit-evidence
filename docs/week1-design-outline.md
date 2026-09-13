@@ -52,4 +52,4 @@ Embeddings / RAG later. Optional Axis / Curiosity GPU or Jupyter job for experim
 | Assistant / judge / search model picks | Sriram | Hosted Nemotron family |
 
 ## Scaffold pointer
-Python package already on this Origin repo: loader, runner stub, omission_check, evidence/tamper, sample cases, 47 tests. Expand RAG + live Nemotron client next; do not rebuild OpenShift path for Week 1.
+Python package on GitHub `Algoritmica-ai/open-credit-evidence` (Origin `iamclyde/open-credit-evidence` may remain a working copy): loader, runner, omission_check, evidence/tamper, sample cases, pytest. Expand RAG next; do not rebuild OpenShift path for Week 1.

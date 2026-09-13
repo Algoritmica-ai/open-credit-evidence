@@ -138,7 +138,7 @@ open-credit-evidence/
 2. **Start small** — Twenty cases end-to-end first
 3. **Use RAG** — Not fine-tuned models on critical path
 4. **NVIDIA Build** — Hosted `nvidia/nemotron-3.5-lightning-30b-a3b`; whole-file context first, embeddings later. No self-hosted models.
-5. **Runtime** — Local machine + Docker Compose. Hosted NVIDIA Build for Nemotron. Origin is source control only. After Algoritmica GitHub upstream, CI can be GitHub Actions (pytest) — not in this repo yet.
+5. **Runtime** — Local machine + Docker Compose. Hosted NVIDIA Build for Nemotron. Team source of truth is GitHub (`Algoritmica-ai/open-credit-evidence`). Origin may be a working copy. CI (GitHub Actions, pytest) can follow on GitHub — not in this repo yet.
 
 ## What This Is NOT
 
@@ -147,12 +147,19 @@ No Iceberg, Trino, Hive, Airflow, or Kustomize here.
 
 **Axis portal / Curiosity** are optional GPU, Jupyter, Slurm, or private Kubernetes pods for experiments. They do **not** host this Evidence Engine as an HTTP app. There is no `axis deploy` and no `/apps/open-credit-evidence/health` URL.
 
+## Source remotes
+
+**Canonical upstream:** [github.com/Algoritmica-ai/open-credit-evidence](https://github.com/Algoritmica-ai/open-credit-evidence). Clone and push there for team work.
+
+```bash
+git clone https://github.com/Algoritmica-ai/open-credit-evidence.git
+```
+
+**Origin** (`iamclyde/open-credit-evidence` on Cursor Origin) may remain a working copy or mirror. It is not a deploy target. GitHub Actions CI (pytest) can run on the GitHub repo once workflows are added.
+
 ## License
 
 Apache 2.0 — See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 Copyright holders: Algoritmica GmbH + ZAGA Open Source (pending confirmation from Luca).
 
-## Future: GitHub Upstream
-
-This repository is temporarily hosted on Origin (source control only, not a deploy target). Clyde will migrate upstream to Algoritmica GitHub after the hackathon; pytest CI via GitHub Actions can follow there.

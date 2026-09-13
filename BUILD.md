@@ -156,9 +156,9 @@ Verify recomputes the chain; mismatch raises tamper error.
 
 **Model inference:** hosted NVIDIA Build, OpenAI-compatible `POST /chat/completions`. Model: `nvidia/nemotron-3.5-lightning-30b-a3b`. Context is **whole-file** (`build_context`). Not self-hosted. Not Curiosity. Embeddings later.
 
-**Origin:** source control only, not a deploy target.
+**Source remotes:** Canonical team upstream is GitHub [`Algoritmica-ai/open-credit-evidence`](https://github.com/Algoritmica-ai/open-credit-evidence). Origin (`iamclyde/open-credit-evidence`) may remain a working copy or mirror; it is not a deploy target.
 
-**CI later:** GitHub Actions (pytest) after Algoritmica GitHub upstream. No workflow in this repo yet.
+**CI later:** GitHub Actions (pytest) on the GitHub repo. No workflow in this repo yet.
 
 **Axis / Curiosity:** optional compute for experiments. They do **not** host this engine as an HTTP app.
 

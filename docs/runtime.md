@@ -100,7 +100,7 @@ They are **not**:
 
 Do **not** expect URLs like `/apps/open-credit-evidence/health`. This project does not expose that surface.
 
-Origin is **source control only**, not a deploy target. After Clyde moves upstream to Algoritmica GitHub, **CI** (GitHub Actions, e.g. pytest) can run there. That workflow is not in this repo yet.
+**Canonical source:** GitHub [`Algoritmica-ai/open-credit-evidence`](https://github.com/Algoritmica-ai/open-credit-evidence). Origin (`iamclyde/open-credit-evidence`) may remain a working copy or mirror; it is not a deploy target. **CI** (GitHub Actions, e.g. pytest) can run on GitHub. That workflow is not in this repo yet.
 
 ---
 

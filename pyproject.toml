@@ -43,7 +43,7 @@ dev = [
 oce = "open_credit_evidence.cli:app"
 
 [project.urls]
-Repository = "https://github.com/algoritmica/open-credit-evidence"
+Repository = "https://github.com/Algoritmica-ai/open-credit-evidence"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/open_credit_evidence"]

@@ -156,7 +156,7 @@ When summarizing referred loan applications, AI systems may:
 
 - GPU, Jupyter, Slurm, private pods for experiments only
 - **Not** an application host; no public Ingress/Service/Route for this engine
-- Origin is source control only. GitHub Actions CI after Algoritmica upstream.
+- Canonical source is GitHub `Algoritmica-ai/open-credit-evidence`. Origin may be a working copy. GitHub Actions CI can follow there.
 
 ---
 
