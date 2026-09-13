@@ -1,6 +1,5 @@
 """Tests for case loading and fingerprint verification."""
 
-import json
 from pathlib import Path
 
 import pytest
@@ -100,7 +99,7 @@ class TestLoadCase:
         """All documents should have fingerprints computed."""
         case = load_case(sample_case_001_dir)
 
-        for name, doc in case.documents.items():
+        for _name, doc in case.documents.items():
             assert doc.fingerprint is not None
             assert len(doc.fingerprint) == 64
 

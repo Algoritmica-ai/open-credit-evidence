@@ -185,13 +185,15 @@ def load_case(
         doc.type = doc_info.type
         doc.description = doc_info.description
 
+        assert doc.fingerprint is not None, "Document must have fingerprint after load"
+
         if verify_fingerprints and doc.name in verify_fingerprints:
             expected = verify_fingerprints[doc.name]
             if doc.fingerprint != expected:
                 raise TamperDetectedError(doc.name, expected, doc.fingerprint)
 
         documents[doc.name] = doc
-        fingerprints.append(doc.fingerprint)  # type: ignore
+        fingerprints.append(doc.fingerprint)
 
         logger.debug(
             "loaded_document",

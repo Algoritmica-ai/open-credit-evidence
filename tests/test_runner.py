@@ -57,9 +57,7 @@ class TestBuildContext:
 
 
 class TestNemotronClient:
-    def test_client_not_configured_without_api_key(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_client_not_configured_without_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
         client = NemotronClient(api_key="")
         assert client.is_configured is False
@@ -111,9 +109,7 @@ class TestNemotronClient:
 @pytest.mark.nvidia_http
 class TestNemotronLiveClientMocked:
     @pytest.mark.asyncio
-    async def test_posts_openai_compatible_chat_completions(
-        self, mock_case_001: Case
-    ) -> None:
+    async def test_posts_openai_compatible_chat_completions(self, mock_case_001: Case) -> None:
         captured: dict = {}
 
         def handler(request: httpx.Request) -> httpx.Response:

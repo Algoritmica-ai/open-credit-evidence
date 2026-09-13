@@ -57,9 +57,7 @@ def resolve_base_url(explicit: str | None = None) -> str:
     if explicit:
         return explicit.rstrip("/")
     return (
-        os.getenv("NEMOTRON_BASE_URL")
-        or os.getenv("NVIDIA_BASE_URL")
-        or DEFAULT_BASE_URL
+        os.getenv("NEMOTRON_BASE_URL") or os.getenv("NVIDIA_BASE_URL") or DEFAULT_BASE_URL
     ).rstrip("/")
 
 
@@ -243,9 +241,7 @@ class NemotronClient:
             )
         except httpx.HTTPStatusError as e:
             body = e.response.text[:500]
-            raise NemotronClientError(
-                f"API error: {e.response.status_code} {body}"
-            ) from e
+            raise NemotronClientError(f"API error: {e.response.status_code} {body}") from e
         except httpx.RequestError as e:
             raise NemotronClientError(f"Request failed: {e}") from e
         except (KeyError, IndexError, json.JSONDecodeError) as e:
