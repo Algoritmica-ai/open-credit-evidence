@@ -1,0 +1,601 @@
+{
+  "schema_version": "1.0",
+  "jurisdiction": {
+    "code": "IT",
+    "name": "Italy",
+    "eu_member": true
+  },
+  "last_verified": "2026-09-15",
+  "scope": {
+    "assumptions": [
+      "The lender is an Italian bank or an Article 106 financial intermediary.",
+      "The borrower is a natural person and the product is consumer or mortgage credit.",
+      "The lender uses credit-information systems and AI or automated processing in credit assessment."
+    ],
+    "exclusions": [
+      "Entity-specific supervisory decisions and licence conditions.",
+      "Tax, employment, accounting, company-law, and product rules unrelated to credit assessment.",
+      "Business lending, servicing of non-performing loans, securitisation, insurance distribution, and payment services unless separately scoped."
+    ]
+  },
+  "entries": [
+    {
+      "id": "IT-TUB-120-UNDECIES",
+      "title": "Mortgage creditworthiness assessment",
+      "citation": "D.Lgs. 385/1993 (TUB), Article 120-undecies",
+      "category": "creditworthiness",
+      "status": "in_force",
+      "applicability": "Consumer credit relating to residential immovable property.",
+      "obligation": "Carry out a thorough creditworthiness assessment using necessary, sufficient, proportionate, and appropriately verified economic and financial information before concluding the credit agreement.",
+      "open_credit_relationship": "direct",
+      "open_credit_evidence": [
+        "Trace each material summary fact to verified source information.",
+        "Flag missing or contradictory income, expense, debt, and repayment-capacity facts."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-4", "FINOS-AIGF-MI-5", "FINOS-AIGF-MI-11"],
+      "eu_ai_act_refs": ["Article 9", "Article 10", "Article 12", "Article 14", "Article 15"],
+      "official_sources": [
+        {
+          "label": "Italian Banking Act",
+          "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:1993-09-01;385",
+          "publisher": "Normattiva"
+        }
+      ]
+    },
+    {
+      "id": "IT-TUB-124-BIS-1",
+      "title": "Thorough consumer creditworthiness assessment",
+      "citation": "D.Lgs. 385/1993 (TUB), Article 124-bis(1)",
+      "category": "creditworthiness",
+      "status": "transition",
+      "applicability": "Consumer credit within TUB Title VI, Chapter II, subject to statutory exclusions and transition rules.",
+      "obligation": "Assess the consumer's creditworthiness thoroughly before concluding the credit agreement, including in the consumer's interest to avoid irresponsible lending and over-indebtedness.",
+      "open_credit_relationship": "direct",
+      "open_credit_evidence": [
+        "Verify that the internal summary contains all defined decision-critical facts.",
+        "Record omissions before the lending decision proceeds."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-5", "FINOS-AIGF-MI-11"],
+      "eu_ai_act_refs": ["Article 9", "Article 14", "Article 15"],
+      "official_sources": [
+        {
+          "label": "Legislative Decree 212/2025",
+          "url": "https://www.normattiva.it/atto/caricaDettaglioAtto?atto.codiceRedazionale=26G00009&atto.dataPubblicazioneGazzetta=2026-01-09&tipoDettaglio=multivigenza",
+          "publisher": "Normattiva"
+        }
+      ],
+      "notes": "General adaptation deadline: 20 November 2026 or, if later, 90 days after the relevant Bank of Italy implementing provisions enter into force."
+    },
+    {
+      "id": "IT-TUB-124-BIS-1-BIS",
+      "title": "Necessary and proportionate creditworthiness information",
+      "citation": "D.Lgs. 385/1993 (TUB), Article 124-bis(1-bis)",
+      "category": "credit_data",
+      "status": "transition",
+      "applicability": "Consumer creditworthiness assessments under Article 124-bis.",
+      "obligation": "Use necessary and proportionate economic and financial information, appropriately verify it, exclude GDPR special-category data, and do not treat social networks as external sources.",
+      "open_credit_relationship": "direct",
+      "open_credit_evidence": [
+        "Record the source document for each critical fact.",
+        "Restrict materiality rules to decision-relevant economic and financial information.",
+        "Flag prohibited source or data categories before processing."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-1", "FINOS-AIGF-MI-4", "FINOS-AIGF-MI-5"],
+      "eu_ai_act_refs": ["Article 9", "Article 10", "Article 12"],
+      "official_sources": [
+        {
+          "label": "Legislative Decree 212/2025",
+          "url": "https://www.normattiva.it/atto/caricaDettaglioAtto?atto.codiceRedazionale=26G00009&atto.dataPubblicazioneGazzetta=2026-01-09&tipoDettaglio=multivigenza",
+          "publisher": "Normattiva"
+        }
+      ]
+    },
+    {
+      "id": "IT-TUB-124-BIS-1-TER",
+      "title": "Documented and updated assessment procedures",
+      "citation": "D.Lgs. 385/1993 (TUB), Article 124-bis(1-ter)",
+      "category": "creditworthiness",
+      "status": "transition",
+      "applicability": "Lenders carrying out consumer creditworthiness assessments.",
+      "obligation": "Develop, document, and keep creditworthiness-assessment procedures and the information used by those procedures up to date.",
+      "open_credit_relationship": "direct",
+      "open_credit_evidence": [
+        "Version materiality rules and checker logic.",
+        "Record the rule and checker version on each evidence report.",
+        "Maintain a change history and periodic review record."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-4", "FINOS-AIGF-MI-5"],
+      "eu_ai_act_refs": ["Article 9", "Article 11", "Article 12"],
+      "official_sources": [
+        {
+          "label": "Legislative Decree 212/2025",
+          "url": "https://www.normattiva.it/atto/caricaDettaglioAtto?atto.codiceRedazionale=26G00009&atto.dataPubblicazioneGazzetta=2026-01-09&tipoDettaglio=multivigenza",
+          "publisher": "Normattiva"
+        }
+      ]
+    },
+    {
+      "id": "IT-TUB-124-BIS-2-BIS-A",
+      "title": "Explanation of automated creditworthiness assessment",
+      "citation": "D.Lgs. 385/1993 (TUB), Article 124-bis(2-bis)(a)",
+      "category": "automated_decisioning",
+      "status": "transition",
+      "applicability": "A creditworthiness assessment based even partly on automated processing of the consumer's personal data.",
+      "obligation": "On request, provide a clear and understandable explanation of the creditworthiness assessment, including the logic and risks of the automated processing and its significance and effects on the decision.",
+      "open_credit_relationship": "direct",
+      "open_credit_evidence": [
+        "Preserve the observed facts used in the internal summary.",
+        "Separate observed facts from inferences.",
+        "Provide traceable supporting evidence for a lender-created explanation."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-4", "FINOS-AIGF-MI-11"],
+      "eu_ai_act_refs": ["Article 13", "Article 14", "Article 86"],
+      "official_sources": [
+        {
+          "label": "Legislative Decree 212/2025",
+          "url": "https://www.normattiva.it/atto/caricaDettaglioAtto?atto.codiceRedazionale=26G00009&atto.dataPubblicazioneGazzetta=2026-01-09&tipoDettaglio=multivigenza",
+          "publisher": "Normattiva"
+        }
+      ],
+      "notes": "OpenCredit's internal completeness report is supporting evidence, not the legally required consumer-facing explanation."
+    },
+    {
+      "id": "IT-TUB-124-BIS-2-BIS-B",
+      "title": "Consumer opportunity to express a view",
+      "citation": "D.Lgs. 385/1993 (TUB), Article 124-bis(2-bis)(b)",
+      "category": "automated_decisioning",
+      "status": "transition",
+      "applicability": "A creditworthiness assessment based even partly on automated processing of the consumer's personal data.",
+      "obligation": "Allow the consumer to express their view to the lender.",
+      "open_credit_relationship": "supporting",
+      "open_credit_evidence": [
+        "Link consumer-provided corrections or context to the case evidence.",
+        "Re-run materiality checks when relevant source information changes."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-11"],
+      "eu_ai_act_refs": ["Article 14", "Article 26"],
+      "official_sources": [
+        {
+          "label": "Legislative Decree 212/2025",
+          "url": "https://www.normattiva.it/atto/caricaDettaglioAtto?atto.codiceRedazionale=26G00009&atto.dataPubblicazioneGazzetta=2026-01-09&tipoDettaglio=multivigenza",
+          "publisher": "Normattiva"
+        }
+      ]
+    },
+    {
+      "id": "IT-TUB-124-BIS-2-BIS-C",
+      "title": "Human reconsideration of assessment and decision",
+      "citation": "D.Lgs. 385/1993 (TUB), Article 124-bis(2-bis)(c)",
+      "category": "automated_decisioning",
+      "status": "transition",
+      "applicability": "A creditworthiness assessment based even partly on automated processing of the consumer's personal data.",
+      "obligation": "Provide a route for reconsideration by the lender of both the creditworthiness assessment and the credit-granting decision.",
+      "open_credit_relationship": "supporting",
+      "open_credit_evidence": [
+        "Show the reviewer the checked summary, omissions, and source evidence.",
+        "Record the human outcome, override, reason, and timestamp."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-4", "FINOS-AIGF-MI-11"],
+      "eu_ai_act_refs": ["Article 14", "Article 26"],
+      "official_sources": [
+        {
+          "label": "Legislative Decree 212/2025",
+          "url": "https://www.normattiva.it/atto/caricaDettaglioAtto?atto.codiceRedazionale=26G00009&atto.dataPubblicazioneGazzetta=2026-01-09&tipoDettaglio=multivigenza",
+          "publisher": "Normattiva"
+        }
+      ]
+    },
+    {
+      "id": "IT-TUB-124-BIS-2-TER",
+      "title": "Third-party explanation information",
+      "citation": "D.Lgs. 385/1993 (TUB), Article 124-bis(2-ter)",
+      "category": "automated_decisioning",
+      "status": "transition",
+      "applicability": "The lender uses a third party to perform automated processing involved in the creditworthiness assessment.",
+      "obligation": "Obtain from the third party the information needed to provide the consumer with the required explanation.",
+      "open_credit_relationship": "direct",
+      "open_credit_evidence": [
+        "Expose versioned model, prompt, checker, and source-use information to the lender.",
+        "Link OpenCredit and model-provider evidence to the same lender process instance."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-4"],
+      "eu_ai_act_refs": ["Article 13", "Article 26"],
+      "official_sources": [
+        {
+          "label": "Legislative Decree 212/2025",
+          "url": "https://www.normattiva.it/atto/caricaDettaglioAtto?atto.codiceRedazionale=26G00009&atto.dataPubblicazioneGazzetta=2026-01-09&tipoDettaglio=multivigenza",
+          "publisher": "Normattiva"
+        }
+      ]
+    },
+    {
+      "id": "IT-TUB-124-BIS-2-QUATER",
+      "title": "Advance notice of automated processing rights",
+      "citation": "D.Lgs. 385/1993 (TUB), Article 124-bis(2-quater)",
+      "category": "consumer_protection",
+      "status": "transition",
+      "applicability": "The lender will use automated processing of personal data in the creditworthiness assessment.",
+      "obligation": "Inform the consumer of the human-intervention, explanation, view, and reconsideration rights before automated processing begins, including relevant third-party involvement.",
+      "open_credit_relationship": "context_only",
+      "open_credit_evidence": [
+        "Expose accurate system and third-party identification for the lender's notice.",
+        "Record the notice version and acknowledgement in the host workflow."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-4"],
+      "eu_ai_act_refs": ["Article 13", "Article 26"],
+      "official_sources": [
+        {
+          "label": "Legislative Decree 212/2025",
+          "url": "https://www.normattiva.it/atto/caricaDettaglioAtto?atto.codiceRedazionale=26G00009&atto.dataPubblicazioneGazzetta=2026-01-09&tipoDettaglio=multivigenza",
+          "publisher": "Normattiva"
+        }
+      ]
+    },
+    {
+      "id": "IT-TUB-124-BIS-2-SEXIES",
+      "title": "Information following credit rejection",
+      "citation": "D.Lgs. 385/1993 (TUB), Article 124-bis(2-sexies)",
+      "category": "consumer_protection",
+      "status": "transition",
+      "applicability": "A consumer credit application is rejected.",
+      "obligation": "Inform the consumer promptly of the rejection and, where relevant, that automated processing was used, the applicable intervention rights, and the reconsideration procedure.",
+      "open_credit_relationship": "supporting",
+      "open_credit_evidence": [
+        "Provide verified decision inputs for an accurate rejection communication.",
+        "Do not transform the internal summary into an applicant explanation without lender review."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-4", "FINOS-AIGF-MI-11"],
+      "eu_ai_act_refs": ["Article 14", "Article 86"],
+      "official_sources": [
+        {
+          "label": "Legislative Decree 212/2025",
+          "url": "https://www.normattiva.it/atto/caricaDettaglioAtto?atto.codiceRedazionale=26G00009&atto.dataPubblicazioneGazzetta=2026-01-09&tipoDettaglio=multivigenza",
+          "publisher": "Normattiva"
+        }
+      ]
+    },
+    {
+      "id": "IT-TUB-125-1-QUINQUIES",
+      "title": "Prohibited data for creditworthiness assessment",
+      "citation": "D.Lgs. 385/1993 (TUB), Article 125(1-quinquies)",
+      "category": "credit_data",
+      "status": "transition",
+      "applicability": "Lenders and credit intermediaries assessing consumer creditworthiness.",
+      "obligation": "Do not process GDPR special-category data or personal data obtained from social networks for creditworthiness assessment.",
+      "open_credit_relationship": "direct",
+      "open_credit_evidence": [
+        "Reject prohibited source categories before summary generation.",
+        "Record allowed source types without reproducing unnecessary personal data."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-1", "FINOS-AIGF-MI-4", "FINOS-AIGF-MI-5"],
+      "eu_ai_act_refs": ["Article 10", "Article 15"],
+      "official_sources": [
+        {
+          "label": "Legislative Decree 212/2025",
+          "url": "https://www.normattiva.it/atto/caricaDettaglioAtto?atto.codiceRedazionale=26G00009&atto.dataPubblicazioneGazzetta=2026-01-09&tipoDettaglio=multivigenza",
+          "publisher": "Normattiva"
+        }
+      ]
+    },
+    {
+      "id": "IT-TUB-125-4",
+      "title": "Accuracy and correction of credit-database information",
+      "citation": "D.Lgs. 385/1993 (TUB), Article 125(4)",
+      "category": "credit_data",
+      "status": "transition",
+      "applicability": "A lender communicates consumer information to covered credit databases.",
+      "obligation": "Ensure information communicated to credit databases is accurate and current and promptly correct errors.",
+      "open_credit_relationship": "supporting",
+      "open_credit_evidence": [
+        "Detect contradictions between source documents and case metadata.",
+        "Version corrected source material and invalidate superseded summaries."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-4", "FINOS-AIGF-MI-5"],
+      "eu_ai_act_refs": ["Article 10", "Article 12", "Article 15"],
+      "official_sources": [
+        {
+          "label": "Legislative Decree 212/2025",
+          "url": "https://www.normattiva.it/atto/caricaDettaglioAtto?atto.codiceRedazionale=26G00009&atto.dataPubblicazioneGazzetta=2026-01-09&tipoDettaglio=multivigenza",
+          "publisher": "Normattiva"
+        }
+      ]
+    },
+    {
+      "id": "IT-TUB-127-TER",
+      "title": "Automated creditworthiness rights for financing contracts",
+      "citation": "D.Lgs. 385/1993 (TUB), Article 127-ter",
+      "category": "automated_decisioning",
+      "status": "transition",
+      "applicability": "Covered financing contracts where the customer's creditworthiness assessment relies even partly on automated processing of personal data.",
+      "obligation": "Apply the Article 124-bis automated-assessment intervention, explanation, view, reconsideration, notice, and rejection protections to the covered assessment.",
+      "open_credit_relationship": "direct",
+      "open_credit_evidence": [
+        "Use the applicable Article 124-bis obligation IDs for the evidence report.",
+        "Preserve the connection between technical evidence and the lender's human-review process."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-4", "FINOS-AIGF-MI-11"],
+      "eu_ai_act_refs": ["Article 13", "Article 14", "Article 26", "Article 86"],
+      "official_sources": [
+        {
+          "label": "Legislative Decree 212/2025",
+          "url": "https://www.normattiva.it/atto/caricaDettaglioAtto?atto.codiceRedazionale=26G00009&atto.dataPubblicazioneGazzetta=2026-01-09&tipoDettaglio=multivigenza",
+          "publisher": "Normattiva"
+        }
+      ]
+    },
+    {
+      "id": "IT-SIC-CODE-2019",
+      "title": "Private credit-information systems Code of Conduct",
+      "citation": "Garante Privacy decision no. 163 of 12 September 2019 and attached Code of Conduct",
+      "category": "credit_data",
+      "status": "in_force",
+      "applicability": "Participation in or use of private credit-information systems concerning consumer credit, reliability, and payment punctuality.",
+      "obligation": "Apply sector rules covering lawful purposes, data categories, notices, accuracy, negative-data warnings, retention periods, access, correction, and monitoring.",
+      "open_credit_relationship": "direct",
+      "open_credit_evidence": [
+        "Identify the credit-information source and observation date.",
+        "Keep source facts distinct from inference.",
+        "Support correction and regeneration when source data changes."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-1", "FINOS-AIGF-MI-4", "FINOS-AIGF-MI-5"],
+      "eu_ai_act_refs": ["Article 10", "Article 12", "Article 15"],
+      "official_sources": [
+        {
+          "label": "Credit-information systems Code of Conduct",
+          "url": "https://garanteprivacy.it/web/guest/home/docweb/-/docweb-display/docweb/9141941",
+          "publisher": "Italian Data Protection Authority"
+        }
+      ]
+    },
+    {
+      "id": "IT-BDI-CR-CIRC-139",
+      "title": "Central Credit Register reporting instructions",
+      "citation": "Bank of Italy Circular no. 139 of 11 February 1991, as amended",
+      "category": "credit_data",
+      "status": "in_force",
+      "applicability": "Intermediaries participating in or using the Bank of Italy Central Credit Register.",
+      "obligation": "Use Central Credit Register data only for permitted credit-risk purposes, apply the reporting and correction rules, and account for the limitations of the returned data.",
+      "open_credit_relationship": "direct",
+      "open_credit_evidence": [
+        "Label Central Credit Register facts as non-certificative source data.",
+        "Record reporting period and provenance.",
+        "Avoid unsupported conclusions from incomplete system coverage."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-1", "FINOS-AIGF-MI-4", "FINOS-AIGF-MI-5"],
+      "eu_ai_act_refs": ["Article 10", "Article 12", "Article 15"],
+      "official_sources": [
+        {
+          "label": "Circular 139",
+          "url": "https://www.bancaditalia.it/compiti/vigilanza/normativa/archivio-norme/circolari/c139/",
+          "publisher": "Bank of Italy"
+        }
+      ]
+    },
+    {
+      "id": "IT-BDI-TRANSPARENCY-2009",
+      "title": "Transparency and fairness in banking and financial services",
+      "citation": "Bank of Italy provisions of 29 July 2009, as amended",
+      "category": "consumer_protection",
+      "status": "in_force",
+      "applicability": "Banks and financial intermediaries offering banking and financial products and services in Italy.",
+      "obligation": "Provide clear, accurate, comprehensible, and consistent information and maintain fair customer relations, complaints handling, and required product and contract disclosures.",
+      "open_credit_relationship": "supporting",
+      "open_credit_evidence": [
+        "Use precise, source-grounded language in internal summaries.",
+        "Prevent internal evidence artifacts from being presented as consumer disclosures without review."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-4", "FINOS-AIGF-MI-11"],
+      "eu_ai_act_refs": ["Article 13", "Article 14"],
+      "official_sources": [
+        {
+          "label": "Transparency provisions",
+          "url": "https://www.bancaditalia.it/compiti/vigilanza/normativa/archivio-norme/disposizioni/trasparenza_operazioni/",
+          "publisher": "Bank of Italy"
+        }
+      ]
+    },
+    {
+      "id": "IT-AI-LAW-132-2025",
+      "title": "Italian artificial intelligence law",
+      "citation": "Law no. 132 of 23 September 2025",
+      "category": "ai_governance",
+      "status": "in_force",
+      "applicability": "Research, development, adoption, and use of AI systems and models in Italy, interpreted consistently with the EU AI Act.",
+      "obligation": "Apply the national principles of human-centric, transparent, responsible, secure, accurate, non-discriminatory, and privacy-protective AI and the Italian governance framework.",
+      "open_credit_relationship": "context_only",
+      "open_credit_evidence": [
+        "Document human oversight, traceability, data protection, accuracy, and non-discrimination evidence.",
+        "Do not present the law as creating a separate OpenCredit certification."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-1", "FINOS-AIGF-MI-4", "FINOS-AIGF-MI-5", "FINOS-AIGF-MI-11"],
+      "eu_ai_act_refs": ["Article 9", "Article 10", "Article 12", "Article 14", "Article 15"],
+      "official_sources": [
+        {
+          "label": "Law 132/2025",
+          "url": "https://www.normattiva.it/eli/id/2025/09/25/25G00143/CONSOLIDATED/20260611",
+          "publisher": "Normattiva"
+        }
+      ],
+      "notes": "Article 3(5) states that the law does not create new obligations for AI systems or general-purpose AI models beyond the EU AI Act."
+    },
+    {
+      "id": "IT-PRIVACY-CODE-196-2003",
+      "title": "Italian Personal Data Protection Code",
+      "citation": "D.Lgs. 196/2003, as amended",
+      "category": "credit_data",
+      "status": "in_force",
+      "applicability": "Processing of personal data in Italy alongside the GDPR.",
+      "obligation": "Apply Italian data-protection provisions, safeguards, remedies, and enforcement rules in addition to directly applicable GDPR duties.",
+      "open_credit_relationship": "supporting",
+      "open_credit_evidence": [
+        "Minimise personal data in evidence reports.",
+        "Apply retention, access, security, correction, and rights-handling controls defined by the lender."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-1", "FINOS-AIGF-MI-4"],
+      "eu_ai_act_refs": ["Article 10", "Article 12", "Article 15"],
+      "official_sources": [
+        {
+          "label": "Personal Data Protection Code",
+          "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2003-06-30;196",
+          "publisher": "Normattiva"
+        }
+      ]
+    },
+    {
+      "id": "IT-TUB-DLGS-385-1993",
+      "title": "Italian Banking Act regulatory perimeter",
+      "citation": "D.Lgs. 385/1993 (TUB)",
+      "category": "prudential",
+      "status": "in_force",
+      "applicability": "Banks, Article 106 financial intermediaries, credit intermediaries, and covered banking and credit activities according to their specific TUB status.",
+      "obligation": "Meet the applicable authorisation, governance, prudential, transparency, customer-protection, reporting, and supervisory requirements.",
+      "open_credit_relationship": "context_only",
+      "open_credit_evidence": [
+        "Record the regulated entity type and product before selecting obligation IDs."
+      ],
+      "finos_controls": [],
+      "eu_ai_act_refs": [],
+      "official_sources": [
+        {
+          "label": "Italian Banking Act",
+          "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:1993-09-01;385",
+          "publisher": "Normattiva"
+        }
+      ]
+    },
+    {
+      "id": "IT-BDI-CIRC-285",
+      "title": "Bank of Italy supervisory provisions for banks",
+      "citation": "Bank of Italy Circular no. 285 of 17 December 2013, as amended",
+      "category": "prudential",
+      "status": "conditional",
+      "applicability": "Banks within the scope of the Bank of Italy supervisory provisions.",
+      "obligation": "Apply the relevant governance, internal-control, risk-management, outsourcing, information-system, and prudential requirements.",
+      "open_credit_relationship": "context_only",
+      "open_credit_evidence": [
+        "Integrate OpenCredit governance with the lender's model, ICT, outsourcing, and internal-control framework."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-1", "FINOS-AIGF-MI-4", "FINOS-AIGF-MI-5"],
+      "eu_ai_act_refs": ["Article 9", "Article 15", "Article 17"],
+      "official_sources": [
+        {
+          "label": "Circular 285",
+          "url": "https://www.bancaditalia.it/compiti/vigilanza/normativa/archivio-norme/circolari/c285/",
+          "publisher": "Bank of Italy"
+        }
+      ]
+    },
+    {
+      "id": "IT-BDI-CIRC-288",
+      "title": "Bank of Italy supervisory provisions for financial intermediaries",
+      "citation": "Bank of Italy Circular no. 288 of 3 April 2015, as amended",
+      "category": "prudential",
+      "status": "conditional",
+      "applicability": "Financial intermediaries entered in the register under TUB Article 106.",
+      "obligation": "Apply the relevant authorisation, governance, internal-control, risk-management, organisational, and prudential requirements.",
+      "open_credit_relationship": "context_only",
+      "open_credit_evidence": [
+        "Integrate OpenCredit governance with the intermediary's internal-control and risk-management framework."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-1", "FINOS-AIGF-MI-4", "FINOS-AIGF-MI-5"],
+      "eu_ai_act_refs": ["Article 9", "Article 15", "Article 17"],
+      "official_sources": [
+        {
+          "label": "Circular 288",
+          "url": "https://www.bancaditalia.it/compiti/vigilanza/normativa/archivio-norme/circolari/c288/",
+          "publisher": "Bank of Italy"
+        }
+      ]
+    },
+    {
+      "id": "IT-AML-DLGS-231-2007",
+      "title": "Anti-money laundering and counter-terrorist financing",
+      "citation": "D.Lgs. 231/2007, as amended",
+      "category": "financial_crime",
+      "status": "in_force",
+      "applicability": "Obliged lenders and financial intermediaries under Italian AML law.",
+      "obligation": "Apply customer due diligence, beneficial-owner identification, risk assessment, recordkeeping, suspicious-transaction reporting, internal controls, and applicable restrictions.",
+      "open_credit_relationship": "context_only",
+      "open_credit_evidence": [
+        "Keep AML determinations outside the materiality checker unless expressly included in the lender's authorised use case.",
+        "Avoid exposing AML-sensitive information in summary evidence."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-1", "FINOS-AIGF-MI-4"],
+      "eu_ai_act_refs": [],
+      "official_sources": [
+        {
+          "label": "Legislative Decree 231/2007",
+          "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2007-11-21;231",
+          "publisher": "Normattiva"
+        }
+      ]
+    },
+    {
+      "id": "IT-USURY-LAW-108-1996",
+      "title": "Anti-usury limits",
+      "citation": "Law no. 108 of 7 March 1996 and quarterly threshold decrees",
+      "category": "pricing",
+      "status": "in_force",
+      "applicability": "Financing transactions subject to Italian anti-usury rules.",
+      "obligation": "Ensure the effective rate and relevant charges do not exceed the applicable category- and amount-specific quarterly threshold.",
+      "open_credit_relationship": "context_only",
+      "open_credit_evidence": [
+        "Do not describe pricing as lawful without a separate time-specific threshold calculation."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-5"],
+      "eu_ai_act_refs": [],
+      "official_sources": [
+        {
+          "label": "TEGM and anti-usury information",
+          "url": "https://www.bancaditalia.it/compiti/vigilanza/compiti-vigilanza/tegm/",
+          "publisher": "Bank of Italy"
+        }
+      ]
+    },
+    {
+      "id": "IT-CONSUMER-CODE-206-2005",
+      "title": "Italian Consumer Code",
+      "citation": "D.Lgs. 206/2005, as amended",
+      "category": "consumer_protection",
+      "status": "in_force",
+      "applicability": "Consumer-facing lending conduct, marketing, contracting, digital interfaces, and commercial practices where the Consumer Code applies.",
+      "obligation": "Avoid unfair or misleading commercial practices and apply applicable consumer information, contracting, and remedy requirements.",
+      "open_credit_relationship": "context_only",
+      "open_credit_evidence": [
+        "Do not reuse an internal credit summary as consumer marketing or disclosure copy without separate legal and factual review."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-11"],
+      "eu_ai_act_refs": ["Article 13"],
+      "official_sources": [
+        {
+          "label": "Italian Consumer Code",
+          "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2005-09-06;206",
+          "publisher": "Normattiva"
+        }
+      ]
+    },
+    {
+      "id": "IT-ABF-REDRESS-2009",
+      "title": "Banking and Financial Ombudsman redress framework",
+      "citation": "Bank of Italy provisions on out-of-court resolution of banking and financial disputes, as amended",
+      "category": "redress",
+      "status": "in_force",
+      "applicability": "Banks and other covered financial intermediaries in disputes concerning banking and financial operations and services.",
+      "obligation": "Maintain complaint handling and participate in the applicable Banking and Financial Ombudsman framework, including disputes about loans and credit-register reporting.",
+      "open_credit_relationship": "supporting",
+      "open_credit_evidence": [
+        "Preserve the evidence report and human-review history needed to investigate a complaint.",
+        "Support correction and re-evaluation without treating the report as a final legal determination."
+      ],
+      "finos_controls": ["FINOS-AIGF-MI-4", "FINOS-AIGF-MI-11"],
+      "eu_ai_act_refs": ["Article 85", "Article 86"],
+      "official_sources": [
+        {
+          "label": "Banking and Financial Ombudsman",
+          "url": "https://www.bancaditalia.it/compiti/tutela-educazione/abf/",
+          "publisher": "Bank of Italy"
+        }
+      ]
+    }
+  ]
+}

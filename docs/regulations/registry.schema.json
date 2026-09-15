@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://open-credit-evidence.org/schemas/jurisdiction-registry-v1.json",
+  "title": "OpenCredit Evidence jurisdiction regulation registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "jurisdiction",
+    "last_verified",
+    "scope",
+    "entries"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "jurisdiction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "name", "eu_member"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[A-Z]{2}$" },
+        "name": { "type": "string", "minLength": 1 },
+        "eu_member": { "type": "boolean" }
+      }
+    },
+    "last_verified": { "type": "string", "format": "date" },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assumptions", "exclusions"],
+      "properties": {
+        "assumptions": { "type": "array", "items": { "type": "string" } },
+        "exclusions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/entry" }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "url", "publisher"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri", "pattern": "^https://" },
+        "publisher": { "type": "string", "minLength": 1 }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "citation",
+        "category",
+        "status",
+        "applicability",
+        "obligation",
+        "open_credit_relationship",
+        "open_credit_evidence",
+        "finos_controls",
+        "eu_ai_act_refs",
+        "official_sources"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Z]{2}-[A-Z0-9]+(?:-[A-Z0-9]+)*$" },
+        "title": { "type": "string", "minLength": 1 },
+        "citation": { "type": "string", "minLength": 1 },
+        "category": {
+          "enum": [
+            "ai_governance",
+            "automated_decisioning",
+            "consumer_protection",
+            "credit_data",
+            "creditworthiness",
+            "financial_crime",
+            "operational_resilience",
+            "pricing",
+            "prudential",
+            "redress"
+          ]
+        },
+        "status": { "enum": ["in_force", "transition", "conditional", "deprecated"] },
+        "applicability": { "type": "string", "minLength": 1 },
+        "obligation": { "type": "string", "minLength": 1 },
+        "open_credit_relationship": { "enum": ["direct", "supporting", "context_only"] },
+        "open_credit_evidence": { "type": "array", "items": { "type": "string" } },
+        "finos_controls": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "FINOS-AIGF-MI-1",
+              "FINOS-AIGF-MI-4",
+              "FINOS-AIGF-MI-5",
+              "FINOS-AIGF-MI-11"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "eu_ai_act_refs": { "type": "array", "items": { "type": "string" } },
+        "official_sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/source" }
+        },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

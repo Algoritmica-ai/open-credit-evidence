@@ -91,7 +91,8 @@ open-credit-evidence/
 ├── docs/
 │   ├── runtime.md           # How to run: venv, Compose, NVIDIA env; Axis is not a host
 │   ├── design-note.md       # System design (models, RAG, safety)
-│   └── week1-design-outline.md
+│   ├── week1-design-outline.md
+│   └── regulations/         # Country obligation IDs + FINOS/Steel Thread mapping
 ├── src/open_credit_evidence/
 │   ├── loader.py            # Case loading with fingerprint verification
 │   ├── runner.py            # Nemotron assistant interface
@@ -140,6 +141,14 @@ open-credit-evidence/
 4. **NVIDIA Build** — Hosted `nvidia/nemotron-3.5-lightning-30b-a3b`; whole-file context first, embeddings later. No self-hosted models.
 5. **Runtime** — Local machine + Docker Compose. Hosted NVIDIA Build for Nemotron. Team source of truth is GitHub (`Algoritmica-ai/open-credit-evidence`). Origin may be a working copy. CI (GitHub Actions, pytest) can follow on GitHub — not in this repo yet.
 
+## Regulatory overlays
+
+Jurisdiction-specific regulation IDs and official-source links live under
+[`docs/regulations/`](docs/regulations/README.md). Italy (`IT`) is the first overlay. EU AI Act
+evidence is mapped to FINOS AI Governance Framework controls and the integration contract explains
+how OpenCredit Evidence can run within the FINOS AI Steel Thread control environment without
+claiming automatic compliance.
+
 ## What This Is NOT
 
 This is the **4-week plan**: Credit Evidence Engine (RAG, hosted Nemotron, omission/tamper). Stretch is the **pitch architecture**: OpenShift DataMesh+CFM deploy design — not this repo's path.
@@ -162,4 +171,3 @@ git clone https://github.com/Algoritmica-ai/open-credit-evidence.git
 Apache 2.0 — See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 Copyright holders: Algoritmica GmbH + ZAGA Open Source (pending confirmation from Luca).
-
