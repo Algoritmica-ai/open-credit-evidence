@@ -12,4 +12,6 @@ services:
       NEMOTRON_MODEL: ${NEMOTRON_MODEL:-nvidia/nemotron-3.5-lightning-30b-a3b}
       NEMOTRON_ENABLE_THINKING: ${NEMOTRON_ENABLE_THINKING:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - ./reports:/app/reports
     command: ["oce", "--help"]

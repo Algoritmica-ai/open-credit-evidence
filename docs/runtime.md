@@ -22,11 +22,13 @@ cp .env.example .env
 pytest
 
 python -m open_credit_evidence.cli load cases/sample_case_001/
-python -m open_credit_evidence.cli process cases/sample_case_001/ -o reports/case_001_report.json
-python -m open_credit_evidence.cli verify reports/case_001_report.json
+python -m open_credit_evidence.cli process cases/sample_case_001/
+python -m open_credit_evidence.cli verify reports/LOAN-2026-09-001.json
 ```
 
 After install, `oce` is the same CLI (`oce --help`, `oce version`, `oce load|process|verify`).
+
+**Report export is on by default.** Running `oce process <case>` automatically saves the report to `reports/<case_id>.json`. Use `--no-export` to skip file output (print only), or `-o/--output <path>` to write to a custom location.
 
 Without a key, `process` uses a stub summary; omission check will fail. That is expected. Named-fact omission is proven by `pytest` fixtures, not by the stub.
 
@@ -34,7 +36,8 @@ Live NVIDIA Build (whole-file, no embeddings):
 
 ```bash
 # .env contains NVIDIA_API_KEY=...
-python -m open_credit_evidence.cli process cases/sample_case_001/ -o reports/case_001_report.json
+python -m open_credit_evidence.cli process cases/sample_case_001/
+# Report saved to reports/LOAN-2026-09-001.json
 ```
 
 ---
@@ -50,6 +53,8 @@ docker compose up --build
 
 This **builds** the image and runs `oce --help`, then exits. That is the smoke check that the package installed and the CLI entrypoint works. There is **no** published port and **no** health URL.
 
+**Report persistence:** Compose mounts `./reports` from your host into the container at `/app/reports`. Reports generated inside the container are saved on your host machine automatically.
+
 Useful overrides:
 
 ```bash
@@ -60,7 +65,11 @@ docker compose run --rm app oce version
 docker compose run --rm app pytest -v
 
 # Process a sample case (cases/ is baked into the image)
+# Report saved to ./reports/LOAN-2026-09-001.json on your host
 docker compose run --rm app oce process cases/sample_case_001/
+
+# Skip file export (print only)
+docker compose run --rm app oce process cases/sample_case_001/ --no-export
 ```
 
 Single-service Compose: `app` only. A later vector store can be a second service; do not add OpenShift or Axis to this file.
