@@ -66,12 +66,18 @@ def version() -> None:
     console.print(f"[bold]OpenCredit Evidence[/bold] v{__version__}")
 
 
+DEFAULT_REPORTS_DIR = Path("reports")
+
+
 @app.command()
 def process(
     case_dir: Annotated[Path, typer.Argument(help="Path to case directory")],
     output: Annotated[
-        Path | None, typer.Option("--output", "-o", help="Output report path")
+        Path | None, typer.Option("--output", "-o", help="Output report path (overrides default)")
     ] = None,
+    no_export: Annotated[
+        bool, typer.Option("--no-export", help="Skip writing report to disk (print only)")
+    ] = False,
     skip_api: Annotated[
         bool, typer.Option("--skip-api", help="Skip API call, use stub summary")
     ] = False,
@@ -80,6 +86,9 @@ def process(
 
     Loads the case, generates a summary, checks for omissions,
     and creates an evidence report.
+
+    By default, the report is saved to reports/<case_id>.json.
+    Use --no-export to skip file output, or --output/-o to specify a custom path.
     """
     console.print(Panel(f"Processing case: [bold]{case_dir}[/bold]"))
 
@@ -149,9 +158,17 @@ def process(
     console.print(f"  Report ID: {report.report_id}")
     console.print(f"  Chain fingerprint: {report.chain_fingerprint[:16]}...")
 
-    if output:
-        save_evidence_report(report, output)
-        console.print(f"\n✓ Report saved to [bold]{output}[/bold]")
+    if not no_export:
+        if output:
+            report_path = output
+            report_path.parent.mkdir(parents=True, exist_ok=True)
+        else:
+            DEFAULT_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+            report_path = DEFAULT_REPORTS_DIR / f"{case.metadata.case_id}.json"
+        save_evidence_report(report, report_path)
+        console.print(f"\n✓ Report saved to [bold]{report_path}[/bold]")
+    else:
+        console.print("\n[yellow]Report export skipped (--no-export)[/yellow]")
 
 
 @app.command()

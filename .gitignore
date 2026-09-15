@@ -94,7 +94,8 @@ Thumbs.db
 *.log
 tmp/
 output/
-reports/
+reports/*
+!reports/.gitkeep
 
 # Evidence fingerprints (should be regenerated)
 *.fingerprint.json

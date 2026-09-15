@@ -59,13 +59,17 @@ pytest
 
 ```bash
 # Whole-file summarization via NVIDIA Build (stub if no key)
+# Report auto-saved to reports/<case_id>.json by default
 python -m open_credit_evidence.cli process cases/sample_case_001/
 
-# With a key in .env — live Build call:
-#   NVIDIA_API_KEY=... python -m open_credit_evidence.cli process cases/sample_case_001/ -o reports/case_001_report.json
+# Skip file export (print results only)
+python -m open_credit_evidence.cli process cases/sample_case_001/ --no-export
+
+# Custom output path
+python -m open_credit_evidence.cli process cases/sample_case_001/ -o custom_report.json
 
 # Verify evidence report integrity
-python -m open_credit_evidence.cli verify reports/case_001_report.json
+python -m open_credit_evidence.cli verify reports/LOAN-2026-09-001.json
 ```
 
 ### Docker Compose (same CLI, no HTTP port)
@@ -74,6 +78,7 @@ python -m open_credit_evidence.cli verify reports/case_001_report.json
 docker compose up --build          # builds image, prints `oce --help`, exits
 docker compose run --rm app pytest -v
 docker compose run --rm app oce process cases/sample_case_001/
+# Reports saved to ./reports/ on your host (volume-mounted)
 ```
 
 Full run/runtime notes: [`docs/runtime.md`](docs/runtime.md).
