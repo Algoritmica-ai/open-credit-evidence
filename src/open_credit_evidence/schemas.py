@@ -59,6 +59,26 @@ class CaseDocument(BaseModel):
     fingerprint: str | None = Field(None, description="SHA-256 hash of document content")
 
 
+class RegulatoryContext(BaseModel):
+    """Facts used to select jurisdiction-specific rules for a case."""
+
+    jurisdiction: str = Field(..., min_length=2, max_length=2)
+    product_type: str = Field(..., description="Product category, for example consumer_credit")
+    customer_type: str = Field(..., description="Customer category, for example consumer")
+    lender_type: str = Field(..., description="bank, article_106_intermediary, or other")
+    decision_mode: str = Field(..., description="human, assisted, or automated")
+    uses_personal_data: bool = True
+    uses_credit_database: bool = False
+    uses_private_credit_bureau: bool = False
+    uses_central_credit_register: bool = False
+    adverse_decision: bool = False
+    remote_onboarding: bool = False
+    evidence: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Evidence references keyed by requirement ID",
+    )
+
+
 class CaseMetadata(BaseModel):
     """Metadata for a loan application case."""
 
@@ -68,6 +88,10 @@ class CaseMetadata(BaseModel):
     documents: list[CaseDocument] = Field(default_factory=list)
     critical_facts: list[CriticalFact] = Field(default_factory=list)
     referral_reason: str | None = Field(None, description="Why the case was referred")
+    regulatory_context: RegulatoryContext | None = Field(
+        None,
+        description="Jurisdiction and evidence used for regulatory rule selection",
+    )
 
 
 class Case(BaseModel):
@@ -117,6 +141,63 @@ class MarkingResult(BaseModel):
     checked_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
+class RegulatoryRuleFinding(BaseModel):
+    """Outcome for one rule in a jurisdiction ruleset."""
+
+    rule_id: str
+    title: str
+    status: str = Field(..., description="pass, fail, not_applicable, or advisory")
+    obligation_owner: str
+    missing_evidence: list[str] = Field(default_factory=list)
+    evidence_checked: list[str] = Field(default_factory=list)
+    evidence_references: dict[str, Any] = Field(default_factory=dict)
+    reason: str
+
+
+class RegulatoryAssessment(BaseModel):
+    """Complete, versioned ruleset assessment for one case."""
+
+    case_id: str
+    jurisdiction: str | None
+    ruleset_id: str | None
+    ruleset_version: str | None
+    ruleset_fingerprint: str | None
+    context_fingerprint: str | None
+    status: str = Field(..., description="pass, fail, unscoped, or ruleset_not_found")
+    coverage_complete: bool
+    total_rules: int = 0
+    applicable_rules: int = 0
+    passed_rules: int = 0
+    failed_rules: int = 0
+    advisory_rules: int = 0
+    evaluated_rule_ids: list[str] = Field(default_factory=list)
+    findings: list[RegulatoryRuleFinding] = Field(default_factory=list)
+    checked_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    note: str
+
+
+class PlatformControlEvidence(BaseModel):
+    """Normalized evidence imported from a FINOS AI Steel Thread process instance."""
+
+    platform: str = "FINOS AI Steel Thread Demo"
+    source_repository: str
+    source_revision: str
+    process_instance_id: str
+    business_key: str | None
+    generated_at: str | None
+    overall_status: str | None
+    claim_status: str = Field(..., description="linked or verified")
+    controls: dict[str, bool] = Field(default_factory=dict)
+    instance_snapshot: bool
+    control_posture_captured_at: str | None
+    check_statuses: dict[str, str] = Field(default_factory=dict)
+    llm_call_count: int = 0
+    total_tokens: int = 0
+    estimated_cost_usd: float = 0.0
+    sat_accepted: bool | None = None
+    issues: list[str] = Field(default_factory=list)
+
+
 class EvidenceReport(BaseModel):
     """Evidence report with tamper-proof chain."""
 
@@ -125,6 +206,15 @@ class EvidenceReport(BaseModel):
     case_fingerprint: str = Field(..., description="Fingerprint of source case")
     summary: Summary = Field(..., description="The generated summary")
     marking_result: MarkingResult = Field(..., description="Omission check results")
+    regulatory_assessment: RegulatoryAssessment | None = Field(
+        None, description="Jurisdiction rules evaluated for this case"
+    )
+    platform_controls: PlatformControlEvidence | None = Field(
+        None, description="Steel Thread platform-control evidence for this case"
+    )
+    governance_fingerprint: str | None = Field(
+        None, description="Fingerprint covering regulatory and platform-control evidence"
+    )
     chain_fingerprint: str = Field(..., description="Fingerprint of the complete chain")
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -138,4 +228,5 @@ class EvidenceReport(BaseModel):
             "summary_text": self.summary.text,
             "marking_passed": self.marking_result.passed,
             "omission_rate": self.marking_result.omission_rate,
+            "governance_fingerprint": self.governance_fingerprint,
         }

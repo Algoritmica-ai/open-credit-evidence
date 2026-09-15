@@ -1,0 +1,42 @@
+{
+  "processInstanceId": "steel-thread-instance-123",
+  "businessKey": "IT-LOAN-001",
+  "state": "COMPLETED",
+  "generatedAt": "2026-09-15T10:00:00Z",
+  "overallStatus": "PASS",
+  "controls": {
+    "mi1Enabled": true,
+    "mi1RedactStatusApi": true,
+    "mi4Enabled": true,
+    "mi5Enabled": true,
+    "mi11Enabled": true,
+    "snapshottedAt": "2026-09-15T09:59:00Z",
+    "instanceSnapshot": true
+  },
+  "checks": [
+    {"id": "mi1-enforced", "control": "mi-1", "status": "pass"},
+    {"id": "mi4-enforced", "control": "mi-4", "status": "pass"}
+  ],
+  "llmCalls": [
+    {
+      "activityId": "open-credit-summary",
+      "model": "nvidia/nemotron",
+      "provider": "nvidia",
+      "durationMs": 850,
+      "status": "success",
+      "totalTokens": 1250,
+      "estimatedCostUsd": 0.0125
+    }
+  ],
+  "sat": {
+    "suiteEnabled": true,
+    "lastAccepted": true,
+    "lastPassRate": 1.0,
+    "lastRanAt": "2026-09-15T09:55:00Z"
+  },
+  "openCreditEvidence": {
+    "caseId": "IT-LOAN-001",
+    "activityId": "open-credit-materiality-check",
+    "evidenceReportId": "EVR-20260915-EXAMPLE"
+  }
+}
