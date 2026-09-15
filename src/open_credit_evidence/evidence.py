@@ -16,6 +16,8 @@ from open_credit_evidence.schemas import (
     Case,
     EvidenceReport,
     MarkingResult,
+    PlatformControlEvidence,
+    RegulatoryAssessment,
     Summary,
 )
 
@@ -35,6 +37,7 @@ def compute_chain_fingerprint(
     case_fingerprint: str,
     summary_fingerprint: str,
     marking_fingerprint: str,
+    governance_fingerprint: str | None = None,
 ) -> str:
     """Compute the chain fingerprint for tamper detection.
 
@@ -49,8 +52,33 @@ def compute_chain_fingerprint(
     Returns:
         Combined chain fingerprint
     """
-    chain_data = f"{case_fingerprint}|{summary_fingerprint}|{marking_fingerprint}"
+    chain_parts = [case_fingerprint, summary_fingerprint, marking_fingerprint]
+    if governance_fingerprint is not None:
+        chain_parts.append(governance_fingerprint)
+    chain_data = "|".join(chain_parts)
     return compute_fingerprint(chain_data)
+
+
+def compute_governance_fingerprint(
+    regulatory_assessment: RegulatoryAssessment | None,
+    platform_controls: PlatformControlEvidence | None,
+) -> str | None:
+    """Fingerprint typed regulatory and platform-control evidence when present."""
+    if regulatory_assessment is None and platform_controls is None:
+        return None
+    payload = {
+        "regulatory_assessment": (
+            regulatory_assessment.model_dump(mode="json")
+            if regulatory_assessment is not None
+            else None
+        ),
+        "platform_controls": (
+            platform_controls.model_dump(mode="json") if platform_controls is not None else None
+        ),
+    }
+    return compute_fingerprint(
+        json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    )
 
 
 def compute_marking_fingerprint(result: MarkingResult) -> str:
@@ -90,6 +118,8 @@ def create_evidence_report(
     summary: Summary,
     marking_result: MarkingResult,
     metadata: dict[str, Any] | None = None,
+    regulatory_assessment: RegulatoryAssessment | None = None,
+    platform_controls: PlatformControlEvidence | None = None,
 ) -> EvidenceReport:
     """Create a tamper-proof evidence report.
 
@@ -106,10 +136,14 @@ def create_evidence_report(
 
     summary_fingerprint = compute_fingerprint(summary.text)
     marking_fingerprint = compute_marking_fingerprint(marking_result)
+    governance_fingerprint = compute_governance_fingerprint(
+        regulatory_assessment, platform_controls
+    )
     chain_fingerprint = compute_chain_fingerprint(
         case.fingerprint,
         summary_fingerprint,
         marking_fingerprint,
+        governance_fingerprint,
     )
 
     report = EvidenceReport(
@@ -118,6 +152,9 @@ def create_evidence_report(
         case_fingerprint=case.fingerprint,
         summary=summary,
         marking_result=marking_result,
+        regulatory_assessment=regulatory_assessment,
+        platform_controls=platform_controls,
+        governance_fingerprint=governance_fingerprint,
         chain_fingerprint=chain_fingerprint,
         created_at=datetime.now(UTC),
         metadata=metadata or {},
@@ -156,11 +193,21 @@ def verify_evidence_report(
 
     summary_fingerprint = compute_fingerprint(report.summary.text)
     marking_fingerprint = compute_marking_fingerprint(report.marking_result)
+    governance_fingerprint = compute_governance_fingerprint(
+        report.regulatory_assessment, report.platform_controls
+    )
+
+    if governance_fingerprint != report.governance_fingerprint:
+        raise TamperVerificationError(
+            report.report_id,
+            "Governance fingerprint mismatch",
+        )
 
     expected_chain = compute_chain_fingerprint(
         report.case_fingerprint,
         summary_fingerprint,
         marking_fingerprint,
+        governance_fingerprint,
     )
 
     if expected_chain != report.chain_fingerprint:

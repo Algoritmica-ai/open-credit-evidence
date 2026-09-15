@@ -17,6 +17,7 @@ from open_credit_evidence.schemas import (
     CaseMetadata,
     CriticalFact,
     FactCategory,
+    RegulatoryContext,
     Severity,
 )
 
@@ -138,6 +139,11 @@ def load_metadata(path: Path) -> CaseMetadata:
             documents=documents,
             critical_facts=critical_facts,
             referral_reason=data.get("referral_reason"),
+            regulatory_context=(
+                RegulatoryContext.model_validate(data["regulatory_context"])
+                if data.get("regulatory_context")
+                else None
+            ),
         )
     except (json.JSONDecodeError, KeyError, ValueError) as e:
         raise CaseLoadError(f"Invalid metadata in {path}: {e}") from e

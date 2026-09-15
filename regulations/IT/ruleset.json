@@ -1,0 +1,379 @@
+{
+  "$schema": "../ruleset.schema.json",
+  "ruleset_id": "IT-CREDIT-LENDING",
+  "version": "1.0.0",
+  "jurisdiction": "IT",
+  "last_verified": "2026-09-15",
+  "scope": {
+    "included": "Consumer and residential mortgage credit assessment by Italian banks and Article 106 intermediaries",
+    "assumptions": [
+      "The borrower is a natural person acting as a consumer.",
+      "OpenCredit Evidence supports the assessment; the regulated lender remains the decision-maker.",
+      "AI and privacy obligations at EU level are handled by the EU baseline and Steel Thread controls."
+    ],
+    "legal_review_required": true
+  },
+  "eu_baseline": [
+    "Regulation (EU) 2024/1689 (AI Act), especially Annex III 5(b) and high-risk-system obligations",
+    "Regulation (EU) 2016/679 (GDPR), including Articles 5, 13-15, 22, 25, 30, 32 and 35",
+    "Directive 2014/17/EU (mortgage credit)",
+    "Directive 2008/48/EC and transition to Directive (EU) 2023/2225 (consumer credit)",
+    "EBA/GL/2020/06 on loan origination and monitoring",
+    "Regulation (EU) 2022/2554 (DORA), where the lender is in scope"
+  ],
+  "platform_control_mapping": {
+    "mi-1": "data minimisation, egress controls, PII redaction and audit",
+    "mi-4": "model, call, latency, error, token, cost and sanitized audit evidence",
+    "mi-5": "deterministic acceptance and policy-invariant testing",
+    "mi-11": "human review, challenge, decision and feedback evidence"
+  },
+  "rules": [
+    {
+      "id": "IT-TUB-124-BIS-CURRENT",
+      "title": "Consumer creditworthiness assessment",
+      "citation": "D.Lgs. 385/1993 (TUB), Article 124-bis, current regime before the D.Lgs. 212/2025 adaptation deadline",
+      "category": "creditworthiness",
+      "enforcement": "required",
+      "obligation_owner": "lender",
+      "applicability": {
+        "product_type": ["consumer_credit"],
+        "customer_type": ["consumer"]
+      },
+      "requirement_summary": "Assess creditworthiness before concluding the agreement or materially increasing credit, using adequate information supplied by the consumer and, where necessary, an appropriate database.",
+      "evidence_requirements": [
+        {"key": "creditworthiness_assessment", "description": "Completed assessment artifact"},
+        {"key": "information_sources", "description": "Sources used in the assessment"},
+        {"key": "information_verification", "description": "Verification and contradiction checks"},
+        {"key": "decision_rationale", "description": "Traceable rationale based on assessed facts"}
+      ],
+      "finos_controls": ["mi-4", "mi-5", "mi-11"],
+      "official_sources": [
+        {"publisher": "Normattiva", "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:1993-09-01;385"},
+        {"publisher": "Bank of Italy", "url": "https://www.bancaditalia.it/compiti/vigilanza/normativa/archivio-norme/disposizioni/trasparenza_operazioni/2025.03.26/Disp-trasparenza-PSD2-PAD.pdf"}
+      ]
+    },
+    {
+      "id": "IT-TUB-120-UNDECIES",
+      "title": "Residential mortgage creditworthiness assessment",
+      "citation": "D.Lgs. 385/1993 (TUB), Article 120-undecies",
+      "category": "creditworthiness",
+      "enforcement": "required",
+      "obligation_owner": "lender",
+      "applicability": {
+        "product_type": ["residential_mortgage"],
+        "customer_type": ["consumer"]
+      },
+      "requirement_summary": "Perform a thorough assessment using necessary, sufficient and proportionate economic and financial information that is appropriately verified before concluding mortgage credit.",
+      "evidence_requirements": [
+        {"key": "creditworthiness_assessment", "description": "Completed mortgage assessment"},
+        {"key": "information_sources", "description": "Necessary and proportionate inputs"},
+        {"key": "information_verification", "description": "Verification of assessment inputs"},
+        {"key": "repayment_capacity", "description": "Documented ability-to-repay assessment"},
+        {"key": "decision_rationale", "description": "Traceable decision rationale"}
+      ],
+      "finos_controls": ["mi-4", "mi-5", "mi-11"],
+      "official_sources": [
+        {"publisher": "Normattiva", "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:1993-09-01;385"}
+      ]
+    },
+    {
+      "id": "IT-TUB-125-DATABASE-DECISION",
+      "title": "Database information following consumer-credit refusal",
+      "citation": "D.Lgs. 385/1993 (TUB), Article 125",
+      "category": "credit_data",
+      "enforcement": "required",
+      "obligation_owner": "lender",
+      "applicability": {
+        "product_type": ["consumer_credit"],
+        "customer_type": ["consumer"],
+        "uses_credit_database": true,
+        "adverse_decision": true
+      },
+      "requirement_summary": "Where refusal is based on consultation of a database, provide the consumer the required immediate and free information about the result and database consulted.",
+      "evidence_requirements": [
+        {"key": "database_access_notice", "description": "Refusal/database communication artifact"},
+        {"key": "decision_rationale", "description": "Evidence showing whether the database affected refusal"}
+      ],
+      "finos_controls": ["mi-4", "mi-11"],
+      "official_sources": [
+        {"publisher": "Normattiva", "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:1993-09-01;385"}
+      ]
+    },
+    {
+      "id": "IT-SIC-CODE-2019",
+      "title": "Private credit-information systems safeguards",
+      "citation": "Garante decision no. 163 of 12 September 2019 and attached SIC Code of Conduct, Articles 3-14",
+      "category": "credit_data",
+      "enforcement": "required",
+      "obligation_owner": "lender",
+      "applicability": {
+        "uses_private_credit_bureau": true,
+        "uses_personal_data": true
+      },
+      "requirement_summary": "Apply the national SIC rules on permitted purpose, notices, data quality, use, scoring, retention, security, rights and correction.",
+      "evidence_requirements": [
+        {"key": "sic_privacy_notice", "description": "SIC information notice"},
+        {"key": "sic_source_provenance", "description": "Database, query date and data provenance"},
+        {"key": "sic_scoring_information", "description": "Information about automated scoring where used"},
+        {"key": "sic_correction_route", "description": "Access, correction and re-evaluation route"}
+      ],
+      "finos_controls": ["mi-1", "mi-4", "mi-5", "mi-11"],
+      "official_sources": [
+        {"publisher": "Garante Privacy", "url": "https://garanteprivacy.it/web/guest/home/docweb/-/docweb-display/docweb/9141941"}
+      ]
+    },
+    {
+      "id": "IT-BDI-CR-CIRCULAR-139",
+      "title": "Bank of Italy Central Credit Register instructions",
+      "citation": "Bank of Italy Circular no. 139 of 11 February 1991, as amended",
+      "category": "credit_data",
+      "enforcement": "required",
+      "obligation_owner": "lender",
+      "applicability": {
+        "uses_central_credit_register": true
+      },
+      "requirement_summary": "Use, report and correct Central Credit Register information under the applicable instructions and preserve its reporting period and provenance.",
+      "evidence_requirements": [
+        {"key": "cr_source_provenance", "description": "CR source and query period"},
+        {"key": "cr_data_quality_check", "description": "Accuracy and contradiction checks"},
+        {"key": "cr_correction_route", "description": "Correction and re-assessment route"}
+      ],
+      "finos_controls": ["mi-1", "mi-4", "mi-5"],
+      "official_sources": [
+        {"publisher": "Bank of Italy", "url": "https://www.bancaditalia.it/compiti/vigilanza/normativa/archivio-norme/circolari/c139/"}
+      ]
+    },
+    {
+      "id": "IT-BDI-TRANSPARENCY-2009",
+      "title": "Transparency and fair customer relations",
+      "citation": "Bank of Italy provisions of 29 July 2009 on transparency, as amended",
+      "category": "consumer_protection",
+      "enforcement": "required",
+      "obligation_owner": "lender",
+      "applicability": {
+        "product_type": ["consumer_credit", "residential_mortgage"],
+        "customer_type": ["consumer"]
+      },
+      "requirement_summary": "Maintain the required pre-contractual information, creditworthiness procedures, clear communications and complaints arrangements for the product.",
+      "evidence_requirements": [
+        {"key": "precontractual_disclosure", "description": "Applicable SECCI/PIES or equivalent disclosure"},
+        {"key": "creditworthiness_procedure_version", "description": "Approved procedure and version"},
+        {"key": "complaints_route", "description": "Customer complaints process"}
+      ],
+      "finos_controls": ["mi-4", "mi-5", "mi-11"],
+      "official_sources": [
+        {"publisher": "Bank of Italy", "url": "https://www.bancaditalia.it/compiti/vigilanza/normativa/archivio-norme/disposizioni/trasparenza_operazioni/"}
+      ]
+    },
+    {
+      "id": "IT-BDI-CIRCULAR-285",
+      "title": "Bank governance and credit-risk controls",
+      "citation": "Bank of Italy Circular no. 285 of 17 December 2013, as amended",
+      "category": "prudential_governance",
+      "enforcement": "required",
+      "obligation_owner": "lender",
+      "applicability": {
+        "lender_type": ["bank"]
+      },
+      "requirement_summary": "Place lending and outsourced technology within the bank's approved governance, internal-control and credit-risk framework.",
+      "evidence_requirements": [
+        {"key": "credit_policy_version", "description": "Approved credit policy applied"},
+        {"key": "internal_control_owner", "description": "Accountable control owner"},
+        {"key": "outsourcing_assessment", "description": "Third-party/outsourcing assessment or recorded non-applicability"}
+      ],
+      "finos_controls": ["mi-1", "mi-4", "mi-5"],
+      "official_sources": [
+        {"publisher": "Bank of Italy", "url": "https://www.bancaditalia.it/compiti/vigilanza/normativa/archivio-norme/circolari/c285/"}
+      ]
+    },
+    {
+      "id": "IT-BDI-CIRCULAR-288",
+      "title": "Article 106 intermediary governance and credit-risk controls",
+      "citation": "Bank of Italy Circular no. 288 of 3 April 2015, as amended",
+      "category": "prudential_governance",
+      "enforcement": "required",
+      "obligation_owner": "lender",
+      "applicability": {
+        "lender_type": ["article_106_intermediary"]
+      },
+      "requirement_summary": "Place lending and outsourced technology within the intermediary's approved governance, internal-control and credit-risk framework.",
+      "evidence_requirements": [
+        {"key": "credit_policy_version", "description": "Approved credit policy applied"},
+        {"key": "internal_control_owner", "description": "Accountable control owner"},
+        {"key": "outsourcing_assessment", "description": "Third-party/outsourcing assessment or recorded non-applicability"}
+      ],
+      "finos_controls": ["mi-1", "mi-4", "mi-5"],
+      "official_sources": [
+        {"publisher": "Bank of Italy", "url": "https://www.bancaditalia.it/compiti/vigilanza/normativa/archivio-norme/circolari/c288/"}
+      ]
+    },
+    {
+      "id": "IT-PRIVACY-CODE-196-2003",
+      "title": "Italian personal-data protection overlay",
+      "citation": "D.Lgs. 196/2003, as amended, applied with the GDPR",
+      "category": "data_protection",
+      "enforcement": "required",
+      "obligation_owner": "lender",
+      "applicability": {
+        "uses_personal_data": true
+      },
+      "requirement_summary": "Apply national safeguards, rights, remedies and enforcement provisions alongside GDPR duties for lending-data processing.",
+      "evidence_requirements": [
+        {"key": "privacy_notice", "description": "Applicable privacy notice"},
+        {"key": "lawful_basis", "description": "Record of purpose and lawful basis"},
+        {"key": "retention_policy", "description": "Approved retention rule"},
+        {"key": "data_subject_rights_route", "description": "Rights, correction and challenge workflow"}
+      ],
+      "finos_controls": ["mi-1", "mi-4", "mi-11"],
+      "official_sources": [
+        {"publisher": "Normattiva", "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2003-06-30;196"}
+      ]
+    },
+    {
+      "id": "IT-AML-DLGS-231-2007",
+      "title": "Customer due diligence and AML recordkeeping",
+      "citation": "D.Lgs. 231/2007, as amended",
+      "category": "financial_crime",
+      "enforcement": "required",
+      "obligation_owner": "lender",
+      "applicability": {
+        "lender_type": ["bank", "article_106_intermediary"]
+      },
+      "requirement_summary": "Complete applicable customer due diligence, beneficial-owner checks, risk assessment and recordkeeping without exposing restricted AML information in AI evidence.",
+      "evidence_requirements": [
+        {"key": "aml_cdd_status", "description": "CDD workflow status reference"},
+        {"key": "beneficial_owner_check", "description": "Beneficial-owner result or recorded non-applicability"},
+        {"key": "aml_record_reference", "description": "Restricted AML record reference, not its contents"}
+      ],
+      "finos_controls": ["mi-1", "mi-4"],
+      "official_sources": [
+        {"publisher": "Normattiva", "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2007-11-21;231"}
+      ]
+    },
+    {
+      "id": "IT-USURY-LAW-108-1996",
+      "title": "Time-specific anti-usury threshold check",
+      "citation": "Law no. 108 of 7 March 1996 and the applicable quarterly threshold decree",
+      "category": "pricing",
+      "enforcement": "required",
+      "obligation_owner": "lender",
+      "applicability": {
+        "product_type": ["consumer_credit", "residential_mortgage"]
+      },
+      "requirement_summary": "Check the financing's relevant rate and charges against the correct transaction category, amount band and quarterly threshold.",
+      "evidence_requirements": [
+        {"key": "pricing_threshold_check", "description": "Separate anti-usury calculation result"},
+        {"key": "pricing_period", "description": "Quarter and threshold table used"}
+      ],
+      "finos_controls": ["mi-5"],
+      "official_sources": [
+        {"publisher": "Bank of Italy", "url": "https://www.bancaditalia.it/compiti/vigilanza/compiti-vigilanza/tegm/"},
+        {"publisher": "Normattiva", "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:legge:1996-03-07;108"}
+      ]
+    },
+    {
+      "id": "IT-CONSUMER-CODE-206-2005",
+      "title": "Fair and non-misleading consumer communications",
+      "citation": "D.Lgs. 206/2005 (Consumer Code), as amended",
+      "category": "consumer_protection",
+      "enforcement": "required",
+      "obligation_owner": "lender",
+      "applicability": {
+        "customer_type": ["consumer"]
+      },
+      "requirement_summary": "Keep marketing and consumer-facing explanations clear, accurate and free from unfair or misleading practices; do not reuse an internal AI summary as customer disclosure without review.",
+      "evidence_requirements": [
+        {"key": "consumer_communications_review", "description": "Legal/factual review of consumer-facing content"}
+      ],
+      "finos_controls": ["mi-5", "mi-11"],
+      "official_sources": [
+        {"publisher": "Normattiva", "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2005-09-06;206"}
+      ]
+    },
+    {
+      "id": "IT-ABF-REDRESS",
+      "title": "Complaints and Banking and Financial Ombudsman route",
+      "citation": "Bank of Italy provisions on out-of-court banking and financial disputes, as amended",
+      "category": "redress",
+      "enforcement": "required",
+      "obligation_owner": "lender",
+      "applicability": {
+        "lender_type": ["bank", "article_106_intermediary"],
+        "customer_type": ["consumer"]
+      },
+      "requirement_summary": "Preserve evidence needed for complaint investigation and provide the applicable complaint and ABF redress information.",
+      "evidence_requirements": [
+        {"key": "complaints_route", "description": "Internal complaint workflow"},
+        {"key": "abf_notice", "description": "Applicable ABF information"}
+      ],
+      "finos_controls": ["mi-4", "mi-11"],
+      "official_sources": [
+        {"publisher": "Bank of Italy", "url": "https://www.bancaditalia.it/compiti/tutela-educazione/abf/"}
+      ]
+    },
+    {
+      "id": "IT-AI-LAW-132-2025",
+      "title": "Italian AI principles and national governance",
+      "citation": "Law no. 132 of 23 September 2025, especially Articles 1-3",
+      "category": "ai_governance",
+      "enforcement": "reference",
+      "obligation_owner": "lender",
+      "applicability": {},
+      "requirement_summary": "Apply Italy's human-centred, transparent, responsible, secure and non-discriminatory AI principles consistently with the EU AI Act.",
+      "evidence_requirements": [
+        {"key": "ai_governance_record", "description": "EU AI Act and national-governance assessment"}
+      ],
+      "transition_note": "Contextual national overlay. Article 3(5) prevents this law from being treated as a separate new AI-system obligation beyond the EU AI Act.",
+      "finos_controls": ["mi-1", "mi-4", "mi-5", "mi-11"],
+      "official_sources": [
+        {"publisher": "Normattiva", "url": "https://www.normattiva.it/eli/id/2025/09/25/25G00143/CONSOLIDATED/20260611"}
+      ]
+    },
+    {
+      "id": "IT-DLGS-212-2025-DATA",
+      "title": "Upcoming consumer-credit data-source restrictions",
+      "citation": "D.Lgs. 212/2025 amendments to TUB Articles 124-bis and 125",
+      "category": "credit_data",
+      "enforcement": "transition",
+      "obligation_owner": "lender",
+      "applicability": {
+        "product_type": ["consumer_credit"],
+        "customer_type": ["consumer"]
+      },
+      "requirement_summary": "Prepare to use necessary and proportionate verified economic and financial information and exclude special-category data and social-network data from creditworthiness assessment.",
+      "evidence_requirements": [
+        {"key": "prohibited_data_check", "description": "Special-category/social-network exclusion check"},
+        {"key": "information_proportionality", "description": "Necessity and proportionality assessment"}
+      ],
+      "transition_note": "Non-blocking until 20 November 2026 or, if later, 90 days after the relevant Bank of Italy implementing provisions enter into force.",
+      "finos_controls": ["mi-1", "mi-4", "mi-5"],
+      "official_sources": [
+        {"publisher": "Gazzetta Ufficiale", "url": "https://www.gazzettaufficiale.it/eli/id/2026/01/09/26G00009/sg"}
+      ]
+    },
+    {
+      "id": "IT-DLGS-212-2025-AUTOMATION-RIGHTS",
+      "title": "Upcoming rights for automated creditworthiness processing",
+      "citation": "D.Lgs. 212/2025 amendments to TUB Article 124-bis",
+      "category": "automated_decisioning",
+      "enforcement": "transition",
+      "obligation_owner": "lender",
+      "applicability": {
+        "product_type": ["consumer_credit"],
+        "customer_type": ["consumer"],
+        "decision_mode": ["assisted", "automated"]
+      },
+      "requirement_summary": "Prepare consumer notice, understandable explanation, expression-of-view and human-reconsideration routes for assessments based partly or wholly on automated processing.",
+      "evidence_requirements": [
+        {"key": "automated_processing_notice", "description": "Advance consumer notice"},
+        {"key": "consumer_explanation", "description": "Clear explanation artifact or workflow"},
+        {"key": "human_reconsideration_route", "description": "Human challenge and reconsideration workflow"}
+      ],
+      "transition_note": "Non-blocking until 20 November 2026 or, if later, 90 days after the relevant Bank of Italy implementing provisions enter into force.",
+      "finos_controls": ["mi-4", "mi-5", "mi-11"],
+      "official_sources": [
+        {"publisher": "Gazzetta Ufficiale", "url": "https://www.gazzettaufficiale.it/eli/id/2026/01/09/26G00009/sg"}
+      ]
+    }
+  ]
+}

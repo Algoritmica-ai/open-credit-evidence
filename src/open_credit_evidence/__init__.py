@@ -12,6 +12,10 @@ from open_credit_evidence.schemas import (
     EvidenceReport,
     MarkingResult,
     OmissionResult,
+    PlatformControlEvidence,
+    RegulatoryAssessment,
+    RegulatoryContext,
+    RegulatoryRuleFinding,
     Summary,
 )
 
@@ -22,5 +26,9 @@ __all__ = [
     "EvidenceReport",
     "MarkingResult",
     "OmissionResult",
+    "PlatformControlEvidence",
+    "RegulatoryAssessment",
+    "RegulatoryContext",
+    "RegulatoryRuleFinding",
     "Summary",
 ]

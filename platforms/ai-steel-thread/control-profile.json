@@ -1,0 +1,43 @@
+{
+  "profile_id": "FINOS-AI-STEEL-THREAD-LOAN-APPROVAL",
+  "source_repository": "https://github.com/finos-hack/ai-steel-thread-demo",
+  "source_revision": "2782173d47f5074f8767dbdf553fa9165ee1ccd8",
+  "architecture_artifact": "architecture/loan-approval.calm.json",
+  "compliance_report_endpoint": "/api/demo/loan-approval/instances/{processInstanceId}/compliance-report",
+  "acceptance_test_endpoint": "/api/demo/loan-approval/acceptance-tests/run",
+  "controls": [
+    {
+      "id": "mi-1",
+      "name": "AI Data Leakage Prevention and Detection",
+      "evidence": "egress allowlisting, PII/status redaction and DLP findings",
+      "aigf_url": "https://air-governance-framework.finos.org/mitigations/mi-1_ai-data-leakage-prevention-and-detection.html"
+    },
+    {
+      "id": "mi-4",
+      "name": "AI System Observability",
+      "evidence": "model/provider/version, latency, errors, tokens, cost and sanitized audit",
+      "aigf_url": "https://air-governance-framework.finos.org/mitigations/mi-4_ai-system-observability.html"
+    },
+    {
+      "id": "mi-5",
+      "name": "System Acceptance Testing",
+      "evidence": "acceptance-suite status, pass rate and policy-invariant findings",
+      "aigf_url": "https://air-governance-framework.finos.org/mitigations/mi-5_system-acceptance-testing.html"
+    },
+    {
+      "id": "mi-11",
+      "name": "Human Feedback Loop for AI Systems",
+      "evidence": "loan-officer task, decision, agreement, feedback and timestamp",
+      "aigf_url": "https://air-governance-framework.finos.org/mitigations/mi-11_human-feedback-loop-for-ai-systems.html"
+    }
+  ],
+  "verified_claim_requires": [
+    "Steel Thread businessKey equals the OpenCredit case_id",
+    "control posture was snapshotted on the process instance",
+    "mi-1, mi-4, mi-5 and mi-11 were enabled for that instance",
+    "no required platform check is warn or fail",
+    "the snapshotted mi-5 result was accepted",
+    "the report carries an openCreditEvidence link with caseId, activityId and evidenceReportId"
+  ]
+}
+

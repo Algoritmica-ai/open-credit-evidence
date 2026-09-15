@@ -68,6 +68,23 @@ python -m open_credit_evidence.cli process cases/sample_case_001/
 python -m open_credit_evidence.cli verify reports/case_001_report.json
 ```
 
+### Platform controls and jurisdiction rules
+
+OpenCredit can attach per-instance control evidence from the FINOS AI Steel Thread demo and checks
+every processed case against its selected jurisdiction ruleset. See
+[`docs/platform-controls.md`](docs/platform-controls.md) and the
+[`regulations/IT`](regulations/IT) Italy pack.
+
+```bash
+# Evaluate all rules selected by regulatory_context in metadata.json
+oce check-rules cases/<case-directory>
+
+# Process and attach a Steel Thread per-instance compliance report
+oce process cases/<case-directory> \
+  --steel-thread-report compliance-report.json \
+  --output reports/case-report.json
+```
+
 ### Docker Compose (same CLI, no HTTP port)
 
 ```bash
@@ -89,6 +106,7 @@ open-credit-evidence/
 ├── docker-compose.yml        # Local CLI container (no published ports)
 ├── Dockerfile                # Image for Compose; default CMD is oce --help
 ├── docs/
+│   ├── platform-controls.md # FINOS Steel Thread control-evidence contract
 │   ├── runtime.md           # How to run: venv, Compose, NVIDIA env; Axis is not a host
 │   ├── design-note.md       # System design (models, RAG, safety)
 │   └── week1-design-outline.md
@@ -97,7 +115,11 @@ open-credit-evidence/
 │   ├── runner.py            # Nemotron assistant interface
 │   ├── omission_check.py    # Decision-critical fact verification
 │   ├── evidence.py          # Evidence report generation
+│   ├── platform_controls.py # AI Steel Thread compliance-report adapter
+│   ├── regulations.py       # Jurisdiction ruleset evaluator
 │   └── schemas.py           # Data models
+├── platforms/               # Pinned external platform-control profiles
+├── regulations/             # Country-specific evidence rule packs (IT first)
 ├── tests/
 │   ├── fixtures/            # Good/bad summary test fixtures
 │   └── test_*.py           # Test suite
@@ -162,4 +184,3 @@ git clone https://github.com/Algoritmica-ai/open-credit-evidence.git
 Apache 2.0 — See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 Copyright holders: Algoritmica GmbH + ZAGA Open Source (pending confirmation from Luca).
-
