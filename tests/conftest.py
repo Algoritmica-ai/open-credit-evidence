@@ -1,9 +1,9 @@
 """Pytest configuration and shared fixtures."""
 
 import json
+from collections.abc import Generator
 from datetime import datetime
 from pathlib import Path
-from typing import Generator
 
 import pytest
 
@@ -14,7 +14,6 @@ from open_credit_evidence.schemas import (
     CriticalFact,
     FactCategory,
     Severity,
-    Summary,
 )
 
 
@@ -220,7 +219,11 @@ def tmp_case_dir(tmp_path: Path) -> Generator[Path, None, None]:
         "created_at": "2026-09-05T10:00:00+05:30",
         "documents": [
             {"name": "application.md", "type": "loan_application", "description": "Test app"},
-            {"name": "bureau_report.md", "type": "credit_bureau_report", "description": "Test bureau"},
+            {
+                "name": "bureau_report.md",
+                "type": "credit_bureau_report",
+                "description": "Test bureau",
+            },
         ],
         "critical_facts": [
             {

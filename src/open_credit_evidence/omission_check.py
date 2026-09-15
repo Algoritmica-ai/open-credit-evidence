@@ -71,7 +71,13 @@ class OmissionChecker:
             "credit_score": ["score", "cibil", "credit score"],
             "delinquency": ["late", "delinquent", "dpd", "overdue", "past due", "delinquency"],
             "enquiry_pattern": ["enquir", "inquiry", "credit seek", "shopping"],
-            "debt_to_income": ["dti", "debt-to-income", "debt to income", "existing emi", "obligation"],
+            "debt_to_income": [
+                "dti",
+                "debt-to-income",
+                "debt to income",
+                "existing emi",
+                "obligation",
+            ],
             "credit_utilization": ["utilization", "utilisation", "outstanding", "limit"],
             "debt_pattern": ["consolidation", "revolving", "debt stress"],
             "payment_behavior": ["minimum payment", "payment behavior"],
@@ -205,10 +211,7 @@ class OmissionChecker:
         total_facts = len(case.metadata.critical_facts)
         omission_rate = facts_omitted / total_facts if total_facts > 0 else 0.0
 
-        if self.require_all_critical and critical_omitted:
-            passed = False
-        else:
-            passed = omission_rate == 0.0
+        passed = False if self.require_all_critical and critical_omitted else omission_rate == 0.0
 
         summary_fingerprint = compute_fingerprint(summary.text)
 

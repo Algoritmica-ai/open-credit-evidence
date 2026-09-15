@@ -4,8 +4,6 @@ These tests verify that the omission checker correctly identifies
 when summaries are missing critical facts.
 """
 
-import pytest
-
 from open_credit_evidence.omission_check import OmissionChecker, check_omissions
 from open_credit_evidence.schemas import Case, Summary
 from tests.fixtures.summaries import (

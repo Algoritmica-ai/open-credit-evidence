@@ -3,7 +3,6 @@
 Creates tamper-proof evidence reports and verifies their integrity.
 """
 
-import hashlib
 import json
 import uuid
 from datetime import UTC, datetime

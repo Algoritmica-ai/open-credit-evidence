@@ -4,13 +4,13 @@ Defines typed schemas for cases, summaries, and evidence reports.
 """
 
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class Severity(str, Enum):
+class Severity(StrEnum):
     """Severity level for critical facts."""
 
     CRITICAL = "critical"
@@ -19,7 +19,7 @@ class Severity(str, Enum):
     LOW = "low"
 
 
-class FactCategory(str, Enum):
+class FactCategory(StrEnum):
     """Categories of decision-critical facts."""
 
     CREDIT_SCORE = "credit_score"
@@ -51,7 +51,9 @@ class CaseDocument(BaseModel):
     """A document within a case."""
 
     name: str = Field(..., description="Filename of the document")
-    type: str = Field(..., description="Document type (loan_application, credit_bureau_report, etc)")
+    type: str = Field(
+        ..., description="Document type (loan_application, credit_bureau_report, etc)"
+    )
     description: str = Field(..., description="Human-readable description")
     content: str | None = Field(None, description="Full text content of the document")
     fingerprint: str | None = Field(None, description="SHA-256 hash of document content")

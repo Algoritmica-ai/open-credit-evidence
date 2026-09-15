@@ -1,7 +1,5 @@
 """Tests for evidence report generation and tamper verification."""
 
-import json
-from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -18,7 +16,7 @@ from open_credit_evidence.evidence import (
 )
 from open_credit_evidence.loader import compute_fingerprint
 from open_credit_evidence.omission_check import check_omissions
-from open_credit_evidence.schemas import Case, EvidenceReport, MarkingResult, Summary
+from open_credit_evidence.schemas import Case, Summary
 from tests.fixtures.summaries import CASE_001_GOOD_SUMMARY
 
 

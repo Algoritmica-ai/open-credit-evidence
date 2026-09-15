@@ -7,7 +7,7 @@ and verifying evidence reports.
 import asyncio
 import json
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import structlog
 import typer
@@ -70,7 +70,7 @@ def version() -> None:
 def process(
     case_dir: Annotated[Path, typer.Argument(help="Path to case directory")],
     output: Annotated[
-        Optional[Path], typer.Option("--output", "-o", help="Output report path")
+        Path | None, typer.Option("--output", "-o", help="Output report path")
     ] = None,
     skip_api: Annotated[
         bool, typer.Option("--skip-api", help="Skip API call, use stub summary")
@@ -91,10 +91,10 @@ def process(
         console.print(f"  Fingerprint: {case.fingerprint[:16]}...")
     except CaseLoadError as e:
         console.print(f"[red]Error loading case:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
     except TamperDetectedError as e:
         console.print(f"[red]TAMPER DETECTED:[/red] {e}")
-        raise typer.Exit(2)
+        raise typer.Exit(2) from None
 
     context = build_context(case)
     console.print(f"  Whole-file context: {len(context)} chars")
@@ -112,7 +112,7 @@ def process(
             summary = asyncio.run(run_case(case))
         except NemotronClientError as e:
             console.print(f"[red]NVIDIA Build error:[/red] {e}")
-            raise typer.Exit(3)
+            raise typer.Exit(3) from None
         console.print(f"  Model: {summary.model}")
         console.print(f"  Length: {len(summary.text)} chars")
 
@@ -138,7 +138,9 @@ def process(
     console.print(table)
 
     status_color = "green" if marking.passed else "red"
-    console.print(f"\nResult: [{status_color}]{'PASSED' if marking.passed else 'FAILED'}[/{status_color}]")
+    console.print(
+        f"\nResult: [{status_color}]{'PASSED' if marking.passed else 'FAILED'}[/{status_color}]"
+    )
     console.print(f"  Facts present: {marking.facts_present}/{marking.total_facts}")
     console.print(f"  Omission rate: {marking.omission_rate:.0%}")
 
@@ -156,7 +158,7 @@ def process(
 def verify(
     report_path: Annotated[Path, typer.Argument(help="Path to evidence report")],
     case_fingerprint: Annotated[
-        Optional[str], typer.Option("--case-fingerprint", "-f", help="Expected case fingerprint")
+        str | None, typer.Option("--case-fingerprint", "-f", help="Expected case fingerprint")
     ] = None,
 ) -> None:
     """Verify an evidence report has not been tampered with."""
@@ -169,7 +171,7 @@ def verify(
         console.print(f"  Created: {report.created_at}")
     except (json.JSONDecodeError, ValueError) as e:
         console.print(f"[red]Error loading report:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     try:
         verify_evidence_report(report, case_fingerprint)
@@ -177,9 +179,9 @@ def verify(
         console.print("  Chain fingerprint is valid")
         console.print("  No tampering detected")
     except Exception as e:
-        console.print(f"\n[red]✗ Verification FAILED[/red]")
+        console.print("\n[red]✗ Verification FAILED[/red]")
         console.print(f"  {e}")
-        raise typer.Exit(2)
+        raise typer.Exit(2) from None
 
 
 @app.command()
@@ -194,7 +196,7 @@ def load(
         case = load_case(case_dir)
     except CaseLoadError as e:
         console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     console.print(Panel(f"Case: [bold]{case.metadata.case_id}[/bold]"))
     console.print(f"Type: {case.metadata.case_type}")
@@ -217,7 +219,9 @@ def load(
             "medium": "blue",
             "low": "white",
         }.get(fact.severity.value, "white")
-        console.print(f"  [{fact.id}] [{severity_color}]{fact.severity.value.upper()}[/{severity_color}] {fact.category.value}")
+        console.print(
+            f"  [{fact.id}] [{severity_color}]{fact.severity.value.upper()}[/{severity_color}] {fact.category.value}"
+        )
         console.print(f"    {fact.fact}")
 
 
