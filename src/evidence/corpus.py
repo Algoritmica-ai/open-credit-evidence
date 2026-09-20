@@ -201,6 +201,9 @@ def _build_milvus(db: Path, passages: list[Passage], vectors: list[list[float]])
         client.close()
         return "milvus-lite"
     except Exception:  # noqa: BLE001 — any failure to open means: use the in-process index
+        import shutil
+
+        shutil.rmtree(db, ignore_errors=True)  # a stale or half-written index must not be reopened
         return "cosine"
 
 
@@ -233,7 +236,11 @@ class Corpus:
         self._db = base / "passages.db"
         self._embedder = embedder or embed
         self._client = None
-        self.backend = "milvus-lite" if self._db.exists() else "cosine"
+        self.backend = (
+            "milvus-lite"
+            if self._db.exists() and self.manifest.get("index_backend", "milvus-lite") != "cosine"
+            else "cosine"
+        )
         self._vectors: dict[str, list[float]] = {}
         for line in (base / "vectors.jsonl").read_text(encoding="utf-8").splitlines():
             if line:
