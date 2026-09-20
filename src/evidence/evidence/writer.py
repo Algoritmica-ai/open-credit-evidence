@@ -74,17 +74,24 @@ def _report(
         f"— run {manifest['run_id']}"
     )
     L.append("")
+    judge_line = "No judge."
+    if judge:
+        judge_line = (
+            f"Judge: `{judge['model_id']}` ({'on-prem' if judge['on_prem'] else 'cloud'}), "
+            "readability and oversight only"
+        )
+        corpus = judge.get("corpus")
+        judge_line += (
+            f", citing regulation corpus {corpus['jurisdiction']} "
+            f"(sha256 `{corpus['corpus_sha256'][:12]}…`, {corpus['passages']} passages)."
+            if corpus
+            else ", no regulation corpus."
+        )
     L.append(
         f"Assistant under test: `{sut['model_id']}` at `{sut['endpoint']}` "
         f"({'on-prem' if sut['on_prem'] else 'cloud'}). "
         f"{manifest['pack']['items']} items × {manifest['repeats']} repeat(s) = "
-        f"{manifest['transcripts']} briefings. "
-        + (
-            f"Judge: `{judge['model_id']}` ({'on-prem' if judge['on_prem'] else 'cloud'}), "
-            f"readability only."
-            if judge
-            else "No judge."
-        )
+        f"{manifest['transcripts']} briefings. " + judge_line
     )
     L.append("")
     L.append(

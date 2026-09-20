@@ -79,8 +79,16 @@ obligation), verify (with a tamper demo on a copy of the run):
 .venv/bin/evidence ui               # http://127.0.0.1:8765
 ```
 
-A committed run is in [`runs/2026-09-20-build/`](runs/2026-09-20-build/); its
-report is [`evidence/report.md`](runs/2026-09-20-build/evidence/report.md).
+Committed runs of the sample pack, all sealed and verifiable:
+
+| Run | Assistant | Judge |
+|---|---|---|
+| [`runs/2026-09-20-build/`](runs/2026-09-20-build/) | Lightning on NVIDIA Build | Ultra, no corpus |
+| [`runs/2026-09-20-onprem/`](runs/2026-09-20-onprem/) | Lightning NIM on the team's node | Ultra, no corpus |
+| [`runs/2026-09-20-onprem-cited/`](runs/2026-09-20-onprem-cited/) | same briefings as above | Ultra, citing the EU AI Act corpus (55/60 citations) |
+
+A hosted, shared demo of the UI is on Hugging Face:
+<https://huggingface.co/spaces/Algoritmica/credit-evidence-engine> (`deploy/huggingface/`).
 
 ## Models and where they run
 

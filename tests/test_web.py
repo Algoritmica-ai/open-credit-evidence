@@ -165,3 +165,24 @@ def test_cancel_keeps_completed_briefings(client):
         d = client.get(f"/api/runs/{job['run_id']}").json()
         assert d["manifest"]["cancelled"] and d["sealed"]
         assert client.post(f"/api/runs/{job['run_id']}/verify", json={}).json()["ok"]
+
+
+def test_shared_workspace_mode(tmp_path, monkeypatch, regulations_root):
+    """EVIDENCE_WORKSPACE seeds a writable copy; EVIDENCE_SHARED caps runs and flags the page."""
+    import importlib
+
+    monkeypatch.setenv("EVIDENCE_ROOT", str(ROOT))
+    monkeypatch.setenv("EVIDENCE_WORKSPACE", str(tmp_path / "ws"))
+    monkeypatch.setenv("EVIDENCE_SHARED", "1")
+    monkeypatch.delenv("EVIDENCE_RULESETS_DIR", raising=False)
+    mod = importlib.reload(web)
+    try:
+        assert (tmp_path / "ws" / "packs" / "underwriter-sample" / "items.jsonl").is_file()
+        assert mod.PACKS == tmp_path / "ws" / "packs"
+        c = TestClient(mod.app)
+        m = c.get("/api/meta").json()
+        assert m["shared"] and m["limits"] == {"items": 5, "repeats": 2}
+    finally:
+        monkeypatch.delenv("EVIDENCE_WORKSPACE")
+        monkeypatch.delenv("EVIDENCE_SHARED")
+        importlib.reload(web)

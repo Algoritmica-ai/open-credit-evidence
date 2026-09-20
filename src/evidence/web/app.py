@@ -51,8 +51,32 @@ _FORM = Form(...)
 _OPTIONAL_FORM = Form(default=None)
 STATIC = Path(__file__).parent / "static"
 ROOT = Path(os.environ.get("EVIDENCE_ROOT") or Path.cwd())
-PACKS = ROOT / "packs"
-RUNS = ROOT / "runs"
+
+# A hosted instance (a Hugging Face Space, say) runs from a read-only image as a
+# user who cannot write to it. EVIDENCE_WORKSPACE names a writable directory;
+# packs, runs and regulations are copied there once and used from there.
+# EVIDENCE_SHARED tells the page it is a shared demo: the models are whatever
+# the environment points at (NVIDIA Build, usually), runs are capped, and
+# nothing uploaded is private.
+WORKSPACE = Path(os.environ["EVIDENCE_WORKSPACE"]) if os.environ.get("EVIDENCE_WORKSPACE") else None
+SHARED = bool(os.environ.get("EVIDENCE_SHARED"))
+SHARED_MAX_ITEMS = 5
+SHARED_MAX_REPEATS = 2
+
+
+def _seed_workspace() -> tuple[Path, Path]:
+    if WORKSPACE is None:
+        return ROOT / "packs", ROOT / "runs"
+    WORKSPACE.mkdir(parents=True, exist_ok=True)
+    for name in ("packs", "runs", "regulations"):
+        src, dst = ROOT / name, WORKSPACE / name
+        if src.is_dir() and not dst.exists():
+            shutil.copytree(src, dst)
+    os.environ.setdefault("EVIDENCE_RULESETS_DIR", str(WORKSPACE / "regulations"))
+    return WORKSPACE / "packs", WORKSPACE / "runs"
+
+
+PACKS, RUNS = _seed_workspace()
 _SAFE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 
 _jobs: dict[str, dict[str, Any]] = {}
@@ -122,6 +146,8 @@ def meta() -> dict[str, Any]:
         "checks": available_checks(),
         "roles": roles,
         "has_key": bool(os.environ.get("NVIDIA_API_KEY")),
+        "shared": SHARED,
+        "limits": {"items": SHARED_MAX_ITEMS, "repeats": SHARED_MAX_REPEATS} if SHARED else None,
     }
 
 
@@ -383,6 +409,9 @@ def start_run(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
     repeats = max(1, min(int(payload.get("repeats", 1)), 10))
     limit = payload.get("limit")
     limit = max(1, min(int(limit), len(pack.items))) if limit else None
+    if SHARED:
+        repeats = min(repeats, SHARED_MAX_REPEATS)
+        limit = min(limit or SHARED_MAX_ITEMS, SHARED_MAX_ITEMS)
     judge = bool(payload.get("judge", True))
     corpus = payload.get("corpus", "EU")
     corpus = None if corpus in (None, "", "none") else _safe_name(str(corpus), "corpus")

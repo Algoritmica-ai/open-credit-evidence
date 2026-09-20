@@ -44,6 +44,12 @@ async function loadMeta() {
   const w = m.roles.assistant.where;
   $("sut-where").textContent = `assistant: ${w}`;
   $("sut-where").hidden = false;
+  if (m.shared) {
+    const note = document.createElement("div");
+    note.className = "note warn";
+    note.innerHTML = `<strong>This is a hosted, shared demo.</strong> The models run wherever this instance is configured — NVIDIA Build, not your hardware — and runs are capped at ${m.limits.items} cases × ${m.limits.repeats} repeats. Packs you upload and runs you start are visible to other visitors and are wiped when the Space restarts. To evaluate on your own GPU, <a href="https://github.com/Algoritmica-ai/open-credit-evidence" target="_blank" rel="noopener">install it locally</a>: two commands.`;
+    document.querySelector("#view-pack .head").after(note);
+  }
   if (!m.has_key && w === "cloud") $("run-error").innerHTML = `<div class="note warn"><strong>NVIDIA_API_KEY is not set.</strong> Runs against NVIDIA Build need it in <code>.env</code>. The gate works without it.</div>`;
 }
 
