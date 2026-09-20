@@ -245,7 +245,7 @@ async function openRun(runId) {
     ["assistant", m.sut.model_id, m.sut.on_prem ? "on-prem" : "cloud"],
     ["briefings", m.transcripts, `${m.pack.items} cases × ${m.repeats}`],
     ["judge", m.judge ? m.judge.model_id : "off", m.judge ? `${m.judge.on_prem ? "on-prem" : "cloud"}${m.judge.corpus ? ` · cites ${m.judge.corpus.jurisdiction} ${m.judge.corpus.corpus_sha256.slice(0, 8)}` : ""}` : ""],
-    ["rule pack", d.regulations ? `${d.regulations.status}` : "—", d.regulations?.ruleset_id || ""],
+    ["lender's process (rule pack)", d.regulations ? `${d.regulations.status}` : "—", d.regulations?.ruleset_id ? `${d.regulations.ruleset_id} · ${d.regulations.applicable_rules} rules apply` : "no regulatory context"],
   ].map(([k, v, sub]) => `<div class="stat"><div class="k">${esc(k)}</div><div class="v sm">${esc(v)}</div><div class="v sm" style="color:var(--ink-3)">${esc(sub)}</div></div>`).join("");
   const ag = s.repeat_agreement || {};
   $("ev-obligations").innerHTML = s.obligations.map((o) => {

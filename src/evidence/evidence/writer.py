@@ -177,7 +177,16 @@ def _report(
             L.append(f"- `{name}`: {_pct(a['stable'], a['items'])} ({a['agreement']}){flips}")
         L.append("")
 
-    L.append("## Jurisdiction rule pack")
+    juris = regulatory.get("jurisdiction") or "—"
+    L.append(f"## Lender's process evidence — jurisdiction rule pack ({juris})")
+    L.append("")
+    L.append(
+        "Separate from the obligations above, which concern the assistant's briefings. "
+        "This section evaluates the *deploying lender's* process against the national rule "
+        "pack selected by the pack's `regulatory_context.json`: for each rule that applies to "
+        "this lender and product, is every required evidence reference present? It does not "
+        "read the referenced artefacts or interpret the law."
+    )
     L.append("")
     if regulatory.get("status") in ("unscoped", "ruleset_not_found"):
         L.append(f"{regulatory['status']}: {regulatory.get('note')}")

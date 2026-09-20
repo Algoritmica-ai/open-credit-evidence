@@ -23,7 +23,7 @@ What we have, verified 16 Sep 2026, and how the framework uses it.
 | Assistant (Lightning) | NIM on the team node | Fixed seed on a local vLLM is reproducible; the free endpoint was not, and took 8–150 s per call. Runner at volume needs both. |
 | Teacher (Ultra) | NVIDIA Build | 550B; serving it would take the whole node. Used once, to label the judge's training set. |
 | Judge (Nano) | vLLM on the team node, GPU 7, port 8002 (`scripts/cluster/serve_nano.sh`) | Nemotron Nano 9B v2, un-tuned today — the baseline; the fine-tuned adapter is served by the same script with `ADAPTER=`. Loan files never leave the box. |
-| Embed | NVIDIA Build for now | Tiny call volume. Move on-node if latency matters. |
+| Embed | vLLM on the team node, GPU 6, port 8003 (`scripts/cluster/serve_embed.sh`) | Nemotron 3 Embed 1B. With this, no case content and no query leaves the node, and a local run needs no NVIDIA key. |
 
 Switching a role is two lines in `.env`; see `.env.example`. Every `ChatResponse`
 records its `endpoint`, so a transcript can always say cloud or on-prem.
@@ -59,6 +59,7 @@ makes one chat call. To stop: `docker stop nemotron-lightning` on the node.
 |---|---|
 | one | Lightning NIM, long-lived |
 | one (GPU 7) | Nano judge, vLLM |
+| one (GPU 6) | Embedder, vLLM |
 | one–two | LoRA training (`nemo:26.08.00`) |
 | rest | interactive work |
 

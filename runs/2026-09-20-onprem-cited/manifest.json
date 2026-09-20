@@ -3,7 +3,7 @@
   "engine": {
     "package": "credit-evidence-engine",
     "version": "0.1.0.dev0",
-    "git_commit": "f506eed"
+    "git_commit": "415cf24"
   },
   "pack": {
     "pack_id": "underwriter-sample",
@@ -70,6 +70,6 @@
     "context_sha256": "36fc622bbe57acd7726200978dc4611c57e81e64935f87c14c5cf424f207f0f5",
     "status": "pass"
   },
-  "started_at": "2026-09-20T12:54:48+00:00",
-  "finished_at": "2026-09-20T12:54:49+00:00"
+  "started_at": "2026-09-20T13:08:14+00:00",
+  "finished_at": "2026-09-20T13:08:15+00:00"
 }
