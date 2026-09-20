@@ -88,7 +88,7 @@ Committed runs of the sample pack, all sealed and verifiable:
 | [`runs/2026-09-20-onprem-cited/`](runs/2026-09-20-onprem-cited/) | same briefings as above | Ultra, citing the EU AI Act corpus (55/60 citations) |
 
 A hosted, shared demo of the UI is on Hugging Face:
-<https://huggingface.co/spaces/Algoritmica/credit-evidence-engine> (`deploy/huggingface/`).
+<https://huggingface.co/spaces/Algoritmica/open-credit-evidence> (`deploy/huggingface/`).
 
 ## Models and where they run
 

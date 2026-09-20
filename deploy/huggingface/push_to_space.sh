@@ -19,7 +19,11 @@ STAGING="$(mktemp -d)"
 trap 'rm -rf "$STAGING"' EXIT
 
 hf auth whoami >/dev/null || { echo "Not logged in. Run: hf auth login" >&2; exit 1; }
-hf repo create "$SPACE" --repo-type space --space-sdk docker --exist-ok >/dev/null
+# Create only if it does not exist: a token with write access to an existing
+# org Space may still lack the right to create one.
+if ! curl -sf -o /dev/null -H "Authorization: Bearer $(hf auth token)" "https://huggingface.co/api/spaces/$SPACE"; then
+  hf repo create "$SPACE" --repo-type space --space-sdk docker >/dev/null
+fi
 
 # The token rides in the clone URL of a temp directory the EXIT trap removes.
 TOKEN="$(hf auth token 2>/dev/null || true)"
@@ -29,9 +33,10 @@ cd "$STAGING/space"
 
 rm -rf src packs regulations runs specs pyproject.toml LICENSE NOTICE THIRD_PARTY_NOTICES.md Dockerfile README.md
 cp -R "$ROOT/src" "$ROOT/packs" "$ROOT/regulations" "$ROOT/specs" .
+# Only runs committed to the project repo — never local or in-progress ones.
 mkdir -p runs
-for run in "$ROOT"/runs/*/; do
-  [[ -f "$run/checksums.sha256" ]] && cp -R "$run" runs/
+for run in $(git -C "$ROOT" ls-files runs | cut -d/ -f2 | sort -u); do
+  [[ -f "$ROOT/runs/$run/checksums.sha256" ]] && cp -R "$ROOT/runs/$run" runs/
 done
 cp "$ROOT/pyproject.toml" "$ROOT/LICENSE" "$ROOT/NOTICE" "$ROOT/THIRD_PARTY_NOTICES.md" .
 cp "$HERE/Dockerfile" "$HERE/README.md" .

@@ -7,7 +7,7 @@ sdk: docker
 app_port: 7860
 pinned: false
 license: apache-2.0
-short_description: Evidence that an AI assistant told the underwriter what mattered
+short_description: Evidence packs for AI assistants in credit decisions
 ---
 
 # Credit Evidence Engine
