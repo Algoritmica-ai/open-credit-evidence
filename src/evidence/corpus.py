@@ -12,10 +12,18 @@ instrument, headed ``## <paragraph>`` so that a passage is a citable unit.
 Outputs, under ``index/``:
 
 - ``passages.jsonl``      one passage per paragraph: id, citation, text
-- ``passages.db``         Milvus Lite vector index over the same passages (not committed;
-                          rebuilt from the sources with the same command)
+- ``vectors.jsonl``       the embedding of each passage (committed, so a clone
+                          needs no rebuild and no embedding call to retrieve)
+- ``passages.db``         Milvus Lite vector index over the same vectors (not
+                          committed; created when the build can open one)
 - ``corpus_manifest.json`` embedding model, chunking rule, sha256 of every
   source and of passages.jsonl — the corpus version a run records
+
+Retrieval uses Milvus Lite when it opens and otherwise a cosine search over
+``vectors.jsonl`` in-process. Milvus Lite cannot open a database on a network
+filesystem (the cluster's ``/home`` and ``/data``) or on a path with a space;
+the fallback gives the same ranking, and the run manifest records which was
+used.
 
 At run time the judge embeds the briefing as a query, takes the top passages,
 and must cite one of them. Regulations change; a document is swapped and the
@@ -143,27 +151,21 @@ def build_corpus(
     (index / "passages.jsonl").write_bytes(passages_bytes)
 
     vectors = embedder([p.text for p in passages], "passage")
-    db = index / "passages.db"
-    from pymilvus import MilvusClient
-
-    client = MilvusClient(str(db))
-    if client.has_collection(COLLECTION):
-        client.drop_collection(COLLECTION)
-    client.create_collection(COLLECTION, dimension=len(vectors[0]), metric_type="COSINE")
-    client.insert(
-        COLLECTION,
-        [
-            {"id": i, "vector": v, "passage_id": p.passage_id}
-            for i, (p, v) in enumerate(zip(passages, vectors, strict=True))
-        ],
+    (index / "vectors.jsonl").write_text(
+        "".join(
+            json.dumps({"passage_id": p.passage_id, "vector": [round(x, 6) for x in v]}) + "\n"
+            for p, v in zip(passages, vectors, strict=True)
+        ),
+        encoding="utf-8",
     )
-    client.close()
+    backend = _build_milvus(index / "passages.db", passages, vectors)
 
     manifest = {
         "jurisdiction": jurisdiction.upper(),
         "title": spec.get("title"),
         "verified": str(spec.get("verified", "")),
         "chunking": CHUNKING,
+        "index_backend": backend,
         "embed_model": embed_model,
         "dimension": len(vectors[0]),
         "passages": len(passages),
@@ -180,6 +182,35 @@ def build_corpus(
     return manifest
 
 
+def _build_milvus(db: Path, passages: list[Passage], vectors: list[list[float]]) -> str:
+    """Create the Milvus Lite index if the platform and filesystem allow it."""
+    try:
+        from pymilvus import MilvusClient
+
+        client = MilvusClient(str(db))
+        if client.has_collection(COLLECTION):
+            client.drop_collection(COLLECTION)
+        client.create_collection(COLLECTION, dimension=len(vectors[0]), metric_type="COSINE")
+        client.insert(
+            COLLECTION,
+            [
+                {"id": i, "vector": v, "passage_id": p.passage_id}
+                for i, (p, v) in enumerate(zip(passages, vectors, strict=True))
+            ],
+        )
+        client.close()
+        return "milvus-lite"
+    except Exception:  # noqa: BLE001 — any failure to open means: use the in-process index
+        return "cosine"
+
+
+def _cosine(a: list[float], b: list[float]) -> float:
+    dot = sum(x * y for x, y in zip(a, b, strict=True))
+    na = sum(x * x for x in a) ** 0.5
+    nb = sum(y * y for y in b) ** 0.5
+    return dot / (na * nb) if na and nb else 0.0
+
+
 class Corpus:
     """A built index, opened for retrieval."""
 
@@ -187,7 +218,7 @@ class Corpus:
         self, jurisdiction: str, root: Path | None = None, embedder: Embedder | None = None
     ):
         base = (root or default_regulations_root()) / jurisdiction.upper() / "index"
-        if not (base / "corpus_manifest.json").is_file() or not (base / "passages.db").exists():
+        if not (base / "corpus_manifest.json").is_file() or not (base / "vectors.jsonl").is_file():
             raise FileNotFoundError(
                 f"corpus index for {jurisdiction.upper()} not built; run `evidence corpus build "
                 f"{jurisdiction.upper()}`"
@@ -202,19 +233,36 @@ class Corpus:
         self._db = base / "passages.db"
         self._embedder = embedder or embed
         self._client = None
+        self.backend = "milvus-lite" if self._db.exists() else "cosine"
+        self._vectors: dict[str, list[float]] = {}
+        for line in (base / "vectors.jsonl").read_text(encoding="utf-8").splitlines():
+            if line:
+                rec = json.loads(line)
+                self._vectors[rec["passage_id"]] = rec["vector"]
 
     @property
     def sha256(self) -> str:
         return str(self.manifest["corpus_sha256"])
 
     def _search(self, vector: list[float], k: int) -> list[tuple[str, float]]:
-        from pymilvus import MilvusClient
+        if self.backend == "milvus-lite":
+            try:
+                from pymilvus import MilvusClient
 
-        if self._client is None:
-            self._client = MilvusClient(str(self._db))
-            self._client.load_collection(COLLECTION)
-        hits = self._client.search(COLLECTION, data=[vector], limit=k, output_fields=["passage_id"])
-        return [(h["entity"]["passage_id"], float(h["distance"])) for h in hits[0]]
+                if self._client is None:
+                    self._client = MilvusClient(str(self._db))
+                    self._client.load_collection(COLLECTION)
+                hits = self._client.search(
+                    COLLECTION, data=[vector], limit=k, output_fields=["passage_id"]
+                )
+                return [(h["entity"]["passage_id"], float(h["distance"])) for h in hits[0]]
+            except Exception:  # noqa: BLE001 — same ranking from the in-process index
+                self.backend = "cosine"
+                self._client = None
+        scored = sorted(
+            ((_cosine(v, vector), pid) for pid, v in self._vectors.items()), reverse=True
+        )
+        return [(pid, score) for score, pid in scored[:k]]
 
     def retrieve(self, query: str, k: int = 2) -> list[tuple[Passage, float]]:
         vector = self._embedder([query], "query")[0]

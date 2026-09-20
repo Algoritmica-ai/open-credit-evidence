@@ -216,6 +216,7 @@ def run_pack(
                     "corpus_sha256": corpus_obj.sha256,
                     "passages": corpus_obj.manifest["passages"],
                     "embed_model": corpus_obj.manifest["embed_model"],
+                    "index_backend": corpus_obj.backend,
                 }
                 if corpus_obj
                 else None

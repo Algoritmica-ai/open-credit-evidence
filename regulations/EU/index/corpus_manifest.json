@@ -3,6 +3,7 @@
   "title": "EU Artificial Intelligence Act \u2014 provisions relevant to an assistant in a credit decision",
   "verified": "2026-09-20",
   "chunking": "markdown-h2-paragraph-v1",
+  "index_backend": "cosine",
   "embed_model": "nvidia/nemotron-3-embed-1b",
   "dimension": 2048,
   "passages": 26,

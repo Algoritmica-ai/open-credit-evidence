@@ -73,3 +73,22 @@ def test_parse_scores_with_citation_and_truncation():
     cut = parse_scores('{"intelligible": 2, "actionable": 1, "overridable": 0, "cit')
     assert cut["overridable"] == 0 and "truncated" in cut["reason"]
     assert parse_scores("no json here") is None
+
+
+def test_cosine_fallback_matches_milvus_ranking(tmp_path):
+    import shutil
+
+    shutil.copytree(
+        ROOT / "regulations" / "EU", tmp_path / "EU", ignore=shutil.ignore_patterns("index")
+    )
+    build_corpus("EU", tmp_path, embedder=fake_embed, embed_model="fake")
+    q = "override or reverse the output of the high-risk AI system"
+    c = Corpus("EU", tmp_path, embedder=fake_embed)
+    milvus = [p.passage_id for p, _ in c.retrieve(q, k=3)]
+    c.close()
+    shutil.rmtree(tmp_path / "EU" / "index" / "passages.db", ignore_errors=True)
+    if (tmp_path / "EU" / "index" / "passages.db").exists():
+        (tmp_path / "EU" / "index" / "passages.db").unlink()
+    c2 = Corpus("EU", tmp_path, embedder=fake_embed)
+    assert c2.backend == "cosine"
+    assert [p.passage_id for p, _ in c2.retrieve(q, k=3)] == milvus
