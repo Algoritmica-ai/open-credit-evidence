@@ -1,24 +1,7 @@
-OpenCredit Evidence
-Copyright 2026 Algoritmica GmbH and ZAGA Open Source contributors
+Credit Evidence Engine
+Copyright (c) 2026 Algoritmica GmbH
 
-This product includes software developed at Algoritmica GmbH and
-contributed by the ZAGA Open Source community.
+This product includes software developed for the NVIDIA Open Models Codefest
+by Sriram Krishnan, Clyde Tedrick and Luca Borella. Licensed under the Apache License, Version 2.0.
 
-NOTE: Copyright holders to be confirmed by Luca (product/reg).
-Please verify licensing attribution before public release.
-
----
-
-Third-Party Notices
--------------------
-
-This software may include or depend on the following open source components:
-
-- Python: PSF License
-- pytest: MIT License
-- pydantic: MIT License
-- httpx: BSD License
-- NVIDIA NeMo / Nemotron: NVIDIA License (for API usage)
-
-For a complete list of dependencies and their licenses, see the
-pyproject.toml file and the respective package documentation.
+Third-party components and their licences are listed in THIRD_PARTY_NOTICES.md.

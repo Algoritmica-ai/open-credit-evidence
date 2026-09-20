@@ -1,0 +1,27 @@
+{
+  "item_id": "underwriter-sample:case_review:APP000684:complete",
+  "run_id": "2026-09-20-build",
+  "repeat": 1,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "https://integrate.api.nvidia.com/v1"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000684\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mrs |\n| Age band | 35-44 |\n| Employment type | permanent |\n| Employer | Harrow Estates |\n| Time in current role | 52 months |\n| Postcode district | B15 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | £25,925 |\n| Income verified | Yes |\n| Existing monthly credit commitments | £426 |\n| Dependants | 2 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | £15,815 |\n| Term | 36 months |\n| Stated purpose | home improvement |\n| Indicative monthly instalment | £532 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000684\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**549** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | November 2019 (88 months) |\n| Accounts on file | 5 |\n| Searches, last 6 months | 1 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 0 |\n| Most recent delinquency | None |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, £2,000 to £40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application has been, **aut |\n\n**File, the applicant's bureau score of 549 falls below the policy threshold of 600, triggering mandatory underwriter review. Additionally, the applicant's gross monthly income of £2,160.42 against proposed monthly instalment of £532 results in a Total Monthly Debt Service ratio of 24.5%, which is within the 40% affordability threshold.\n\n**What the File Shows:**\n\n*   **Against:**\n    *   **Credit Score:** The bureau score of 549 is below the 600 policy threshold, indicating a higher risk profile.\n    *   **Thin File:** The credit file opened in November 2019 (88 months ago) is just under the 24-month minimum considered a \"thin file\" under policy, though this is not an automatic decline trigger.\n*   **For:**\n    *   **Affordability:** The Total Monthly Debt Service ratio is 24.5% (Gross monthly income £2,160.42; Existing commitments £426 + Proposed instalment £532), which is comfortably within the 40% policy limit.\n    *   **Payment History:** There are 0 delinquencies in the last 24 months and no defaults or CCJs.\n\n**What would need to change for a favourable outcome:**\nFor the application to fall automatically within policy without underwriter intervention, the bureau score would need to increase to **600 or above**. Alternatively, if the score remains below 600, the underwriter could approve the application if they determine the applicant's current income stability and clean payment history offset the lower score, or if a reduced facility amount or extended term is offered to lower the instalment and further reduce the debt service ratio.",
+  "latency_ms": 148400,
+  "tokens_in": 686,
+  "tokens_out": 404,
+  "provider_id": "chatcmpl-52c7daba-9d34-4d3d-9a97-80b7729ce811",
+  "started_at": "2026-09-20T08:28:28+00:00",
+  "sha256": "f16133d4a76f44a51af3ac5d1753c8c757724f9b0bf9707e6ade2e91e99f43c1"
+}

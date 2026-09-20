@@ -1,0 +1,27 @@
+{
+  "item_id": "underwriter-sample:case_review:APP000037:complete",
+  "run_id": "2026-09-20-build",
+  "repeat": 0,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "https://integrate.api.nvidia.com/v1"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000037\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mrs |\n| Age band | 45-54 |\n| Employment type | permanent |\n| Employer | Meridian Health |\n| Time in current role | 79 months |\n| Postcode district | B15 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | £22,295 |\n| Income verified | Yes |\n| Existing monthly credit commitments | £367 |\n| Dependants | 2 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | £22,266 |\n| Term | 36 months |\n| Stated purpose | vehicle |\n| Indicative monthly instalment | £749 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000037\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**700** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | December 2015 (135 months) |\n| Accounts on file | 7 |\n| Searches, last 6 months | 1 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 0 |\n| Most recent delinquency | None |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, £2,000 to £40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application has been referred for underwriter review because the automated rules could not settle it. The primary reason is that the applicant’s total monthly debt service exceeds the policy threshold of 40% of gross monthly income.\n\n**What the File Shows:**\n\n*   **Against the applicant (The Decline):**\n    *   **Affordability:** The applicant is seeking a loan of £22,266 over 36 months, resulting in a proposed monthly instalment of £749. Combined with existing monthly credit commitments of £367, the total monthly debt service is £1,116.\n    *   The applicant’s gross annual income is £22,295, which equates to a gross monthly income of approximately £1,857.83. The total monthly debt service of £1,116 represents **60.1%** of the applicant's gross monthly income. This significantly exceeds the policy threshold of 40%.\n    *   **Credit History:** While the credit file is established (opened December 2015, 135 months) and shows no defaults, CCJs, or missed payments in the last 24 months, the affordability ratio is the driving factor for referral.\n\n*   **In favour of the applicant (Mitigating Factors):**\n    *   **Credit Profile:** The bureau score is 700, which is above the 600 threshold requiring review.",
+  "latency_ms": 50313,
+  "tokens_in": 685,
+  "tokens_out": 322,
+  "provider_id": "chatcmpl-b036f03d-1a05-41f9-b921-3bdfd95a20f9",
+  "started_at": "2026-09-20T04:56:08+00:00",
+  "sha256": "1c8fe683105d5254ad2ed0334dbbc019c0e01237faf57b2fb3bda5ca1b53621f"
+}

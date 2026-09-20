@@ -1,0 +1,27 @@
+{
+  "item_id": "underwriter-sample:case_review:APP000407:complete",
+  "run_id": "2026-09-20-build",
+  "repeat": 1,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "https://integrate.api.nvidia.com/v1"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000407\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Dr |\n| Age band | 55-64 |\n| Employment type | permanent |\n| Employer | Harrow Estates |\n| Time in current role | 130 months |\n| Postcode district | NE2 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | £22,800 |\n| Income verified | Yes |\n| Existing monthly credit commitments | £503 |\n| Dependants | 0 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | £9,883 |\n| Term | 36 months |\n| Stated purpose | debt consolidation |\n| Indicative monthly instalment | £333 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000407\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**625** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | June 2022 (57 months) |\n| Accounts on file | 4 |\n| Searches, last 6 months | 2 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 1 |\n| Most recent delinquency | 15 months ago |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, £2,000 to £40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application was referred for underwriter review because the automated rules flagged two policy breaches: the applicant’s bureau score of **625** falls below the 600 threshold requiring review, and the proposed loan instalment causes the total monthly debt service to exceed the **40%** affordability threshold.\n\n**What the File Shows – Against the Applicant:**\n*   **Affordability:** The proposed monthly instalment of **£333**, combined with existing commitments of **£503**, results in total monthly debt service of **£836** against a gross monthly income of **£1,900** (£22,800 ÷ 12). This represents **44.0%** of income, exceeding the 40% policy limit.\n*   **Credit History:** The credit file is **57 months** old (opened June 2022), which is acceptable. However, there is **1 delinquency** recorded in the last 24 months, occurring **15 months ago**. While no defaults or CCJs are recorded, the presence of a recent missed payment contributes to the risk profile.\n\n**What the File Shows – In favour of the Applicant:**\n*   **Income Stability:** The applicant has **permanent** employment with **Harrow Estates** and has held the role for **130 months** (over 10 years), demonstrating strong job stability.\n*   **Income Verification:** Gross annual income of **£22,800** is verified.\n*   **No Adverse Public Records:** There are no defaults or County Court Judgments (CCJs) on file.\n*   **Low Dependants:** The applicant has **0 dependants**, reducing potential financial pressure.\n\n**Conditions for a Different Outcome:**\nFor this application to fall within policy without underwriter discretion, one of the following would need to change:\n1.  **Reduce the loan amount or term** to lower the monthly instalment so that total debt service (existing + proposed) drops to **40% or below** of gross monthly income (i.e., £760 or less).\n2.  **Provide additional verified income** to increase the gross monthly income baseline, thereby reducing the debt-service percentage.\n3.  **Accept a higher bureau score risk** or modified terms, though the current score of 625 specifically triggers the underwriter review clause.",
+  "latency_ms": 115527,
+  "tokens_in": 689,
+  "tokens_out": 521,
+  "provider_id": "chatcmpl-77c58ff6-1c45-463f-8d95-3c22143de69b",
+  "started_at": "2026-09-20T04:53:50+00:00",
+  "sha256": "58943d19b2a515de909c7fa6853f57b3a9c5d6fe1c1639353a2a68b1c62d4651"
+}

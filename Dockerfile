@@ -1,17 +1,21 @@
-# OpenCredit Evidence — local CLI image
-# Primary runtime is venv or docker compose (see docs/runtime.md).
-# Not an HTTP server. Not hosted on Axis/Curiosity.
-
-FROM python:3.11-slim
+# Credit Evidence Engine — CLI image; `evidence ui --host 0.0.0.0` serves the web UI on 8765.
+#   docker build -t credit-evidence-engine .
+#   docker run --rm -e NVIDIA_API_KEY -v $PWD/runs:/app/runs credit-evidence-engine \
+#       evidence run packs/underwriter-sample --repeats 3 --out runs/today
+FROM python:3.12-slim
 
 WORKDIR /app
-
-COPY pyproject.toml README.md LICENSE NOTICE ./
+COPY pyproject.toml README.md LICENSE NOTICE THIRD_PARTY_NOTICES.md ./
 COPY src ./src
 COPY tests ./tests
-COPY cases ./cases
+COPY packs ./packs
+COPY regulations ./regulations
+COPY specs ./specs
+COPY scripts ./scripts
+# runs/ is a volume (see docker-compose.yml); committed runs are copied only if present.
+COPY run[s] ./runs/
 
-RUN pip install --no-cache-dir -e ".[dev]"
+RUN pip install --no-cache-dir -e ".[dev,web]"
 
-# Smoke entrypoint: prove the CLI installed. Override with compose run.
-CMD ["oce", "--help"]
+EXPOSE 8765
+CMD ["evidence", "--help"]

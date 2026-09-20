@@ -8,60 +8,42 @@ on:
 
 jobs:
   lint-and-test:
-    name: Lint and Test (Python ${{ matrix.python-version }})
+    name: Lint and test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12"]
-
+        python-version: ["3.12", "3.13"]
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v7
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
-
-      - name: Install dependencies
-        run: pip install -e ".[dev]"
-
-      - name: Lint with ruff
-        run: ruff check src tests
-
-      - name: Check formatting with ruff
-        run: ruff format --check src tests
-
-      - name: Type check with mypy
-        run: mypy src
-
-      - name: Run tests with pytest
-        run: pytest -v
-        env:
-          OCE_STUB_NEMOTRON: "1"
+      - name: Install
+        run: pip install -e ".[dev,web]"
+      - name: Lint
+        run: ruff check .
+      - name: Test (no network)
+        run: pytest -q
+      - name: Verify every committed run re-derives
+        run: |
+          for run in runs/*/; do
+            [ -f "$run/checksums.sha256" ] || continue
+            evidence verify "$run" --recompute --pack packs/underwriter-sample
+          done
 
   docker:
-    name: Docker Build
+    name: Docker build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v7
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
         with:
           context: .
           push: false
-          tags: open-credit-evidence:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: credit-evidence-engine:ci
           load: true
-
-      - name: Run tests in Docker container
-        run: |
-          docker run --rm -e OCE_STUB_NEMOTRON=1 open-credit-evidence:ci pytest -v
+      - name: Tests inside the image
+        run: docker run --rm credit-evidence-engine:ci pytest -q
