@@ -1,6 +1,7 @@
 # Local runtime for the CLI. Reads .env for the NVIDIA key and any EVIDENCE_* overrides.
 #   docker compose run --rm engine evidence run packs/underwriter-sample --repeats 3 --out runs/today
 #   docker compose run --rm engine evidence verify runs/today --recompute --pack packs/underwriter-sample
+#   docker compose up ui        # web UI on http://localhost:8765
 services:
   engine:
     build: .
@@ -11,3 +12,14 @@ services:
     volumes:
       - ./runs:/app/runs
     command: ["evidence", "--help"]
+  ui:
+    build: .
+    image: credit-evidence-engine:local
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./runs:/app/runs
+    ports:
+      - "8765:8765"
+    command: ["evidence", "ui", "--host", "0.0.0.0", "--port", "8765"]

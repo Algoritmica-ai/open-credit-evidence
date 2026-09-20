@@ -1,0 +1,390 @@
+/* Credit Evidence Engine — one stylesheet (shares its design language with Synthetic Data Designer), no build step, no CDN.
+ *
+ * The tool runs on a laptop against a local server, often with no internet, so
+ * everything here is self-contained. Restrained and dense on purpose: this is a
+ * tool for people who read numbers all day, so tabular figures everywhere, one
+ * accent colour, and nothing that moves unless the movement means something.
+ */
+
+:root {
+  --bg:        #f6f6f4;
+  --panel:     #ffffff;
+  --panel-2:   #fbfbfa;
+  --ink:       #1c1c1e;
+  --ink-2:     #5c5c66;
+  --ink-3:     #8b8b95;
+  --line:      #e3e3e0;
+  --line-2:    #efefec;
+  --accent:    #2f6f5e;
+  --accent-2:  #eaf3ef;
+  --good:      #2c7a4b;
+  --good-bg:   #e7f4ec;
+  --warn:      #97671a;
+  --warn-bg:   #fbf1de;
+  --bad:       #a83226;
+  --bad-bg:    #fbe9e6;
+  --radius:    10px;
+  --shadow:    0 1px 2px rgba(20, 20, 25, .05), 0 6px 18px -12px rgba(20, 20, 25, .25);
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+}
+
+/* Dark is available and no longer automatic.
+ *
+ * Behind `prefers-color-scheme` the page followed the operating system, so the
+ * same build looked like two different products depending on whose machine it
+ * was opened on — and the screenshots in the user guide, captured in light,
+ * matched neither for anyone running a dark desktop. Light is the design; dark
+ * is opt-in by setting `data-theme="dark"` on the root element. */
+:root[data-theme="dark"] {
+  --bg:      #131316;
+  --panel:   #1b1b1f;
+  --panel-2: #202026;
+  --ink:     #ececf0;
+  --ink-2:   #a6a6b0;
+  --ink-3:   #74747e;
+  --line:    #2d2d34;
+  --line-2:  #26262c;
+  --accent:  #6fbfa5;
+  --accent-2:#1d2b28;
+  --good:    #6cc08a;
+  --good-bg: #17281d;
+  --warn:    #d9a441;
+  --warn-bg: #2a2216;
+  --bad:     #e0796c;
+  --bad-bg:  #2c1a18;
+  --shadow:  0 1px 2px rgba(0, 0, 0, .4), 0 8px 22px -14px rgba(0, 0, 0, .8);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font: 14px/1.5 var(--sans);
+  color: var(--ink);
+  background: var(--bg);
+  padding-bottom: 64px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.spacer { flex: 1; }
+[hidden] { display: none !important; }
+
+a { color: var(--accent); text-decoration: none; font-weight: 540; }
+a:hover { text-decoration: underline; }
+
+/* ------------------------------------------------------------------ topbar */
+
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 20px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 9px; }
+.brand .mark {
+  width: 15px; height: 15px; border-radius: 4px;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 45%, #7aa6ff));
+}
+.brand .title { font-weight: 620; letter-spacing: -.01em; }
+
+.tag {
+  font: 11px/1 var(--mono);
+  padding: 4px 7px; border-radius: 5px;
+  background: var(--panel-2); border: 1px solid var(--line);
+  color: var(--ink-2); white-space: nowrap;
+}
+.tag.subtle { max-width: 40vw; overflow: hidden; text-overflow: ellipsis; }
+.tag.ok  { color: var(--good); background: var(--good-bg); border-color: transparent; }
+.tag.err { color: var(--bad);  background: var(--bad-bg);  border-color: transparent; }
+
+/* -------------------------------------------------------------------- shell */
+
+.shell {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: 28px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+}
+main { min-width: 0; display: flex; flex-direction: column; gap: 18px; }
+.view { display: flex; flex-direction: column; gap: 18px; }
+
+/* --------------------------------------------------------------- step rail */
+
+.rail {
+  position: sticky; top: 68px; align-self: start;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.rail .step {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 11px; border: 0; border-radius: 8px;
+  background: transparent; color: var(--ink-2);
+  font: inherit; text-align: left; width: 100%; cursor: pointer;
+}
+.rail .step:hover:not(:disabled) { background: var(--panel-2); color: var(--ink); }
+.rail .step:disabled { opacity: .42; cursor: default; }
+.rail .step[aria-current="true"] { background: var(--panel); color: var(--ink); box-shadow: var(--shadow); }
+.rail .step .n {
+  flex: none; width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center;
+  font: 600 11px/1 var(--sans);
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--ink-2);
+}
+.rail .step[aria-current="true"] .n { background: var(--accent); border-color: var(--accent); color: #fff; }
+.rail .step.complete .n {
+  background: var(--accent-2); border-color: transparent; color: var(--accent); font-size: 0;
+}
+.rail .step.complete .n::after { content: "✓"; font-size: 11px; }
+.rail .step .s { display: flex; flex-direction: column; min-width: 0; }
+.rail .step .s b { font-weight: 570; font-size: 13px; }
+.rail .step .s i { font-style: normal; font-size: 11px; color: var(--ink-3); }
+
+/* The source link sits under the flow rather than in it. Quieter than a step,
+   and behind a rule, so the numbered sequence still reads as six things and not
+   as seven with an odd one at the end. */
+.rail-link {
+  display: flex; align-items: center; gap: 9px;
+  margin-top: 10px; padding: 9px 11px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-3); text-decoration: none;
+  font-size: 12px;
+}
+.rail-link:hover { color: var(--ink); }
+.rail-link svg { flex: none; opacity: .85; }
+
+/* --------------------------------------------------------------- headings */
+
+.head h1 { font-size: 21px; letter-spacing: -.015em; margin: 2px 0 5px; }
+.head p  { margin: 0; color: var(--ink-2); max-width: 74ch; }
+
+/* ------------------------------------------------------------------- cards */
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 18px 18px;
+  box-shadow: var(--shadow);
+}
+.card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
+.card h2 { font-size: 14px; font-weight: 620; margin: 0; letter-spacing: -.005em; }
+.hint { color: var(--ink-2); margin: 0 0 14px; max-width: 82ch; font-size: 13px; }
+
+.grid { display: grid; gap: 14px; }
+.grid.two   { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.grid.three { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+/* ------------------------------------------------------------------ inputs */
+
+.field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.field .lbl { font-size: 12px; font-weight: 560; color: var(--ink); }
+.field .sub { font-size: 11.5px; color: var(--ink-3); line-height: 1.45; }
+
+input[type=text], input[type=number], input[type=search], select, textarea {
+  font: inherit; color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 7px; padding: 7px 9px; width: 100%;
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible, .drop:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 1px;
+}
+input[disabled], select[disabled] { opacity: .55; }
+textarea { font: 12px/1.55 var(--mono); min-height: 460px; resize: vertical; white-space: pre; }
+.search { width: auto; min-width: 180px; padding: 5px 9px; font-size: 12.5px; }
+.check { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); }
+.check input { width: auto; }
+
+.slider { display: flex; align-items: center; gap: 10px; }
+.slider input[type=range] { flex: 1; accent-color: var(--accent); padding: 0; background: none; border: 0; }
+.slider output {
+  font: 12px/1 var(--mono); min-width: 60px; text-align: right;
+  color: var(--ink); padding: 5px 6px; border-radius: 5px; background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+
+/* ------------------------------------------------------------------ buttons */
+
+.btn {
+  font: inherit; font-size: 13px; font-weight: 540;
+  padding: 8px 15px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+}
+.btn:hover:not(:disabled) { border-color: var(--ink-3); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover:not(:disabled) { filter: brightness(1.07); }
+.btn.ghost { background: transparent; }
+.btn.sm { padding: 5px 10px; font-size: 12px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* --------------------------------------------------------------- drop zone */
+
+.drop {
+  border: 1.5px dashed var(--line); border-radius: 9px;
+  padding: 26px 16px; text-align: center; cursor: pointer;
+  display: flex; flex-direction: column; gap: 5px; align-items: center;
+  background: var(--panel-2); transition: border-color .12s, background .12s;
+}
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-2); }
+.drop strong { font-size: 13px; font-weight: 560; }
+.drop .formats { font: 11px/1 var(--mono); color: var(--ink-3); letter-spacing: .02em; }
+
+.badge {
+  font: 10.5px/1 var(--sans); font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  padding: 4px 7px; border-radius: 5px; background: var(--panel-2);
+  border: 1px solid var(--line); color: var(--ink-3);
+}
+.badge.req  { color: var(--accent); background: var(--accent-2); border-color: transparent; }
+.badge.good { color: var(--good); background: var(--good-bg); border-color: transparent; }
+.badge.warn { color: var(--warn); background: var(--warn-bg); border-color: transparent; }
+.badge.bad  { color: var(--bad);  background: var(--bad-bg);  border-color: transparent; }
+.badge.role { text-transform: none; letter-spacing: 0; font-family: var(--mono); font-weight: 500; }
+
+/* ------------------------------------------------------------------- notes */
+
+.note {
+  border: 1px solid var(--line); border-left: 3px solid var(--ink-3);
+  border-radius: 7px; padding: 9px 12px; margin-top: 10px;
+  font-size: 12.5px; color: var(--ink-2); background: var(--panel-2);
+}
+.note strong { color: var(--ink); font-weight: 570; }
+.note.good { border-left-color: var(--good); background: var(--good-bg); color: var(--ink); }
+.note.warn { border-left-color: var(--warn); background: var(--warn-bg); color: var(--ink); }
+.note.bad  { border-left-color: var(--bad);  background: var(--bad-bg);  color: var(--ink); }
+.note ul { margin: 6px 0 0; padding-left: 18px; }
+.note code, code.inline {
+  font: 11.5px var(--mono); background: color-mix(in srgb, var(--ink) 7%, transparent);
+  padding: 1px 5px; border-radius: 4px;
+}
+
+.spin {
+  display: inline-block; width: 11px; height: 11px; margin-right: 6px;
+  border: 2px solid var(--line); border-top-color: var(--accent);
+  border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -1px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ------------------------------------------------------------------- packs */
+
+.pack-list { display: flex; flex-direction: column; gap: 8px; }
+.pack {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 11px 13px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel-2); cursor: pointer; text-align: left; font: inherit; color: var(--ink);
+}
+.pack:hover { border-color: var(--accent); }
+.pack .pack-text { min-width: 0; }
+.pack .name { font-weight: 570; font-size: 13.5px; }
+.pack .m { color: var(--ink-3); font-size: 11.5px; margin-top: 3px; }
+.pack .pack-id {
+  flex: none;
+  font: 10.5px/1 var(--mono); font-weight: 400; color: var(--ink-3);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  padding: 4px 7px; border-radius: 4px; white-space: nowrap;
+}
+/* On a narrow screen the identifier is the first thing to go: the title says
+   what the pack is, and the id is only needed at a command line. */
+@media (max-width: 620px) {
+  .pack .pack-id { display: none; }
+}
+
+/* ------------------------------------------------------------------- stats */
+
+.stats { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); }
+.stat {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 11px 13px; box-shadow: var(--shadow);
+}
+.stat .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3); }
+.stat .v {
+  font-size: 19px; font-weight: 600; margin-top: 3px;
+  font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+}
+.stat .v.sm { font-size: 13px; font-family: var(--mono); font-weight: 500; letter-spacing: 0; }
+.stat .v.good { color: var(--good); }
+.stat .v.bad { color: var(--bad); }
+
+/* ------------------------------------------------------------------ tables */
+
+.scroll { overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); }
+.scroll.tall { max-height: 520px; }
+
+table.grid-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12.5px; }
+.grid-table th, .grid-table td {
+  padding: 7px 10px; border-bottom: 1px solid var(--line-2); text-align: left; white-space: nowrap;
+}
+.grid-table thead th {
+  position: sticky; top: 0; z-index: 2; background: var(--panel);
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3);
+  border-bottom: 1px solid var(--line); font-weight: 600;
+}
+.grid-table thead th.sortable { cursor: pointer; user-select: none; }
+.grid-table thead th.sortable:hover { color: var(--ink); }
+.grid-table thead th .dir { color: var(--accent); margin-left: 3px; }
+.grid-table tbody tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.grid-table td.num, .grid-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.grid-table td.nul { color: var(--ink-3); font-style: italic; }
+.grid-table td.wrap { white-space: normal; min-width: 260px; }
+.grid-table td.pass { color: var(--good); font-weight: 600; }
+.grid-table td.fail { color: var(--bad); font-weight: 600; }
+
+/* ---------------------------------------------------------------- progress */
+
+.bar { height: 8px; border-radius: 4px; background: var(--line-2); overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--accent); width: 0; transition: width .3s; }
+.progress-head { display: flex; align-items: baseline; gap: 10px; margin: 8px 0 6px; font-size: 12.5px; color: var(--ink-2); }
+.progress-head b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.log {
+  font: 11.5px/1.5 var(--mono); color: var(--ink-2);
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px;
+  padding: 9px 12px; max-height: 220px; overflow: auto; white-space: pre; margin-top: 10px;
+}
+
+/* ------------------------------------------------------------------- docs */
+
+.doc {
+  font: 12.5px/1.55 var(--mono); white-space: pre-wrap;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+  padding: 12px 14px; max-height: 420px; overflow: auto;
+}
+.doc-tabs { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.doc-tabs .tab {
+  font: inherit; font-size: 12px; padding: 5px 10px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink-2);
+}
+.doc-tabs .tab[aria-selected="true"] { background: var(--accent-2); color: var(--accent); border-color: transparent; }
+
+/* --------------------------------------------------------------- key list */
+
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 12.5px; }
+.kv dt { color: var(--ink-3); }
+.kv dd { margin: 0; }
+.kv dd code { font: 11.5px var(--mono); }
+
+.ob { border: 1px solid var(--line); border-radius: 8px; padding: 10px 13px; background: var(--panel-2); margin-bottom: 8px; }
+.ob .ob-head { display: flex; align-items: center; gap: 8px; font-weight: 570; font-size: 13px; }
+.ob ul { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--ink-2); }
+.ob li b { color: var(--ink); font-weight: 570; }
+.miss { background: var(--bad-bg); border-bottom: 2px solid var(--bad); padding: 0 2px; }
+.found { background: var(--good-bg); border-bottom: 2px solid var(--good); padding: 0 2px; }
+
+.report { font-size: 13px; line-height: 1.55; }
+.report h1 { font-size: 16px; margin: 0 0 8px; }
+.report h2 { font-size: 13.5px; margin: 16px 0 6px; border-top: 1px solid var(--line-2); padding-top: 10px; }
+.report table { border-collapse: collapse; font-size: 12px; }
+.report th, .report td { border-bottom: 1px solid var(--line-2); padding: 4px 8px; text-align: left; vertical-align: top; }
+.report code { font: 11.5px var(--mono); background: color-mix(in srgb, var(--ink) 7%, transparent); padding: 1px 4px; border-radius: 4px; }
+.report ul { padding-left: 20px; }
+
+.footer-bar { margin-top: 24px; color: var(--ink-3); font-size: 11.5px; text-align: center; }
+@media (max-width: 860px) {
+  .shell { grid-template-columns: 1fr; }
+  .rail { position: static; flex-direction: row; flex-wrap: wrap; }
+  .rail .step { width: auto; }
+  .rail-link { display: none; }
+}
+#gate-text { white-space: pre-wrap; font: 13px/1.55 var(--sans); }

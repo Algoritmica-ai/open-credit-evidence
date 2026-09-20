@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Credit Evidence Engine</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="mark" aria-hidden="true"></span>
+    <span class="title">Credit Evidence Engine</span>
+    <span class="tag" id="version"></span>
+  </div>
+  <span class="spacer"></span>
+  <span class="tag subtle" id="pack-name" hidden></span>
+  <span class="tag" id="sut-where" hidden></span>
+</header>
+
+<div class="shell">
+
+  <nav class="rail" id="rail" aria-label="Steps">
+    <button class="step" data-view="pack" aria-current="true">
+      <span class="n">1</span><span class="s"><b>Pack</b><i>Cases with a known answer</i></span></button>
+    <button class="step" data-view="case" disabled>
+      <span class="n">2</span><span class="s"><b>Case</b><i>Documents and the sealed key</i></span></button>
+    <button class="step" data-view="gate" disabled>
+      <span class="n">3</span><span class="s"><b>Gate</b><i>Mark a briefing, no model</i></span></button>
+    <button class="step" data-view="run" disabled>
+      <span class="n">4</span><span class="s"><b>Run</b><i>The assistant under test</i></span></button>
+    <button class="step" data-view="evidence" disabled>
+      <span class="n">5</span><span class="s"><b>Evidence</b><i>By obligation</i></span></button>
+    <button class="step" data-view="verify" disabled>
+      <span class="n">6</span><span class="s"><b>Verify</b><i>Checksums and re-derivation</i></span></button>
+
+    <a class="rail-link" href="https://github.com/Algoritmica-ai/open-credit-evidence"
+       target="_blank" rel="noopener noreferrer">
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+        <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
+          0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01
+          1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95
+          0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 0 1 2-.27c.68 0
+          1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0
+          3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0
+          0 0 16 8c0-4.42-3.58-8-8-8z"/>
+      </svg>
+      <span>Source on GitHub</span>
+    </a>
+  </nav>
+
+  <main>
+
+    <!-- ---------------------------------------------------------- 1. pack -->
+    <section class="view" id="view-pack">
+      <div class="head">
+        <h1>Pack</h1>
+        <p>A pack is a set of generated loan cases whose right answer was computed before any
+           model ran. Choose one to see its cases, mark a briefing by hand, or run the assistant
+           under test over all of it.</p>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Packs on disk</h2></div>
+        <div class="pack-list" id="packs"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Where the models run</h2></div>
+        <p class="hint">Any role moves between NVIDIA Build and a self-hosted NIM with two lines in
+           <code class="inline">.env</code>. Every transcript records which endpoint produced it.</p>
+        <div class="stats" id="roles"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Previous runs</h2></div>
+        <div class="scroll"><table class="grid-table" id="runs-table"></table></div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------- 2. case -->
+    <section class="view" id="view-case" hidden>
+      <div class="head">
+        <h1>Case</h1>
+        <p>What the assistant sees, and — sealed from it — what a briefing must state. The marking
+           key was computed from the scorecard that decided the case; decoys are fields with no
+           weight in that decision.</p>
+      </div>
+      <div class="grid two">
+        <div class="card">
+          <div class="card-head"><h2>Cases in this pack</h2><span class="tag" id="case-count"></span></div>
+          <div class="scroll tall"><table class="grid-table" id="cases-table"></table></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2 id="case-title">Select a case</h2><span class="badge" id="case-disp" hidden></span></div>
+          <div id="case-key"></div>
+          <div class="doc-tabs" id="doc-tabs"></div>
+          <div class="doc" id="doc-body" hidden></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------- 3. gate -->
+    <section class="view" id="view-gate" hidden>
+      <div class="head">
+        <h1>Gate</h1>
+        <p>Type or paste a briefing for the selected case and mark it. Nothing here calls a model:
+           each check is a comparison against the sealed key. Try a briefing that is fluent and
+           true but leaves out the policy limit, or one with a made-up ratio.</p>
+      </div>
+      <div class="grid two">
+        <div class="card">
+          <div class="card-head"><h2>Briefing</h2><span class="tag subtle" id="gate-case"></span></div>
+          <textarea id="gate-text" style="min-height: 280px" placeholder="Write the underwriter briefing here…"></textarea>
+          <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap">
+            <button class="btn primary" id="gate-mark">Mark it</button>
+            <button class="btn" id="gate-fill-bad">Insert: omits the limit</button>
+            <button class="btn" id="gate-fill-good">Insert: complete</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Verdicts</h2></div>
+          <div id="gate-results"><p class="hint">Mark a briefing to see each check's verdict and evidence.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ----------------------------------------------------------- 4. run -->
+    <section class="view" id="view-run" hidden>
+      <div class="head">
+        <h1>Run</h1>
+        <p>Put every case in the pack to the assistant under test, N times, and mark every
+           briefing. Transcripts are written as they arrive, so a stopped run resumes. The judge
+           grades readability only and is reported, not gated.</p>
+      </div>
+      <div class="grid two">
+        <div class="card">
+          <div class="card-head"><h2>Configuration</h2></div>
+          <div class="grid two">
+            <label class="field"><span class="lbl">Repeats per case</span>
+              <input type="number" id="run-repeats" min="1" max="10" value="3" />
+              <span class="sub">Serving stacks are not byte-deterministic; agreement across repeats is the reproducibility figure.</span></label>
+            <label class="field"><span class="lbl">Limit to first N cases</span>
+              <input type="number" id="run-limit" min="1" placeholder="all" />
+              <span class="sub">Leave empty for the whole pack.</span></label>
+          </div>
+          <label class="check" style="margin-top:10px"><input type="checkbox" id="run-judge" checked /> Call the readability judge (slower on a reasoning model)</label>
+          <div style="margin-top:14px"><button class="btn primary" id="run-start">Start run</button></div>
+          <div id="run-error"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Progress</h2><span class="tag" id="run-id" hidden></span></div>
+          <div class="progress-head"><b id="run-done">0</b><span>of</span><b id="run-total">0</b><span>briefings marked</span><span class="spacer"></span><span id="run-status"></span></div>
+          <div class="bar"><span id="run-bar"></span></div>
+          <div class="log" id="run-log"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------ 5. evidence -->
+    <section class="view" id="view-evidence" hidden>
+      <div class="head">
+        <h1>Evidence</h1>
+        <p>The evidence pack for a run, by obligation. Each obligation is marked with the pack's own
+           claim: evidences, contributes, or not covered. Every number traces to a transcript.</p>
+      </div>
+      <div class="stats" id="ev-stats"></div>
+      <div class="grid two">
+        <div class="card">
+          <div class="card-head"><h2>By obligation</h2><span class="tag subtle" id="ev-run" hidden></span></div>
+          <div id="ev-obligations"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Failures, by case</h2></div>
+          <div class="scroll tall"><table class="grid-table" id="ev-failures"></table></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Transcript</h2><span class="tag subtle" id="ev-transcript-name" hidden></span></div>
+        <p class="hint">Click a failure above to open the briefing it came from.</p>
+        <div class="doc" id="ev-transcript" hidden></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>report.md</h2></div>
+        <div class="report" id="ev-report"></div>
+      </div>
+    </section>
+
+    <!-- -------------------------------------------------------- 6. verify -->
+    <section class="view" id="view-verify" hidden>
+      <div class="head">
+        <h1>Verify</h1>
+        <p>Re-hash every file in the run against <code class="inline">checksums.sha256</code>, then
+           re-run every deterministic check from the transcripts and compare with the recorded
+           results. The tamper demo copies the run, changes one digit, and verifies the copy — the
+           original is untouched.</p>
+      </div>
+      <div class="grid two">
+        <div class="card">
+          <div class="card-head"><h2>Integrity and re-derivation</h2><span class="tag subtle" id="vf-run" hidden></span></div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap">
+            <button class="btn primary" id="vf-verify">Verify checksums</button>
+            <button class="btn" id="vf-recompute">Verify and re-derive</button>
+          </div>
+          <div id="vf-result"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Tamper demo</h2></div>
+          <p class="hint">One digit in one transcript, in a copy of the run.</p>
+          <button class="btn" id="vf-tamper">Change a digit and verify</button>
+          <div id="vf-tamper-result"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer-bar">Credit Evidence Engine · Apache 2.0 · every figure re-derives from the transcripts</div>
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

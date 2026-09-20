@@ -69,6 +69,14 @@ readability judge — and the evidence pack it produces:
 
 Change one digit in any transcript and `verify` fails, naming the file.
 
+The same six steps in a browser — pack, case, gate, run, evidence, verify — with
+a tamper demo that edits a copy of a run and verifies both:
+
+```bash
+.venv/bin/pip install -e ".[web]"
+.venv/bin/evidence ui               # http://127.0.0.1:8765
+```
+
 A committed run is in [`runs/2026-09-20-build/`](runs/2026-09-20-build/); its
 report is [`evidence/report.md`](runs/2026-09-20-build/evidence/report.md).
 
@@ -91,7 +99,7 @@ which endpoint produced it. See [`docs/models.md`](docs/models.md) and
 |---|---|
 | `packs/underwriter-sample/` | The sample pack: 20 items, three documents each, marking keys, obligations map, regulatory context |
 | `specs/credit_underwriting.yaml` | The Synthetic Data Designer recipe the pack was generated from |
-| `src/evidence/` | Contracts, checks, runner, judge, evidence pack writer and verifier, CLI |
+| `src/evidence/` | Contracts, checks, runner, judge, evidence pack writer and verifier, CLI, web UI |
 | `regulations/` | Jurisdiction rule packs and obligation registries (Italy first) |
 | `scripts/` | Pack builder, the no-model demo, cluster serving scripts, LoRA fine-tuning |
 | `notebooks/` | Executed notebooks: the three models on one case; the on-prem setup |

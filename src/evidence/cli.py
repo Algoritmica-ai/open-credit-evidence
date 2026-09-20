@@ -93,6 +93,21 @@ def _cmd_rules(a: argparse.Namespace) -> int:
     return 0 if r.status in ("pass", "unscoped") else 1
 
 
+def _cmd_ui(a: argparse.Namespace) -> int:
+    if a.root:
+        import os
+
+        os.environ["EVIDENCE_ROOT"] = str(Path(a.root).resolve())
+    try:
+        from evidence.web.app import serve
+    except ImportError:
+        print("the web UI needs the [web] extra: pip install -e '.[web]'", file=sys.stderr)
+        return 2
+    print(f"Credit Evidence Engine UI on http://{a.host}:{a.port}  (Ctrl-C to stop)")
+    serve(a.host, a.port)
+    return 0
+
+
 def _cmd_checks(_: argparse.Namespace) -> int:
     for name in available_checks():
         print(name)
@@ -125,6 +140,12 @@ def main(argv: list[str] | None = None) -> int:
     u = sub.add_parser("rules", help="evaluate the jurisdiction rule pack for a pack's context")
     u.add_argument("pack")
     u.set_defaults(fn=_cmd_rules)
+
+    w = sub.add_parser("ui", help="serve the local web UI")
+    w.add_argument("--host", default="127.0.0.1")
+    w.add_argument("--port", type=int, default=8765)
+    w.add_argument("--root", help="directory holding packs/ and runs/ (default: current)")
+    w.set_defaults(fn=_cmd_ui)
 
     c = sub.add_parser("checks", help="list registered deterministic checks")
     c.set_defaults(fn=_cmd_checks)

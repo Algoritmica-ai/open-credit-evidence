@@ -28,7 +28,8 @@ omission and fidelity checking possible.
 | Judge | `src/evidence/judge.py` | Readability only; reported, not gated |
 | Regulations | `src/evidence/regulations.py`, `regulations/` | Jurisdiction rule packs: evidence-presence checks selected by the pack's regulatory context |
 | Evidence | `src/evidence/evidence/` | Aggregation by obligation, the report, checksums, the verifier |
-| CLI | `src/evidence/cli.py` | `evidence run · report · verify · rules · checks` |
+| CLI | `src/evidence/cli.py` | `evidence run · report · verify · rules · checks · ui` |
+| Web UI | `src/evidence/web/` | A thin FastAPI layer over the same functions; static HTML, no build step; runs on a worker thread and is polled |
 
 Generation never scores briefings. Marking never invents what "material"
 means. Model access never sees scorecard internals — only the documents and the
