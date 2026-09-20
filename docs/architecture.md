@@ -20,7 +20,7 @@ omission and fidelity checking possible.
 
 | Part | Module | Responsibility |
 |---|---|---|
-| Case generation | `scripts/build_sample_pack.py`, `specs/` | Generate applications, decide them with a scorecard, attribute drivers and decoys, render documents, emit a pack |
+| Case generation | `src/evidence/packs/`, `specs/` | Generate applications, decide them with a scorecard, attribute drivers and decoys, render documents, emit a pack |
 | Contracts | `src/evidence/contracts/` | The item, the transcript, the check result, the regulatory context and assessment |
 | Checks | `src/evidence/checks/` | Deterministic marking against the item's reference lists; no model in the verdict |
 | Model access | `src/evidence/adapters/` | One client for NVIDIA Build and any OpenAI-compatible NIM; retrieval over the case file |
@@ -29,7 +29,7 @@ omission and fidelity checking possible.
 | Regulations | `src/evidence/regulations.py`, `regulations/` | Jurisdiction rule packs: evidence-presence checks selected by the pack's regulatory context |
 | Evidence | `src/evidence/evidence/` | Aggregation by obligation, the report, checksums, the verifier |
 | CLI | `src/evidence/cli.py` | `evidence run · report · verify · rules · checks · ui` |
-| Web UI | `src/evidence/web/` | A thin FastAPI layer over the same functions; static HTML, no build step; runs on a worker thread and is polled |
+| Web UI | `src/evidence/web/` | A thin FastAPI layer over the same functions; static HTML, no build step. Pack → cases → run → evidence → verify; packs can be built from a spec or uploaded; runs execute on a worker thread, are polled, and can be cancelled |
 
 Generation never scores briefings. Marking never invents what "material"
 means. Model access never sees scorecard internals — only the documents and the

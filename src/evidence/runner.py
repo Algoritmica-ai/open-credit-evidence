@@ -94,8 +94,15 @@ def run_pack(
     judge: bool = True,
     limit: int | None = None,
     log: Callable[[str], None] = print,
+    should_stop: Callable[[], bool] | None = None,
 ) -> dict[str, Any]:
-    """Execute the pack. Returns the run manifest; writes transcripts and results.jsonl."""
+    """Execute the pack. Returns the run manifest; writes transcripts and results.jsonl.
+
+    ``should_stop`` is polled before every model call. When it returns True the
+    run stops cleanly: what was completed is scored and sealed, the manifest
+    records ``cancelled: true`` and the real transcript count, and a later run
+    into the same directory resumes from the transcripts on disk.
+    """
     out.mkdir(parents=True, exist_ok=True)
     (out / "transcripts").mkdir(exist_ok=True)
     run_id = out.name
@@ -107,10 +114,14 @@ def run_pack(
     calls_made = 0
     total = len(items) * repeats
     done = 0
+    cancelled = False
     for item in items:
         names = checks if checks is not None else item.deterministic_checks
         want_judge = judge and ("readability" in item.judges or judge is True)
         for rep in range(repeats):
+            if should_stop is not None and should_stop():
+                cancelled = True
+                break
             path = transcript_path(out, item.item_id, rep)
             if path.is_file():
                 t = Transcript.model_validate_json(path.read_text(encoding="utf-8"))
@@ -174,7 +185,9 @@ def run_pack(
         ),
         "checks": checks if checks is not None else pack.checks_declared(),
         "repeats": repeats,
-        "transcripts": len(items) * repeats,
+        "transcripts": done,
+        "planned": total,
+        "cancelled": cancelled,
         "model_calls_made": calls_made,
         "regulatory": {
             "jurisdiction": regulatory.jurisdiction,

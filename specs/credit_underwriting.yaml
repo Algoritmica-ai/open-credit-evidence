@@ -25,7 +25,7 @@
 #                           generator rather than a claim about it.
 #
 # The scorecard that turns these fields into approve / refer / decline, with
-# per-case attribution, lives in scripts/build_sample_pack.py. It is not in this
+# per-case attribution, lives in src/evidence/packs/credit_underwriting.py. It is not in this
 # spec because SDD declares how data is generated; the decision rule and the
 # marking key are layered on top of what it produces.
 #

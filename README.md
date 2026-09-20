@@ -69,8 +69,9 @@ readability judge — and the evidence pack it produces:
 
 Change one digit in any transcript and `verify` fails, naming the file.
 
-The same six steps in a browser — pack, case, gate, run, evidence, verify — with
-a tamper demo that edits a copy of a run and verifies both:
+The same flow in a browser — pack (choose, build from a spec, or upload), cases,
+run (with cancel), evidence (every briefing with its verdicts, then the pack by
+obligation), verify (with a tamper demo on a copy of the run):
 
 ```bash
 .venv/bin/pip install -e ".[web]"

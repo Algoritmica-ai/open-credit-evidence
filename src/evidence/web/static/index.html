@@ -25,15 +25,13 @@
     <button class="step" data-view="pack" aria-current="true">
       <span class="n">1</span><span class="s"><b>Pack</b><i>Cases with a known answer</i></span></button>
     <button class="step" data-view="case" disabled>
-      <span class="n">2</span><span class="s"><b>Case</b><i>Documents and the sealed key</i></span></button>
-    <button class="step" data-view="gate" disabled>
-      <span class="n">3</span><span class="s"><b>Gate</b><i>Mark a briefing, no model</i></span></button>
+      <span class="n">2</span><span class="s"><b>Cases</b><i>What the assistant will see</i></span></button>
     <button class="step" data-view="run" disabled>
-      <span class="n">4</span><span class="s"><b>Run</b><i>The assistant under test</i></span></button>
+      <span class="n">3</span><span class="s"><b>Run</b><i>The assistant writes the briefings</i></span></button>
     <button class="step" data-view="evidence" disabled>
-      <span class="n">5</span><span class="s"><b>Evidence</b><i>By obligation</i></span></button>
+      <span class="n">4</span><span class="s"><b>Evidence</b><i>Briefings, verdicts, obligations</i></span></button>
     <button class="step" data-view="verify" disabled>
-      <span class="n">6</span><span class="s"><b>Verify</b><i>Checksums and re-derivation</i></span></button>
+      <span class="n">5</span><span class="s"><b>Verify</b><i>Checksums and re-derivation</i></span></button>
 
     <a class="rail-link" href="https://github.com/Algoritmica-ai/open-credit-evidence"
        target="_blank" rel="noopener noreferrer">
@@ -56,13 +54,40 @@
     <section class="view" id="view-pack">
       <div class="head">
         <h1>Pack</h1>
-        <p>A pack is a set of generated loan cases whose right answer was computed before any
-           model ran. Choose one to see its cases, mark a briefing by hand, or run the assistant
-           under test over all of it.</p>
+        <p>A pack is a set of generated loan cases whose right answer was computed before any model
+           ran. Choose one, build a new one from a Synthetic Data Designer spec, or upload a pack
+           built elsewhere.</p>
       </div>
       <div class="card">
         <div class="card-head"><h2>Packs on disk</h2></div>
         <div class="pack-list" id="packs"></div>
+      </div>
+      <div class="grid two">
+        <div class="card">
+          <div class="card-head"><h2>Build a pack from a spec</h2><span class="badge">needs SDD</span></div>
+          <p class="hint">The spec declares the hidden driver, the observable fields and the decoys.
+             Leave the file empty to use the bundled recipe <code class="inline">specs/credit_underwriting.yaml</code>.
+             The scorecard, the materiality rule and the document templates are fixed in this version, so a
+             custom spec must keep the same field names.</p>
+          <div class="grid three">
+            <label class="field"><span class="lbl">Pack id</span><input type="text" id="b-id" value="underwriter-custom" /></label>
+            <label class="field"><span class="lbl">Spec (YAML, optional)</span><input type="file" id="b-spec" accept=".yaml,.yml" /></label>
+            <label class="field"><span class="lbl">Applications to generate</span><input type="number" id="b-n" value="700" min="50" max="20000" /></label>
+            <label class="field"><span class="lbl">Referred cases to keep</span><input type="number" id="b-keep" value="20" min="1" max="500" /></label>
+            <label class="field"><span class="lbl">Seed</span><input type="number" id="b-seed" value="7" /></label>
+          </div>
+          <div style="margin-top:12px; display:flex; gap:8px; align-items:center"><button class="btn primary" id="b-build">Build</button><span id="b-status"></span></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Upload a pack</h2></div>
+          <p class="hint">A zip holding <code class="inline">items.jsonl</code> and <code class="inline">manifest.json</code>
+             (plus <code class="inline">obligations.yaml</code> and <code class="inline">regulatory_context.json</code> if you have them),
+             built with this format. It is validated before it is listed.</p>
+          <label class="field"><span class="lbl">Zip file</span><input type="file" id="u-zip" accept=".zip" /></label>
+          <div style="margin-top:12px; display:flex; gap:8px; align-items:center"><button class="btn" id="u-upload">Upload</button><span id="u-status"></span></div>
+          <div class="note" style="margin-top:14px"><strong>Pack format.</strong> One JSON object per line: the prompt, the documents, the checks to run, and the sealed marking key.
+            <a href="/api/schema/item" target="_blank" rel="noopener">JSON schema</a> · <a href="https://github.com/Algoritmica-ai/open-credit-evidence/blob/main/docs/contracts.md" target="_blank" rel="noopener">contracts.md</a></div>
+        </div>
       </div>
       <div class="card">
         <div class="card-head"><h2>Where the models run</h2></div>
@@ -79,46 +104,36 @@
     <!-- ---------------------------------------------------------- 2. case -->
     <section class="view" id="view-case" hidden>
       <div class="head">
-        <h1>Case</h1>
-        <p>What the assistant sees, and — sealed from it — what a briefing must state. The marking
-           key was computed from the scorecard that decided the case; decoys are fields with no
-           weight in that decision.</p>
+        <h1>Cases</h1>
+        <p>What the assistant will see for each case, and — sealed from it — what a briefing must state.
+           The marking key was computed from the scorecard that decided the case; decoys are fields
+           with no weight in that decision.</p>
       </div>
       <div class="grid two">
         <div class="card">
-          <div class="card-head"><h2>Cases in this pack</h2><span class="tag" id="case-count"></span></div>
+          <div class="card-head"><h2>Cases in this pack</h2><span class="tag" id="case-count"></span><span class="spacer"></span><button class="btn sm primary" id="case-to-run">Run the assistant →</button></div>
           <div class="scroll tall"><table class="grid-table" id="cases-table"></table></div>
         </div>
         <div class="card">
-          <div class="card-head"><h2 id="case-title">Select a case</h2><span class="badge" id="case-disp" hidden></span></div>
+          <div class="card-head">
+            <button class="btn sm" id="case-prev" title="previous case">‹</button>
+            <h2 id="case-title">Select a case</h2><span class="badge" id="case-disp" hidden></span>
+            <button class="btn sm" id="case-next" title="next case">›</button>
+            <span class="tag" id="case-pos"></span>
+          </div>
           <div id="case-key"></div>
           <div class="doc-tabs" id="doc-tabs"></div>
           <div class="doc" id="doc-body" hidden></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ---------------------------------------------------------- 3. gate -->
-    <section class="view" id="view-gate" hidden>
-      <div class="head">
-        <h1>Gate</h1>
-        <p>Type or paste a briefing for the selected case and mark it. Nothing here calls a model:
-           each check is a comparison against the sealed key. Try a briefing that is fluent and
-           true but leaves out the policy limit, or one with a made-up ratio.</p>
-      </div>
-      <div class="grid two">
-        <div class="card">
-          <div class="card-head"><h2>Briefing</h2><span class="tag subtle" id="gate-case"></span></div>
-          <textarea id="gate-text" style="min-height: 280px" placeholder="Write the underwriter briefing here…"></textarea>
-          <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap">
-            <button class="btn primary" id="gate-mark">Mark it</button>
-            <button class="btn" id="gate-fill-bad">Insert: omits the limit</button>
-            <button class="btn" id="gate-fill-good">Insert: complete</button>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-head"><h2>Verdicts</h2></div>
-          <div id="gate-results"><p class="hint">Mark a briefing to see each check's verdict and evidence.</p></div>
+          <details style="margin-top:14px">
+            <summary style="cursor:pointer; font-size:12.5px; color:var(--ink-2)">Mark a briefing by hand (a control: the checks with no model involved)</summary>
+            <textarea id="gate-text" style="min-height:140px; margin-top:8px" placeholder="Paste or write a briefing for this case…"></textarea>
+            <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap">
+              <button class="btn sm primary" id="gate-mark">Mark it</button>
+              <button class="btn sm" id="gate-fill-bad">Insert: omits the limit</button>
+              <button class="btn sm" id="gate-fill-good">Insert: complete</button>
+            </div>
+            <div id="gate-results" style="margin-top:10px"></div>
+          </details>
         </div>
       </div>
     </section>
@@ -128,8 +143,8 @@
       <div class="head">
         <h1>Run</h1>
         <p>Put every case in the pack to the assistant under test, N times, and mark every
-           briefing. Transcripts are written as they arrive, so a stopped run resumes. The judge
-           grades readability only and is reported, not gated.</p>
+           briefing as it arrives. Cancel keeps what is done and seals it; the same run directory
+           resumes later. The judge grades readability only and is reported, not gated.</p>
       </div>
       <div class="grid two">
         <div class="card">
@@ -143,7 +158,7 @@
               <span class="sub">Leave empty for the whole pack.</span></label>
           </div>
           <label class="check" style="margin-top:10px"><input type="checkbox" id="run-judge" checked /> Call the readability judge (slower on a reasoning model)</label>
-          <div style="margin-top:14px"><button class="btn primary" id="run-start">Start run</button></div>
+          <div style="margin-top:14px; display:flex; gap:8px"><button class="btn primary" id="run-start">Start run</button><button class="btn" id="run-cancel" disabled>Cancel</button></div>
           <div id="run-error"></div>
         </div>
         <div class="card">
@@ -159,24 +174,34 @@
     <section class="view" id="view-evidence" hidden>
       <div class="head">
         <h1>Evidence</h1>
-        <p>The evidence pack for a run, by obligation. Each obligation is marked with the pack's own
-           claim: evidences, contributes, or not covered. Every number traces to a transcript.</p>
+        <p>What the assistant wrote for each case, and what every check said about it. Then the
+           evidence pack by obligation, each marked with the pack's own claim: evidences, contributes,
+           or not covered. Every number traces to a transcript.</p>
       </div>
       <div class="stats" id="ev-stats"></div>
+      <div class="card">
+        <div class="card-head">
+          <button class="btn sm" id="ev-prev" title="previous case">‹</button>
+          <h2 id="ev-case">Case</h2>
+          <button class="btn sm" id="ev-next" title="next case">›</button>
+          <span class="tag" id="ev-pos"></span>
+          <span class="doc-tabs" id="ev-repeats" style="margin:0 0 0 8px"></span>
+          <span class="spacer"></span><span class="tag subtle" id="ev-run" hidden></span>
+        </div>
+        <div class="grid two">
+          <div><div class="hint" style="margin-bottom:6px" id="ev-meta"></div><div class="doc" id="ev-briefing"></div></div>
+          <div id="ev-verdicts"></div>
+        </div>
+      </div>
       <div class="grid two">
         <div class="card">
-          <div class="card-head"><h2>By obligation</h2><span class="tag subtle" id="ev-run" hidden></span></div>
+          <div class="card-head"><h2>By obligation</h2></div>
           <div id="ev-obligations"></div>
         </div>
         <div class="card">
           <div class="card-head"><h2>Failures, by case</h2></div>
           <div class="scroll tall"><table class="grid-table" id="ev-failures"></table></div>
         </div>
-      </div>
-      <div class="card">
-        <div class="card-head"><h2>Transcript</h2><span class="tag subtle" id="ev-transcript-name" hidden></span></div>
-        <p class="hint">Click a failure above to open the briefing it came from.</p>
-        <div class="doc" id="ev-transcript" hidden></div>
       </div>
       <div class="card">
         <div class="card-head"><h2>report.md</h2></div>

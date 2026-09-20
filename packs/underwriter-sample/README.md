@@ -84,7 +84,7 @@ tells the check which fact matters for *this* applicant.
 *because* of it. Delinquencies are appearing as context rather than as a driver: the −0.20
 weight is light against DTI's −0.68. Defensible as scorecard design, but if a recent missed
 payment should carry more weight in a referral decision, it is one number in `WEIGHTS` in
-`scripts/build_sample_pack.py`.
+`src/evidence/packs/credit_underwriting.py` (run via `scripts/build_sample_pack.py`).
 
 ## The gate, on this pack
 

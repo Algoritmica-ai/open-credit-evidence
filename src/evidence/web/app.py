@@ -18,23 +18,26 @@ result. Logic belongs in the engine where the CLI can reach it too.
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import re
 import shutil
 import threading
 import uuid
+import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from fastapi import Body, FastAPI, HTTPException
+from fastapi import Body, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from evidence import __version__
 from evidence.adapters.nvidia_build import endpoint_for
 from evidence.checks import available_checks, run_checks
+from evidence.contracts.item import BenchmarkItem
 from evidence.evidence import verify_run, write_evidence
 from evidence.pack import Pack, load_pack
 from evidence.regulations import assess
@@ -42,6 +45,10 @@ from evidence.runner import run_pack
 
 _BODY = Body(...)
 _OPTIONAL_BODY = Body(default={})
+_FILE = File(...)
+_OPTIONAL_FILE = File(default=None)
+_FORM = Form(...)
+_OPTIONAL_FORM = Form(default=None)
 STATIC = Path(__file__).parent / "static"
 ROOT = Path(os.environ.get("EVIDENCE_ROOT") or Path.cwd())
 PACKS = ROOT / "packs"
@@ -182,6 +189,117 @@ def pack_rules(pack_id: str) -> dict[str, Any]:
     return assess(_pack(pack_id).regulatory_context).model_dump()
 
 
+@app.get("/api/schema/item")
+def item_schema() -> dict[str, Any]:
+    """The pack format: JSON schema of one line of items.jsonl."""
+    return BenchmarkItem.model_json_schema()
+
+
+def _build_worker(job_id: str, opts: dict[str, Any]) -> None:
+    job = _jobs[job_id]
+    try:
+        from evidence.packs.credit_underwriting import build
+
+        manifest = build(
+            opts["n"],
+            opts["keep"],
+            opts["seed"],
+            PACKS / opts["pack_id"],
+            opts["pack_id"],
+            opts.get("spec"),
+        )
+        with _lock:
+            job.update(
+                status="done",
+                pack_id=opts["pack_id"],
+                items=manifest["items"],
+                population=manifest.get("population"),
+            )
+    except ImportError:
+        with _lock:
+            job.update(
+                status="error",
+                error="Synthetic Data Designer is not installed: pip install -e '.[generate]'",
+            )
+    except Exception as exc:  # noqa: BLE001
+        with _lock:
+            job.update(status="error", error=f"{type(exc).__name__}: {exc}")
+
+
+@app.post("/api/packs/build")
+async def build_pack(
+    pack_id: str = _FORM,
+    n: int = _FORM,
+    keep: int = _FORM,
+    seed: int = _FORM,
+    spec: UploadFile | None = _OPTIONAL_FILE,
+) -> dict[str, Any]:
+    """Generate a new pack from an SDD spec (uploaded, or the bundled recipe)."""
+    pack_id = _safe_name(pack_id, "pack")
+    if (PACKS / pack_id / "items.jsonl").is_file():
+        raise HTTPException(400, f"pack {pack_id} already exists")
+    spec_path = None
+    if spec is not None and spec.filename:
+        if not spec.filename.lower().endswith((".yaml", ".yml")):
+            raise HTTPException(400, "the spec must be a YAML file")
+        (PACKS / pack_id).mkdir(parents=True, exist_ok=True)
+        spec_path = PACKS / pack_id / "spec.yaml"
+        spec_path.write_bytes(await spec.read())
+    job_id = uuid.uuid4().hex[:12]
+    _jobs[job_id] = {"status": "running", "kind": "build", "log": [], "done": 0, "total": 1}
+    threading.Thread(
+        target=_build_worker,
+        args=(
+            job_id,
+            {
+                "pack_id": pack_id,
+                "n": max(50, min(n, 20000)),
+                "keep": max(1, min(keep, 500)),
+                "seed": seed,
+                "spec": spec_path,
+            },
+        ),
+        daemon=True,
+    ).start()
+    return {"job_id": job_id, "pack_id": pack_id}
+
+
+@app.post("/api/packs/upload")
+async def upload_pack(
+    archive: UploadFile = _FILE, pack_id: str | None = _OPTIONAL_FORM
+) -> dict[str, Any]:
+    """Install a pack built elsewhere: a zip with items.jsonl and manifest.json (+ obligations)."""
+    data = await archive.read()
+    try:
+        zf = zipfile.ZipFile(io.BytesIO(data))
+    except zipfile.BadZipFile as exc:
+        raise HTTPException(400, "not a zip file") from exc
+    names = {Path(n).name: n for n in zf.namelist() if not n.endswith("/")}
+    if "items.jsonl" not in names or "manifest.json" not in names:
+        raise HTTPException(400, "the zip must contain items.jsonl and manifest.json")
+    manifest = json.loads(zf.read(names["manifest.json"]))
+    pid = _safe_name(pack_id or str(manifest.get("pack_id", "")), "pack")
+    dest = PACKS / pid
+    if (dest / "items.jsonl").is_file():
+        raise HTTPException(400, f"pack {pid} already exists")
+    dest.mkdir(parents=True, exist_ok=True)
+    for base, member in names.items():
+        if base in (
+            "items.jsonl",
+            "manifest.json",
+            "obligations.yaml",
+            "regulatory_context.json",
+            "README.md",
+        ):
+            (dest / base).write_bytes(zf.read(member))
+    try:
+        pack = load_pack(dest)
+    except Exception as exc:  # noqa: BLE001 — report the validation error, remove the pack
+        shutil.rmtree(dest)
+        raise HTTPException(400, f"pack rejected: {exc}") from exc
+    return {"pack_id": pack.pack_id, "items": len(pack.items), "warnings": pack.warnings}
+
+
 # -------------------------------------------------------------------- runs
 
 
@@ -197,11 +315,22 @@ def _job_worker(job_id: str, pack: Pack, out: Path, opts: dict[str, Any]) -> Non
 
     try:
         manifest = run_pack(
-            pack, out, repeats=opts["repeats"], judge=opts["judge"], limit=opts["limit"], log=log
+            pack,
+            out,
+            repeats=opts["repeats"],
+            judge=opts["judge"],
+            limit=opts["limit"],
+            log=log,
+            should_stop=lambda: job.get("cancel", False),
         )
-        write_evidence(out, pack.obligations)
+        if manifest["transcripts"]:
+            write_evidence(out, pack.obligations)
         with _lock:
-            job.update(status="done", run_id=manifest["run_id"])
+            job.update(
+                status="cancelled" if manifest["cancelled"] else "done",
+                run_id=manifest["run_id"],
+                transcripts=manifest["transcripts"],
+            )
     except Exception as exc:  # noqa: BLE001 — the browser needs the message, not a 500
         with _lock:
             job.update(status="error", error=f"{type(exc).__name__}: {exc}")
@@ -234,6 +363,18 @@ def start_run(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
         daemon=True,
     ).start()
     return {"job_id": job_id, "run_id": out.name, "total": total}
+
+
+@app.post("/api/run/{job_id}/cancel")
+def cancel_run(job_id: str) -> dict[str, Any]:
+    """Ask the worker to stop before its next model call. Completed briefings are kept."""
+    job = _jobs.get(job_id)
+    if job is None:
+        raise HTTPException(404, "job not found")
+    with _lock:
+        job["cancel"] = True
+        job["log"].append("  cancel requested — finishing the call in flight")
+    return {"job_id": job_id, "cancel": True}
 
 
 @app.get("/api/run/{job_id}")

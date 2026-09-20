@@ -5,7 +5,7 @@
  * computed here that the engine computes, so the page can never disagree with
  * the CLI about a number. */
 
-const state = { pack: null, packMeta: null, case: null, caseData: null, run: null, job: null };
+const state = { pack: null, packMeta: null, cases: [], caseIndex: -1, caseData: null, run: null, job: null, results: [], evCases: [], evIndex: -1, evRepeat: 0, transcripts: [] };
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -61,7 +61,7 @@ async function loadPacks() {
 }
 
 async function choosePack(id, meta) {
-  state.pack = id; state.packMeta = meta; state.case = null; state.caseData = null;
+  state.pack = id; state.packMeta = meta; state.caseIndex = -1; state.caseData = null;
   $("pack-name").textContent = `${id} v${meta.version}`; $("pack-name").hidden = false;
   enable("pack", true); enable("case"); enable("run");
   await loadCases();
@@ -85,17 +85,23 @@ async function loadRuns() {
 
 async function loadCases() {
   const items = await api(`/api/packs/${state.pack}/items`);
+  state.cases = items;
   $("case-count").textContent = `${items.length} cases`;
   $("cases-table").innerHTML = `<thead><tr><th>case</th><th>outcome</th><th>difficulty</th><th>must state</th></tr></thead><tbody>` +
-    items.map((i) => `<tr data-case="${esc(i.case)}" style="cursor:pointer"><td><code class="inline">${esc(i.case)}</code></td><td>${esc(i.disposition)}</td><td>${esc(i.difficulty)}</td><td class="wrap">${i.must_state.map(esc).join("; ")}</td></tr>`).join("") + "</tbody>";
-  $("cases-table").querySelectorAll("tr[data-case]").forEach((tr) => tr.addEventListener("click", () => chooseCase(tr.dataset.case)));
-  if (items.length) chooseCase(items[0].case);
+    items.map((i, k) => `<tr data-i="${k}" style="cursor:pointer"><td><code class="inline">${esc(i.case)}</code></td><td>${esc(i.disposition)}</td><td>${esc(i.difficulty)}</td><td class="wrap">${i.must_state.map(esc).join("; ")}</td></tr>`).join("") + "</tbody>";
+  $("cases-table").querySelectorAll("tr[data-i]").forEach((tr) => tr.addEventListener("click", () => chooseCase(+tr.dataset.i)));
+  if (items.length) chooseCase(0);
 }
 
-async function chooseCase(c) {
+async function chooseCase(k) {
+  if (!state.cases.length) return;
+  k = (k + state.cases.length) % state.cases.length;
+  const c = state.cases[k].case;
   const d = await api(`/api/packs/${state.pack}/items/${c}`);
-  state.case = c; state.caseData = d;
+  state.caseIndex = k; state.caseData = d;
+  $("cases-table").querySelectorAll("tr[data-i]").forEach((tr) => tr.style.background = +tr.dataset.i === k ? "var(--accent-2)" : "");
   $("case-title").textContent = c;
+  $("case-pos").textContent = `${k + 1} / ${state.cases.length}`;
   $("case-disp").textContent = d.disposition; $("case-disp").hidden = false;
   $("case-key").innerHTML = `<dl class="kv">
     <dt>must state</dt><dd>${d.must_state.map((m) => `<span class="found">${esc(m)}</span>`).join(" · ")}</dd>
@@ -103,17 +109,19 @@ async function chooseCase(c) {
     <dt>decoys (zero weight)</dt><dd>${d.decoys.map((x) => `<code>${esc(x)}</code>`).join(" ") || "—"}</dd>
     <dt>would flip it</dt><dd>${d.flip.map((f) => `<code>${esc(f.ref)}</code> ${esc(f.direction)}`).join("; ") || "—"}</dd>
     <dt>checks</dt><dd>${d.checks.map((x) => `<code>${esc(x)}</code>`).join(" ")}</dd></dl>`;
-  $("doc-tabs").innerHTML = [{ renderer: "task prompt", content: d.prompt }, ...d.documents]
-    .map((doc, i) => `<button class="tab" data-i="${i}" aria-selected="${i === 1}">${esc(doc.renderer)}</button>`).join("");
   const docs = [{ renderer: "task prompt", content: d.prompt }, ...d.documents];
+  $("doc-tabs").innerHTML = docs.map((doc, i) => `<button class="tab" data-i="${i}" aria-selected="${i === 1}">${esc(doc.renderer)}</button>`).join("");
   const showDoc = (i) => { $("doc-body").textContent = docs[i].content; $("doc-body").hidden = false; $("doc-tabs").querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", t.dataset.i == i)); };
   $("doc-tabs").querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => showDoc(+t.dataset.i)));
   showDoc(1);
-  $("gate-case").textContent = c;
-  enable("case", true); enable("gate");
+  $("gate-results").innerHTML = "";
+  enable("case", true);
 }
+$("case-prev").addEventListener("click", () => chooseCase(state.caseIndex - 1));
+$("case-next").addEventListener("click", () => chooseCase(state.caseIndex + 1));
+$("case-to-run").addEventListener("click", () => show("run"));
 
-/* ------------------------------------------------------------------ gate */
+/* ------------------------------------------------- mark by hand (control) */
 
 function num(doc, label) { const m = doc.match(new RegExp(label + "\\s*\\|\\s*£?([\\d,]+)")); return m ? m[1].replace(/,/g, "") : null; }
 function fillGate(kind) {
@@ -130,12 +138,11 @@ function fillGate(kind) {
 $("gate-fill-good").addEventListener("click", () => fillGate("good"));
 $("gate-fill-bad").addEventListener("click", () => fillGate("bad"));
 $("gate-mark").addEventListener("click", async () => {
-  if (!state.case) return;
+  if (!state.caseData) return;
   $("gate-results").innerHTML = `<span class="spin"></span>marking…`;
   try {
-    const { results } = await api("/api/gate", { pack: state.pack, case: state.case, briefing: $("gate-text").value });
+    const { results } = await api("/api/gate", { pack: state.pack, case: state.caseData.case, briefing: $("gate-text").value });
     $("gate-results").innerHTML = results.map(renderCheck).join("");
-    enable("gate", true);
   } catch (e) { $("gate-results").innerHTML = `<div class="note bad">${esc(e.message)}</div>`; }
 });
 function renderCheck(r) {
@@ -163,7 +170,7 @@ $("run-start").addEventListener("click", async () => {
     state.job = job.job_id; state.run = job.run_id;
     $("run-id").textContent = job.run_id; $("run-id").hidden = false;
     $("run-total").textContent = job.total; $("run-done").textContent = 0; $("run-bar").style.width = "0"; $("run-log").textContent = "";
-    $("run-start").disabled = true; $("run-status").innerHTML = `<span class="spin"></span>running`;
+    $("run-start").disabled = true; $("run-cancel").disabled = false; $("run-status").innerHTML = `<span class="spin"></span>running`;
     clearInterval(poll); poll = setInterval(pollJob, 2000);
   } catch (e) { $("run-error").innerHTML = `<div class="note bad">${esc(e.message)}</div>`; }
 });
@@ -172,15 +179,24 @@ async function pollJob() {
   $("run-done").textContent = j.done; $("run-total").textContent = j.total;
   $("run-bar").style.width = `${j.total ? (100 * j.done) / j.total : 0}%`;
   $("run-log").textContent = j.log.slice(-40).join("\n"); $("run-log").scrollTop = 1e9;
-  if (j.status === "done") { clearInterval(poll); $("run-status").innerHTML = `<span class="badge good">done</span>`; $("run-start").disabled = false; enable("run", true); await loadRuns(); await openRun(j.run_id); }
-  if (j.status === "error") { clearInterval(poll); $("run-status").innerHTML = `<span class="badge bad">error</span>`; $("run-start").disabled = false; $("run-error").innerHTML = `<div class="note bad">${esc(j.error)}</div>`; }
+  if (j.status === "done" || j.status === "cancelled") {
+    clearInterval(poll); $("run-start").disabled = false; $("run-cancel").disabled = true;
+    $("run-status").innerHTML = `<span class="badge ${j.status === "done" ? "good" : "warn"}">${j.status}</span>`;
+    enable("run", true); await loadRuns();
+    if (j.transcripts) await openRun(j.run_id); else $("run-error").innerHTML = `<div class="note warn">Cancelled before any briefing was written.</div>`;
+  }
+  if (j.status === "error") { clearInterval(poll); $("run-status").innerHTML = `<span class="badge bad">error</span>`; $("run-start").disabled = false; $("run-cancel").disabled = true; $("run-error").innerHTML = `<div class="note bad">${esc(j.error)}</div>`; }
 }
+$("run-cancel").addEventListener("click", async () => { if (state.job) { await api(`/api/run/${state.job}/cancel`, {}); $("run-cancel").disabled = true; } });
 
 /* -------------------------------------------------------------- evidence */
 
 async function openRun(runId) {
   const d = await api(`/api/runs/${runId}`);
-  state.run = runId;
+  state.run = runId; state.transcripts = d.transcripts;
+  state.results = await api(`/api/runs/${runId}/results`);
+  state.evCases = [...new Set(state.results.map((r) => r.item_id))];
+  state.evIndex = -1;
   $("ev-run").textContent = runId; $("ev-run").hidden = false; $("vf-run").textContent = runId; $("vf-run").hidden = false;
   const m = d.manifest, s = d.summary || { checks: {}, repeat_agreement: {}, failing: [], obligations: [] };
   $("ev-stats").innerHTML = [
@@ -204,20 +220,36 @@ async function openRun(runId) {
   $("ev-failures").innerHTML = s.failing.length
     ? `<thead><tr><th>case</th><th>check</th><th class="num">repeats failed</th><th>detail</th></tr></thead><tbody>` + s.failing.map((f) => `<tr data-item="${esc(f.item_id)}" style="cursor:pointer"><td><code class="inline">${esc(short(f.item_id))}</code></td><td>${esc(f.check)}</td><td class="num">${f.repeats_failed}</td><td class="wrap">${esc(f.detail)}</td></tr>`).join("") + "</tbody>"
     : `<tr><td class="nul">No failures.</td></tr>`;
-  $("ev-failures").querySelectorAll("tr[data-item]").forEach((tr) => tr.addEventListener("click", () => openTranscript(runId, d.transcripts.find((t) => t.startsWith(tr.dataset.item.replace(/[^A-Za-z0-9_.-]+/g, "_"))))));
+  $("ev-failures").querySelectorAll("tr[data-item]").forEach((tr) => tr.addEventListener("click", () => { showEvCase(state.evCases.indexOf(tr.dataset.item), 0); window.scrollTo({ top: 0, behavior: "smooth" }); }));
   $("ev-report").innerHTML = md(d.report || "");
-  $("ev-transcript").hidden = true;
+  if (state.evCases.length) showEvCase(0, 0);
   enable("evidence", true); enable("verify");
   $("vf-result").innerHTML = ""; $("vf-tamper-result").innerHTML = "";
   show("evidence");
 }
-async function openTranscript(runId, name) {
-  if (!name) return;
-  const t = await api(`/api/runs/${runId}/transcripts/${name}`);
-  $("ev-transcript-name").textContent = `${name} · ${t.sut.model_id} · ${t.sut.endpoint || ""} · ${(t.latency_ms / 1000).toFixed(1)}s`; $("ev-transcript-name").hidden = false;
-  $("ev-transcript").textContent = t.output; $("ev-transcript").hidden = false;
-  $("ev-transcript").scrollIntoView({ behavior: "smooth", block: "center" });
+async function showEvCase(k, rep) {
+  if (!state.evCases.length) return;
+  k = (k + state.evCases.length) % state.evCases.length;
+  const item = state.evCases[k];
+  const rows = state.results.filter((r) => r.item_id === item);
+  const reps = [...new Set(rows.map((r) => r.repeat))].sort((a, b) => a - b);
+  rep = reps.includes(rep) ? rep : reps[0];
+  state.evIndex = k; state.evRepeat = rep;
+  $("ev-case").textContent = short(item);
+  $("ev-pos").textContent = `${k + 1} / ${state.evCases.length}`;
+  $("ev-repeats").innerHTML = reps.map((r) => `<button class="tab" data-r="${r}" aria-selected="${r === rep}">repeat ${r + 1}</button>`).join("");
+  $("ev-repeats").querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => showEvCase(k, +t.dataset.r)));
+  const name = state.transcripts.find((t) => t.startsWith(item.replace(/[^A-Za-z0-9_.-]+/g, "_")) && t.endsWith(`-r${rep}.json`));
+  if (name) {
+    const t = await api(`/api/runs/${state.run}/transcripts/${name}`);
+    $("ev-meta").textContent = `${t.sut.model_id} · ${t.sut.endpoint || ""} · ${(t.latency_ms / 1000).toFixed(1)}s · ${t.tokens_out} tokens`;
+    $("ev-briefing").textContent = t.output;
+  } else { $("ev-meta").textContent = ""; $("ev-briefing").textContent = "(transcript not found)"; }
+  $("ev-verdicts").innerHTML = rows.filter((r) => r.repeat === rep).map((r) => renderCheck({ ...r, name: r.check })).join("");
 }
+$("ev-prev").addEventListener("click", () => showEvCase(state.evIndex - 1, state.evRepeat));
+$("ev-next").addEventListener("click", () => showEvCase(state.evIndex + 1, state.evRepeat));
+
 /* A small markdown renderer for report.md: headings, tables, lists, code, bold. */
 function md(src) {
   const inline = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
@@ -251,6 +283,34 @@ $("vf-tamper").addEventListener("click", async () => {
     $("vf-tamper-result").innerHTML = `<p class="hint" style="margin:10px 0 6px">Edited <code class="inline">${esc(r.edit.transcript)}</code> in the copy <code class="inline">${esc(r.copy)}</code>: <code class="inline">${esc(r.edit.from)}</code> → <code class="inline">${esc(r.edit.to)}</code></p>
       <div class="grid two"><div><div class="badge">original</div>${renderVerification(r.original)}</div><div><div class="badge">tampered copy</div>${renderVerification(r.tampered)}</div></div>`;
   } catch (e) { $("vf-tamper-result").innerHTML = `<div class="note bad">${esc(e.message)}</div>`; }
+});
+
+/* ------------------------------------------------------- build / upload */
+
+$("b-build").addEventListener("click", async () => {
+  const fd = new FormData();
+  fd.append("pack_id", $("b-id").value.trim()); fd.append("n", $("b-n").value); fd.append("keep", $("b-keep").value); fd.append("seed", $("b-seed").value);
+  if ($("b-spec").files[0]) fd.append("spec", $("b-spec").files[0]);
+  $("b-status").innerHTML = `<span class="spin"></span>generating…`; $("b-build").disabled = true;
+  try {
+    const r = await fetch("/api/packs/build", { method: "POST", body: fd }); const j = await r.json();
+    if (!r.ok) throw new Error(j.detail || r.statusText);
+    const t = setInterval(async () => {
+      const job = await api(`/api/run/${j.job_id}`);
+      if (job.status === "done") { clearInterval(t); $("b-status").innerHTML = `<span class="badge good">built</span> ${job.items} cases`; $("b-build").disabled = false; await loadPacks(); }
+      if (job.status === "error") { clearInterval(t); $("b-status").innerHTML = `<span class="badge bad">failed</span> ${esc(job.error)}`; $("b-build").disabled = false; }
+    }, 1500);
+  } catch (e) { $("b-status").innerHTML = `<span class="badge bad">failed</span> ${esc(e.message)}`; $("b-build").disabled = false; }
+});
+$("u-upload").addEventListener("click", async () => {
+  const f = $("u-zip").files[0]; if (!f) { $("u-status").textContent = "choose a zip first"; return; }
+  const fd = new FormData(); fd.append("archive", f);
+  $("u-status").innerHTML = `<span class="spin"></span>`;
+  try {
+    const r = await fetch("/api/packs/upload", { method: "POST", body: fd }); const j = await r.json();
+    if (!r.ok) throw new Error(j.detail || r.statusText);
+    $("u-status").innerHTML = `<span class="badge good">installed</span> ${esc(j.pack_id)} · ${j.items} cases`; await loadPacks();
+  } catch (e) { $("u-status").innerHTML = `<span class="badge bad">rejected</span> ${esc(e.message)}`; }
 });
 
 /* ------------------------------------------------------------------ boot */
