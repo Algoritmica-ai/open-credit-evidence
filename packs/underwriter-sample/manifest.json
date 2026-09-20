@@ -1,0 +1,30 @@
+{
+  "pack_id": "underwriter-sample",
+  "version": "0.2.0",
+  "domain": "credit_underwriting",
+  "domain_version": "0.1",
+  "sdd": {
+    "spec": "specs/credit_underwriting.yaml",
+    "spec_sha256": "5a827b5de979bad9",
+    "generated": 700,
+    "seed": 7
+  },
+  "scorecard_version": "underwriter-scorecard-0.1.0",
+  "ceiling": {
+    "claimed": false,
+    "reason": "output is a briefing, not an outcome prediction"
+  },
+  "population": {
+    "approve": 523,
+    "refer": 25,
+    "decline": 152
+  },
+  "items": 20,
+  "cases": 20,
+  "items_sha256": "eea1671b477736b91dea655c85e13e3a6f9f8cd81841a802fc49de8fcf63c9ed",
+  "tasks": [
+    "case_review"
+  ],
+  "obligations_file": "obligations.yaml",
+  "built_at": "2026-09-20T04:18:18+00:00"
+}

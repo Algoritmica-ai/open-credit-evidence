@@ -1,165 +1,127 @@
-# OpenCredit Evidence
+# Credit Evidence Engine
 
-**Credit Evidence Engine** (4-week plan) — OpenCredit Evidence Hackathon. Runs locally (venv or Docker Compose). Inference is hosted NVIDIA Build. Axis/Curiosity are optional GPU/Jupyter only — not an app host.
+Tests an AI assistant that compiles a case file for a human making a regulated
+credit decision, and produces the evidence a validator or supervisor needs to
+approve it for use.
 
-A credit decision evidence verification system that ensures AI-generated loan summaries include all decision-critical facts from source documents.
+The assistant does not decide the loan. It writes the briefing the underwriter
+decides from. A briefing can read well, state the right conclusion, and still be
+dangerous — because of what it leaves out, or because a number in it is wrong.
+This engine catches both, by name, without asking another model to judge.
 
-## Team
+## How
 
-- **Luca** — Product / Regulatory
-- **Sriram** — Cases / Models / Marking
-- **Clyde** — Backend / Repo / RAG / Evidence / Deploy
+**Ground truth by construction.** The loan applications are generated, not
+collected. A hidden repayment-capacity tier drives the observable fields; a
+scorecard decides approve, refer or decline; the fields that drove each decision
+are recorded before any model runs. Fields with no path to the outcome — age
+band, dependants, postcode, employer — are declared as decoys. That sealed
+marking key is what makes an omission check possible.
 
-## Week 1 Success Criteria (ends Wed 16 Sep 2026)
+**Deterministic checks are the evidence.** Each briefing is compared with the
+marking key by plain code: did it state the facts the decision turned on, are
+its numbers in the file, did it cite a decoy as a reason, did it name what would
+change the outcome. A judge model grades readability only, and is reported, not
+gated.
 
-- [ ] Twenty referred loan application cases run end-to-end
-- [ ] System catches a deliberately bad summary that omits decision-critical facts
-- [ ] Evidence verification pipeline with tamper detection
-- [ ] Basic whole-file summarization via hosted NVIDIA Build (embeddings later)
-
-## Quick Start
-
-### Prerequisites
-
-- Python 3.11+
-- uv (recommended) or pip
-
-### Installation
-
-```bash
-# Clone the repository
-git clone <repo-url>
-cd open-credit-evidence
-
-# Create virtual environment and install dependencies
-uv venv
-source .venv/bin/activate
-uv pip install -e ".[dev]"
-
-# Or with pip
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-```
-
-### Configuration
-
-```bash
-cp .env.example .env
-# Set NVIDIA_API_KEY for live NVIDIA Build calls
-```
-
-### Running Tests
-
-```bash
-pytest
-```
-
-### Running the Pipeline (Week 1)
-
-```bash
-# Whole-file summarization via NVIDIA Build (stub if no key)
-python -m open_credit_evidence.cli process cases/sample_case_001/
-
-# With a key in .env — live Build call:
-#   NVIDIA_API_KEY=... python -m open_credit_evidence.cli process cases/sample_case_001/ -o reports/case_001_report.json
-
-# Verify evidence report integrity
-python -m open_credit_evidence.cli verify reports/case_001_report.json
-```
-
-### Docker Compose (same CLI, no HTTP port)
-
-```bash
-docker compose up --build          # builds image, prints `oce --help`, exits
-docker compose run --rm app pytest -v
-docker compose run --rm app oce process cases/sample_case_001/
-```
-
-Full run/runtime notes: [`docs/runtime.md`](docs/runtime.md).
-
-## Project Structure
+**The output is an evidence pack**, organised by EU AI Act article, with every
+result traceable to a transcript and every file covered by a checksum. Anyone
+with the pack and the run can re-derive every number.
 
 ```
-open-credit-evidence/
-├── BUILD.md                  # Detailed technical spec
-├── cases/                    # Sample referred loan application cases
-│   ├── sample_case_001/     # Application form + bureau report
-│   └── sample_case_002/
-├── docker-compose.yml        # Local CLI container (no published ports)
-├── Dockerfile                # Image for Compose; default CMD is oce --help
-├── docs/
-│   ├── runtime.md           # How to run: venv, Compose, NVIDIA env; Axis is not a host
-│   ├── design-note.md       # System design (models, RAG, safety)
-│   └── week1-design-outline.md
-├── src/open_credit_evidence/
-│   ├── loader.py            # Case loading with fingerprint verification
-│   ├── runner.py            # Nemotron assistant interface
-│   ├── omission_check.py    # Decision-critical fact verification
-│   ├── evidence.py          # Evidence report generation
-│   └── schemas.py           # Data models
-├── tests/
-│   ├── fixtures/            # Good/bad summary test fixtures
-│   └── test_*.py           # Test suite
-└── pyproject.toml
+Synthetic Data Designer ──▶ scorecard ──▶ pack (documents + sealed marking key)
+                                               │
+                                               ▼
+                       assistant under test (Nemotron, NIM or NVIDIA Build)
+                                               │ briefing, N repeats
+                                               ▼
+        material_omission · numeric_fidelity · decoy_citation · flip_accuracy
+                          + readability judge (reported)
+                                               │
+                                               ▼
+              evidence pack by obligation ── checksums ── evidence verify
 ```
 
-## Architecture Overview
-
-**Docs / architecture.** Detailed technical spec: BUILD.md. How to run: [`docs/runtime.md`](docs/runtime.md).
-
-```
-┌─────────────┐    ┌──────────────┐    ┌─────────────────┐
-│  Case Docs  │───▶│    Loader    │───▶│  Fingerprinted  │
-│  (MD/Text)  │    │  + Hash      │    │     Case        │
-└─────────────┘    └──────────────┘    └────────┬────────┘
-                                                │
-                   ┌──────────────┐             ▼
-                   │   Nemotron   │◀───────────────────────
-                   │   (NVIDIA)   │    RAG Context + Query
-                   └──────┬───────┘
-                          │
-                          ▼
-                   ┌──────────────┐    ┌─────────────────┐
-                   │   Summary    │───▶│ Omission Check  │
-                   │  Generation  │    │ (Critical Facts)│
-                   └──────────────┘    └────────┬────────┘
-                                                │
-                                                ▼
-                                       ┌─────────────────┐
-                                       │ Evidence Report │
-                                       │ + Tamper Proof  │
-                                       └─────────────────┘
-```
-
-## Key Constraints (Mentor Guidance Day 1)
-
-1. **Design before coding** — See `docs/design-note.md`
-2. **Start small** — Twenty cases end-to-end first
-3. **Use RAG** — Not fine-tuned models on critical path
-4. **NVIDIA Build** — Hosted `nvidia/nemotron-3.5-lightning-30b-a3b`; whole-file context first, embeddings later. No self-hosted models.
-5. **Runtime** — Local machine + Docker Compose. Hosted NVIDIA Build for Nemotron. Team source of truth is GitHub (`Algoritmica-ai/open-credit-evidence`). Origin may be a working copy. CI (GitHub Actions, pytest) can follow on GitHub — not in this repo yet.
-
-## What This Is NOT
-
-This is the **4-week plan**: Credit Evidence Engine (RAG, hosted Nemotron, omission/tamper). Stretch is the **pitch architecture**: OpenShift DataMesh+CFM deploy design — not this repo's path.
-No Iceberg, Trino, Hive, Airflow, or Kustomize here.
-
-**Axis portal / Curiosity** are optional GPU, Jupyter, Slurm, or private Kubernetes pods for experiments. They do **not** host this Evidence Engine as an HTTP app. There is no `axis deploy` and no `/apps/open-credit-evidence/health` URL.
-
-## Source remotes
-
-**Canonical upstream:** [github.com/Algoritmica-ai/open-credit-evidence](https://github.com/Algoritmica-ai/open-credit-evidence). Clone and push there for team work.
+## Quick start
 
 ```bash
 git clone https://github.com/Algoritmica-ai/open-credit-evidence.git
+cd open-credit-evidence
+python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+cp .env.example .env            # NVIDIA_API_KEY, or point a role at a NIM
+.venv/bin/pytest -q             # 40 tests, no network
 ```
 
-**Origin** (`iamclyde/open-credit-evidence` on Cursor Origin) may remain a working copy or mirror. It is not a deploy target. GitHub Actions CI (pytest) can run on the GitHub repo once workflows are added.
+The catch, with no model involved:
 
-## License
+```bash
+.venv/bin/python scripts/demo_gate.py --case APP000044
+```
 
-Apache 2.0 — See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+A full run of the sample pack — 20 referred cases, three repeats, all checks, the
+readability judge — and the evidence pack it produces:
 
-Copyright holders: Algoritmica GmbH + ZAGA Open Source (pending confirmation from Luca).
+```bash
+.venv/bin/evidence run packs/underwriter-sample --repeats 3 --out runs/today
+.venv/bin/evidence report runs/today
+.venv/bin/evidence verify runs/today --recompute --pack packs/underwriter-sample
+```
 
+Change one digit in any transcript and `verify` fails, naming the file.
+
+A committed run is in [`runs/2026-09-20-build/`](runs/2026-09-20-build/); its
+report is [`evidence/report.md`](runs/2026-09-20-build/evidence/report.md).
+
+## Models and where they run
+
+| Role | Model | Where |
+|---|---|---|
+| Assistant under test | `nvidia/nemotron-3.5-lightning-30b-a3b` | NVIDIA Build, or a NIM on your own GPU |
+| Judge (readability only) | `nvidia/nemotron-3-ultra-550b-a55b` | NVIDIA Build; a distilled Nemotron Nano can replace it on-prem |
+| Retriever | `nvidia/nemotron-3-embed-1b` | NVIDIA Build |
+
+Any role moves between cloud and on-prem with two lines in `.env`
+(`EVIDENCE_<ROLE>_BASE_URL`, `EVIDENCE_<ROLE>_MODEL`); every transcript records
+which endpoint produced it. See [`docs/models.md`](docs/models.md) and
+[`docs/cluster.md`](docs/cluster.md).
+
+## Repository
+
+| Path | What it is |
+|---|---|
+| `packs/underwriter-sample/` | The sample pack: 20 items, three documents each, marking keys, obligations map, regulatory context |
+| `specs/credit_underwriting.yaml` | The Synthetic Data Designer recipe the pack was generated from |
+| `src/evidence/` | Contracts, checks, runner, judge, evidence pack writer and verifier, CLI |
+| `regulations/` | Jurisdiction rule packs and obligation registries (Italy first) |
+| `scripts/` | Pack builder, the no-model demo, cluster serving scripts, LoRA fine-tuning |
+| `notebooks/` | Executed notebooks: the three models on one case; the on-prem setup |
+| `runs/` | A committed evidence pack from a real run |
+| `examples/nemo_evaluator/` | The same pack as a NeMo Evaluator benchmark, with a gate policy |
+| `docs/` | Architecture, contracts, models, cluster, regulations, the Verifier's Law framing, the deck |
+
+## What it claims, and what it does not
+
+For the sample pack, per obligation (from `packs/underwriter-sample/obligations.yaml`):
+
+| Obligation | Level |
+|---|---|
+| Art 14 human oversight | Evidences — omission, decoy, flip checks |
+| Art 15 accuracy and robustness | Evidences — numeric fidelity, repeat agreement |
+| Art 13 transparency, Art 9 risk management | Contributes |
+| Art 10, 12, 17 | Not covered, and the report says so |
+
+It does not make or score the credit decision, does not grade regulatory
+compliance, and does not measure fairness across a population. The jurisdiction
+rule packs check that required evidence references are present; they do not
+interpret law.
+
+## Team
+
+Sriram Krishnan (cases, marking, models) · Clyde Tedrick (engine, evidence,
+deployment) · Luca Borella (materiality, regulation). Built for the NVIDIA Open
+Models Codefest, mentored by Tosin Adesuyi.
+
+## Licence
+
+Apache 2.0. See [LICENSE](LICENSE), [NOTICE](NOTICE) and
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
