@@ -12,7 +12,8 @@ COPY packs ./packs
 COPY regulations ./regulations
 COPY specs ./specs
 COPY scripts ./scripts
-COPY runs ./runs
+# runs/ is a volume (see docker-compose.yml); committed runs are copied only if present.
+COPY run[s] ./runs/
 
 RUN pip install --no-cache-dir -e ".[dev,web]"
 
