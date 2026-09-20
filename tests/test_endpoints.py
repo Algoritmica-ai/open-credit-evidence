@@ -11,6 +11,8 @@ from evidence.adapters import nvidia_build as nb
 
 @pytest.fixture(autouse=True)
 def _clean_env(monkeypatch):
+    # The developer's .env may point roles at the cluster; these tests must not see it.
+    monkeypatch.setattr(nb, "_load_env", lambda: None)
     for k in list(os.environ):
         if k.startswith("EVIDENCE_") or k == "NO_PROXY" or k == "no_proxy":
             monkeypatch.delenv(k, raising=False)

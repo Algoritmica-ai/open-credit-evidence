@@ -111,7 +111,7 @@ async function chooseCase(k) {
     <dt>checks</dt><dd>${d.checks.map((x) => `<code>${esc(x)}</code>`).join(" ")}</dd></dl>`;
   const docs = [{ renderer: "task prompt", content: d.prompt }, ...d.documents];
   $("doc-tabs").innerHTML = docs.map((doc, i) => `<button class="tab" data-i="${i}" aria-selected="${i === 1}">${esc(doc.renderer)}</button>`).join("");
-  const showDoc = (i) => { $("doc-body").textContent = docs[i].content; $("doc-body").hidden = false; $("doc-tabs").querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", t.dataset.i == i)); };
+  const showDoc = (i) => { $("doc-body").innerHTML = md(docs[i].content); $("doc-body").hidden = false; $("doc-tabs").querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", t.dataset.i == i)); };
   $("doc-tabs").querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => showDoc(+t.dataset.i)));
   showDoc(1);
   $("gate-results").innerHTML = "";
@@ -243,7 +243,7 @@ async function showEvCase(k, rep) {
   if (name) {
     const t = await api(`/api/runs/${state.run}/transcripts/${name}`);
     $("ev-meta").textContent = `${t.sut.model_id} · ${t.sut.endpoint || ""} · ${(t.latency_ms / 1000).toFixed(1)}s · ${t.tokens_out} tokens`;
-    $("ev-briefing").textContent = t.output;
+    $("ev-briefing").innerHTML = md(t.output);
   } else { $("ev-meta").textContent = ""; $("ev-briefing").textContent = "(transcript not found)"; }
   $("ev-verdicts").innerHTML = rows.filter((r) => r.repeat === rep).map((r) => renderCheck({ ...r, name: r.check })).join("");
 }
@@ -252,16 +252,19 @@ $("ev-next").addEventListener("click", () => showEvCase(state.evIndex + 1, state
 
 /* A small markdown renderer for report.md: headings, tables, lists, code, bold. */
 function md(src) {
-  const inline = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+  const inline = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<i>$2</i>");
   const out = []; let list = null, table = null;
   const flush = () => { if (list) { out.push(`<ul>${list.join("")}</ul>`); list = null; } if (table) { out.push(`<table>${table.join("")}</table>`); table = null; } };
   for (const raw of src.split("\n")) {
     const line = raw.replace(/\s+$/, "");
-    if (/^\|/.test(line)) { if (/^\|\s*-/.test(line)) continue; const cells = line.slice(1, -1).split("|").map((c) => inline(c.trim())); table = table || []; table.push(table.length ? `<tr>${cells.map((c) => `<td>${c}</td>`).join("")}</tr>` : `<tr>${cells.map((c) => `<th>${c}</th>`).join("")}</tr>`); continue; }
-    if (/^\s*- /.test(line)) { if (table) flush(); list = list || []; list.push(`<li>${inline(line.replace(/^\s*- /, ""))}</li>`); continue; }
+    if (/^\|/.test(line)) { if (/^\|[\s:-]*\|[\s:|-]*$/.test(line)) continue; const cells = line.replace(/^\|/, "").replace(/\|\s*$/, "").split("|").map((c) => inline(c.trim())); table = table || []; table.push(table.length ? `<tr>${cells.map((c) => `<td>${c}</td>`).join("")}</tr>` : `<tr>${cells.map((c) => `<th>${c}</th>`).join("")}</tr>`); continue; }
+    if (/^\s*[-*•] /.test(line)) { if (table) flush(); list = list || []; list.push(`<li>${inline(line.replace(/^\s*[-*•] /, ""))}</li>`); continue; }
+    if (/^\s*\d+[.)] /.test(line)) { if (table) flush(); list = list || []; list.push(`<li>${inline(line.replace(/^\s*\d+[.)] /, ""))}</li>`); continue; }
     flush();
     if (/^# /.test(line)) out.push(`<h1>${inline(line.slice(2))}</h1>`);
     else if (/^## /.test(line)) out.push(`<h2>${inline(line.slice(3))}</h2>`);
+    else if (/^### /.test(line)) out.push(`<h3>${inline(line.slice(4))}</h3>`);
+    else if (/^---+$/.test(line)) out.push("<hr>");
     else if (line) out.push(`<p>${inline(line)}</p>`);
   }
   flush(); return out.join("");

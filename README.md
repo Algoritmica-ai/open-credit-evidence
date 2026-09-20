@@ -48,7 +48,7 @@ Synthetic Data Designer ──▶ scorecard ──▶ pack (documents + sealed m
 git clone https://github.com/Algoritmica-ai/open-credit-evidence.git
 cd open-credit-evidence
 python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"
-cp .env.example .env            # NVIDIA_API_KEY, or point a role at a NIM
+cp .env.example .env            # NVIDIA_API_KEY; assistant points at the team's NIM (VPN)
 .venv/bin/pytest -q             # 40 tests, no network
 ```
 
@@ -85,7 +85,7 @@ report is [`evidence/report.md`](runs/2026-09-20-build/evidence/report.md).
 
 | Role | Model | Where |
 |---|---|---|
-| Assistant under test | `nvidia/nemotron-3.5-lightning-30b-a3b` | NVIDIA Build, or a NIM on your own GPU |
+| Assistant under test | `nvidia/nemotron-3.5-lightning` | The NIM on the team's GPU node (`.env.example` points there); or NVIDIA Build |
 | Judge (readability only) | `nvidia/nemotron-3-ultra-550b-a55b` | NVIDIA Build; a distilled Nemotron Nano can replace it on-prem |
 | Retriever | `nvidia/nemotron-3-embed-1b` | NVIDIA Build |
 

@@ -161,12 +161,20 @@ def chat(
     extra: dict[str, Any] = {"chat_template_kwargs": {"enable_thinking": thinking}}
     client = _client(ep)
     t0 = time.perf_counter()
-    resp = client.chat.completions.create(
-        model=model_id,
-        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-        extra_body=extra,
-        **params,
-    )
+    try:
+        resp = client.chat.completions.create(
+            model=model_id,
+            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+            extra_body=extra,
+            **params,
+        )
+    except Exception as exc:
+        if not ep.is_build and "Connection" in type(exc).__name__:
+            raise ConnectionError(
+                f"{role} endpoint {ep.base_url} is unreachable. If it is the Codefest node, "
+                "connect the VPN and check the NIM is up (docs/cluster.md)."
+            ) from exc
+        raise
     ms = int((time.perf_counter() - t0) * 1000)
     usage = resp.usage
     return ChatResponse(
