@@ -1,0 +1,38 @@
+# The regulation corpus for the EU jurisdiction: the texts the judge is handed
+# and must cite. Built into an index by `evidence corpus build EU`; the index
+# records the sha256 of every source so a run can name exactly which text it
+# used. Official publications remain the canonical text.
+jurisdiction: EU
+title: EU Artificial Intelligence Act — provisions relevant to an assistant in a credit decision
+verified: 2026-09-20
+sources:
+  - id: ai-act-art-13
+    file: sources/ai-act-article-13.md
+    instrument: Regulation (EU) 2024/1689
+    citation: AI Act Article 13
+    title: Transparency and provision of information to deployers
+    url: https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng
+  - id: ai-act-art-14
+    file: sources/ai-act-article-14.md
+    instrument: Regulation (EU) 2024/1689
+    citation: AI Act Article 14
+    title: Human oversight
+    url: https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng
+  - id: ai-act-art-15
+    file: sources/ai-act-article-15.md
+    instrument: Regulation (EU) 2024/1689
+    citation: AI Act Article 15
+    title: Accuracy, robustness and cybersecurity
+    url: https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng
+  - id: ai-act-art-26
+    file: sources/ai-act-article-26.md
+    instrument: Regulation (EU) 2024/1689
+    citation: AI Act Article 26
+    title: Obligations of deployers of high-risk AI systems
+    url: https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng
+  - id: ai-act-annex-iii-5
+    file: sources/ai-act-annex-iii-5.md
+    instrument: Regulation (EU) 2024/1689
+    citation: AI Act Annex III, point 5
+    title: Access to essential private and public services (incl. creditworthiness, 5(b))
+    url: https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng

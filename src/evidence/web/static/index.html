@@ -90,6 +90,15 @@
         </div>
       </div>
       <div class="card">
+        <div class="card-head"><h2>Regulation corpus for the judge</h2></div>
+        <p class="hint">The passages the judge is handed and must cite. Built from the source texts under
+           <code class="inline">regulations/&lt;CC&gt;/</code> into a versioned, hashed index — a standalone step, run when the
+           texts change, never during an evaluation. Every judge result records the passages it saw and the corpus hash.</p>
+        <div class="scroll"><table class="grid-table" id="corpora-table"></table></div>
+        <div id="corpus-status" style="margin-top:8px"></div>
+        <div class="doc" id="corpus-passages" hidden style="margin-top:10px; max-height:320px"></div>
+      </div>
+      <div class="card">
         <div class="card-head"><h2>Where the models run</h2></div>
         <p class="hint">Any role moves between NVIDIA Build and a self-hosted NIM with two lines in
            <code class="inline">.env</code>. Every transcript records which endpoint produced it.</p>
@@ -158,6 +167,9 @@
               <span class="sub">Leave empty for the whole pack.</span></label>
           </div>
           <label class="check" style="margin-top:10px"><input type="checkbox" id="run-judge" checked /> Call the readability judge (slower on a reasoning model)</label>
+          <label class="field" style="margin-top:10px; max-width:320px"><span class="lbl">Regulation corpus the judge cites</span>
+            <select id="run-corpus"><option value="none">none</option></select>
+            <span class="sub">A built corpus from the Pack screen. The judge must cite one of the passages retrieved for it.</span></label>
           <div style="margin-top:14px; display:flex; gap:8px"><button class="btn primary" id="run-start">Start run</button><button class="btn" id="run-cancel" disabled>Cancel</button></div>
           <div id="run-error"></div>
         </div>

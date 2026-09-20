@@ -33,7 +33,13 @@ def _cmd_run(a: argparse.Namespace) -> int:
     print(f"checks   {', '.join(checks or pack.checks_declared())}")
     print(f"repeats  {a.repeats}   judge {'on' if not a.no_judge else 'off'}   out {out}")
     manifest = run_pack(
-        pack, out, repeats=a.repeats, checks=checks, judge=not a.no_judge, limit=a.limit
+        pack,
+        out,
+        repeats=a.repeats,
+        checks=checks,
+        judge=not a.no_judge,
+        limit=a.limit,
+        corpus=None if a.corpus == "none" else a.corpus,
     )
     print(f"sut      {manifest['sut']['model_id']}  {manifest['sut']['endpoint']}")
     res = write_evidence(out, pack.obligations)
@@ -108,6 +114,28 @@ def _cmd_ui(a: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_corpus(a: argparse.Namespace) -> int:
+    from evidence.corpus import build_corpus, list_corpora
+
+    if a.action == "build":
+        m = build_corpus(a.jurisdiction)
+        print(
+            f"{m['jurisdiction']}: {m['passages']} passages from {len(m['sources'])} source(s), "
+            f"embed {m['embed_model']}, corpus sha256 {m['corpus_sha256'][:12]}…"
+        )
+        for src in m["sources"]:
+            print(f"  {src['id']:24} {src['passages']:3} passages  {src['citation']}")
+        return 0
+    for c in list_corpora():
+        state = (
+            f"built: {c['passages']} passages, sha {c['corpus_sha256'][:12]}…"
+            if c["built"]
+            else "not built"
+        )
+        print(f"{c['jurisdiction']:4} {c['sources']} source(s)  {state}  — {c['title']}")
+    return 0
+
+
 def _cmd_checks(_: argparse.Namespace) -> int:
     for name in available_checks():
         print(name)
@@ -125,6 +153,11 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--checks", help="comma-separated; default: what each item declares")
     r.add_argument("--no-judge", action="store_true", help="skip the readability judge")
     r.add_argument("--limit", type=int, help="only the first N items")
+    r.add_argument(
+        "--corpus",
+        default="EU",
+        help="regulation corpus the judge retrieves from (jurisdiction code, or 'none')",
+    )
     r.set_defaults(fn=_cmd_run)
 
     p = sub.add_parser("report", help="print evidence/report.md for a run")
@@ -140,6 +173,11 @@ def main(argv: list[str] | None = None) -> int:
     u = sub.add_parser("rules", help="evaluate the jurisdiction rule pack for a pack's context")
     u.add_argument("pack")
     u.set_defaults(fn=_cmd_rules)
+
+    k = sub.add_parser("corpus", help="build or list regulation corpora for the judge")
+    k.add_argument("action", choices=["build", "list"])
+    k.add_argument("jurisdiction", nargs="?", default="EU")
+    k.set_defaults(fn=_cmd_corpus)
 
     w = sub.add_parser("ui", help="serve the local web UI")
     w.add_argument("--host", default="127.0.0.1")

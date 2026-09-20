@@ -68,6 +68,33 @@ async function choosePack(id, meta) {
   show("case");
 }
 
+let passageIndex = {};
+async function loadCorpora() {
+  const cs = await api("/api/corpora");
+  const t = $("corpora-table");
+  t.innerHTML = `<thead><tr><th>jurisdiction</th><th>title</th><th class="num">sources</th><th class="num">passages</th><th>embed model</th><th>corpus sha</th><th></th></tr></thead><tbody>` +
+    cs.map((c) => `<tr><td><code class="inline">${esc(c.jurisdiction)}</code></td><td class="wrap">${esc(c.title || "")}</td><td class="num">${c.sources}</td>
+      <td class="num">${c.built ? c.passages : `<span class="badge">not built</span>`}</td><td>${esc(c.embed_model || "—")}</td><td>${c.built ? `<code class="inline">${esc(c.corpus_sha256.slice(0, 12))}…</code>` : "—"}</td>
+      <td style="white-space:nowrap"><button class="btn sm" data-build="${esc(c.jurisdiction)}">${c.built ? "Rebuild" : "Build"}</button> ${c.built ? `<button class="btn sm ghost" data-view="${esc(c.jurisdiction)}">Passages</button>` : ""}</td></tr>`).join("") + "</tbody>";
+  const sel = $("run-corpus");
+  sel.innerHTML = `<option value="none">none</option>` + cs.filter((c) => c.built).map((c) => `<option value="${esc(c.jurisdiction)}" ${c.jurisdiction === "EU" ? "selected" : ""}>${esc(c.jurisdiction)} — ${c.passages} passages</option>`).join("");
+  t.querySelectorAll("button[data-build]").forEach((b) => b.addEventListener("click", async () => {
+    $("corpus-status").innerHTML = `<span class="spin"></span>embedding passages…`;
+    const j = await api(`/api/corpora/${b.dataset.build}/build`, {});
+    const tick = setInterval(async () => {
+      const job = await api(`/api/run/${j.job_id}`);
+      if (job.status === "done") { clearInterval(tick); $("corpus-status").innerHTML = `<span class="badge good">built</span> ${job.passages} passages · sha ${esc(job.corpus_sha256.slice(0, 12))}…`; await loadCorpora(); }
+      if (job.status === "error") { clearInterval(tick); $("corpus-status").innerHTML = `<span class="badge bad">failed</span> ${esc(job.error)}`; }
+    }, 1500);
+  }));
+  t.querySelectorAll("button[data-view]").forEach((b) => b.addEventListener("click", async () => {
+    const ps = await api(`/api/corpora/${b.dataset.view}/passages`);
+    ps.forEach((p) => (passageIndex[p.passage_id] = p));
+    $("corpus-passages").innerHTML = ps.map((p) => `<p><b>[${esc(p.passage_id)}]</b> ${esc(p.citation)} — ${esc(p.title)}<br>${esc(p.text)}</p>`).join("");
+    $("corpus-passages").hidden = false;
+  }));
+}
+
 async function loadRuns() {
   const runs = await api("/api/runs");
   const t = $("runs-table");
@@ -150,6 +177,11 @@ function renderCheck(r) {
     if ("matched" in e) return `<li>${e.matched ? "✓" : "✗"} <b>${esc(e.ref)}</b>${e.method ? ` · ${esc(e.method)}` : " · missing"}${e.form ? ` · “${esc(e.form)}”` : ""}${e.sentence ? `<br><i style="color:var(--ink-3)">${esc(e.sentence)}</i>` : ""}</li>`;
     if ("grounded" in e) return `<li>${e.grounded ? "✓" : "✗"} <b>${esc(e.value)}</b> · ${esc(e.method || "not in the case file")}${e.derivation ? ` = ${esc(e.derivation)}` : ""}</li>`;
     if ("cited" in e) return e.mentioned ? `<li>${e.cited ? "✗ cited as a factor" : "· mentioned"}: <b>${esc(e.ref)}</b><br><i style="color:var(--ink-3)">${esc(e.sentence)}</i></li>` : "";
+    if ("citation" in e && !("matched" in e)) {
+      const p = passageIndex[e.citation];
+      return `<li>${["intelligible", "actionable", "overridable"].filter((k) => k in e).map((k) => `${k} <b>${e[k]}</b>`).join(" · ")}</li>` +
+        (e.citation ? `<li>cites <b>${esc(e.citation)}</b>${e.citation_in_passages === false ? ` <span class="badge bad">not among the passages given</span>` : ""}${p ? `<br><i style="color:var(--ink-3)">${esc(p.citation)}: ${esc(p.text.slice(0, 260))}…</i>` : ""}</li>` : "");
+    }
     if ("expected" in e) return `<li>${e.found && e.direction === e.expected ? "✓" : "✗"} <b>${esc(e.ref)}</b> · expected ${esc(e.expected)}${e.sentence ? `<br><i style="color:var(--ink-3)">${esc(e.sentence)}</i>` : " · not named"}</li>`;
     return `<li>${esc(JSON.stringify(e))}</li>`;
   }).join("");
@@ -166,7 +198,7 @@ let poll = null;
 $("run-start").addEventListener("click", async () => {
   $("run-error").innerHTML = "";
   try {
-    const job = await api("/api/run", { pack: state.pack, repeats: +$("run-repeats").value || 1, limit: $("run-limit").value ? +$("run-limit").value : null, judge: $("run-judge").checked });
+    const job = await api("/api/run", { pack: state.pack, repeats: +$("run-repeats").value || 1, limit: $("run-limit").value ? +$("run-limit").value : null, judge: $("run-judge").checked, corpus: $("run-corpus").value });
     state.job = job.job_id; state.run = job.run_id;
     $("run-id").textContent = job.run_id; $("run-id").hidden = false;
     $("run-total").textContent = job.total; $("run-done").textContent = 0; $("run-bar").style.width = "0"; $("run-log").textContent = "";
@@ -195,6 +227,10 @@ async function openRun(runId) {
   const d = await api(`/api/runs/${runId}`);
   state.run = runId; state.transcripts = d.transcripts;
   state.results = await api(`/api/runs/${runId}/results`);
+  const jc = d.manifest.judge && d.manifest.judge.corpus;
+  if (jc && !Object.keys(passageIndex).some((k) => k)) {
+    try { (await api(`/api/corpora/${jc.jurisdiction}/passages`)).forEach((p) => (passageIndex[p.passage_id] = p)); } catch (e) { /* corpus not built here */ }
+  }
   state.evCases = [...new Set(state.results.map((r) => r.item_id))];
   state.evIndex = -1;
   $("ev-run").textContent = runId; $("ev-run").hidden = false; $("vf-run").textContent = runId; $("vf-run").hidden = false;
@@ -202,7 +238,7 @@ async function openRun(runId) {
   $("ev-stats").innerHTML = [
     ["assistant", m.sut.model_id, m.sut.on_prem ? "on-prem" : "cloud"],
     ["briefings", m.transcripts, `${m.pack.items} cases × ${m.repeats}`],
-    ["judge", m.judge ? m.judge.model_id : "off", m.judge ? (m.judge.on_prem ? "on-prem" : "cloud") : ""],
+    ["judge", m.judge ? m.judge.model_id : "off", m.judge ? `${m.judge.on_prem ? "on-prem" : "cloud"}${m.judge.corpus ? ` · cites ${m.judge.corpus.jurisdiction} ${m.judge.corpus.corpus_sha256.slice(0, 8)}` : ""}` : ""],
     ["rule pack", d.regulations ? `${d.regulations.status}` : "—", d.regulations?.ruleset_id || ""],
   ].map(([k, v, sub]) => `<div class="stat"><div class="k">${esc(k)}</div><div class="v sm">${esc(v)}</div><div class="v sm" style="color:var(--ink-3)">${esc(sub)}</div></div>`).join("");
   const ag = s.repeat_agreement || {};
@@ -318,4 +354,4 @@ $("u-upload").addEventListener("click", async () => {
 
 /* ------------------------------------------------------------------ boot */
 
-(async () => { await loadMeta(); await loadPacks(); await loadRuns(); })();
+(async () => { await loadMeta(); await loadPacks(); await loadCorpora(); await loadRuns(); })();

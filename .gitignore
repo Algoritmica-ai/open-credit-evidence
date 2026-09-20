@@ -16,3 +16,4 @@ __pycache__/
 /runs/smoke/
 /.venv-nel/
 /results/
+/regulations/*/index/passages.db

@@ -189,6 +189,47 @@ def pack_rules(pack_id: str) -> dict[str, Any]:
     return assess(_pack(pack_id).regulatory_context).model_dump()
 
 
+@app.get("/api/corpora")
+def corpora() -> list[dict[str, Any]]:
+    from evidence.corpus import list_corpora
+
+    return list_corpora()
+
+
+@app.get("/api/corpora/{jurisdiction}/passages")
+def corpus_passages(jurisdiction: str) -> list[dict[str, Any]]:
+    from evidence.corpus import default_regulations_root
+
+    path = (
+        default_regulations_root() / _safe_name(jurisdiction, "corpus") / "index" / "passages.jsonl"
+    )
+    if not path.is_file():
+        raise HTTPException(404, "corpus not built")
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+
+
+def _corpus_worker(job_id: str, jurisdiction: str) -> None:
+    job = _jobs[job_id]
+    try:
+        from evidence.corpus import build_corpus
+
+        m = build_corpus(jurisdiction)
+        with _lock:
+            job.update(status="done", passages=m["passages"], corpus_sha256=m["corpus_sha256"])
+    except Exception as exc:  # noqa: BLE001
+        with _lock:
+            job.update(status="error", error=f"{type(exc).__name__}: {exc}")
+
+
+@app.post("/api/corpora/{jurisdiction}/build")
+def build_corpus_job(jurisdiction: str) -> dict[str, Any]:
+    j = _safe_name(jurisdiction, "corpus")
+    job_id = uuid.uuid4().hex[:12]
+    _jobs[job_id] = {"status": "running", "kind": "corpus", "log": [], "done": 0, "total": 1}
+    threading.Thread(target=_corpus_worker, args=(job_id, j), daemon=True).start()
+    return {"job_id": job_id, "jurisdiction": j}
+
+
 @app.get("/api/schema/item")
 def item_schema() -> dict[str, Any]:
     """The pack format: JSON schema of one line of items.jsonl."""
@@ -343,6 +384,8 @@ def start_run(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
     limit = payload.get("limit")
     limit = max(1, min(int(limit), len(pack.items))) if limit else None
     judge = bool(payload.get("judge", True))
+    corpus = payload.get("corpus", "EU")
+    corpus = None if corpus in (None, "", "none") else _safe_name(str(corpus), "corpus")
     if not os.environ.get("NVIDIA_API_KEY") and endpoint_for("assistant").is_build:
         raise HTTPException(400, "NVIDIA_API_KEY is not set and the assistant is on NVIDIA Build")
     stamp = datetime.now(UTC).strftime("%Y-%m-%dT%H%M%SZ")
@@ -359,7 +402,12 @@ def start_run(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
     }
     threading.Thread(
         target=_job_worker,
-        args=(job_id, pack, out, {"repeats": repeats, "judge": judge, "limit": limit}),
+        args=(
+            job_id,
+            pack,
+            out,
+            {"repeats": repeats, "judge": judge, "limit": limit, "corpus": corpus},
+        ),
         daemon=True,
     ).start()
     return {"job_id": job_id, "run_id": out.name, "total": total}

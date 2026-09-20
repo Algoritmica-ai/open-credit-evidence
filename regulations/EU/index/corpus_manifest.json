@@ -1,0 +1,58 @@
+{
+  "jurisdiction": "EU",
+  "title": "EU Artificial Intelligence Act \u2014 provisions relevant to an assistant in a credit decision",
+  "verified": "2026-09-20",
+  "chunking": "markdown-h2-paragraph-v1",
+  "embed_model": "nvidia/nemotron-3-embed-1b",
+  "dimension": 2048,
+  "passages": 26,
+  "passages_sha256": "7f3c6ec680008d906f9a138fef5e7d040a608edaf2892c69da5c242313a2e93e",
+  "sources": [
+    {
+      "id": "ai-act-art-13",
+      "file": "sources/ai-act-article-13.md",
+      "citation": "AI Act Article 13",
+      "title": "Transparency and provision of information to deployers",
+      "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng",
+      "sha256": "3ba39ad38aceb98b23ed7fde50eb4703f7cc54986ba38d403e5b90becc20665c",
+      "passages": 3
+    },
+    {
+      "id": "ai-act-art-14",
+      "file": "sources/ai-act-article-14.md",
+      "citation": "AI Act Article 14",
+      "title": "Human oversight",
+      "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng",
+      "sha256": "16fe3e3b2382258199d131a384f3751412dbcfc225838c044fee29d7818925b4",
+      "passages": 5
+    },
+    {
+      "id": "ai-act-art-15",
+      "file": "sources/ai-act-article-15.md",
+      "citation": "AI Act Article 15",
+      "title": "Accuracy, robustness and cybersecurity",
+      "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng",
+      "sha256": "60c451e2d8aaca862e5126362aa4813e7fa2618a0437b1c69db44708fbf5a7ca",
+      "passages": 5
+    },
+    {
+      "id": "ai-act-art-26",
+      "file": "sources/ai-act-article-26.md",
+      "citation": "AI Act Article 26",
+      "title": "Obligations of deployers of high-risk AI systems",
+      "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng",
+      "sha256": "d920cf1518ed2d9cb7ffa11af5511ac58a9a475e91e495d3dd1455e801df2504",
+      "passages": 12
+    },
+    {
+      "id": "ai-act-annex-iii-5",
+      "file": "sources/ai-act-annex-iii-5.md",
+      "citation": "AI Act Annex III, point 5",
+      "title": "Access to essential private and public services (incl. creditworthiness, 5(b))",
+      "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng",
+      "sha256": "83a609a3557fd1b288e864d729e0a4be9a32459626c14534fca2ce70837ab401",
+      "passages": 1
+    }
+  ],
+  "corpus_sha256": "1c42832279bbbee81d3f66568ac4b5ccd3488613bab5351e0536781f4bfb0535"
+}

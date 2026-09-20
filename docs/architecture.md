@@ -25,7 +25,8 @@ omission and fidelity checking possible.
 | Checks | `src/evidence/checks/` | Deterministic marking against the item's reference lists; no model in the verdict |
 | Model access | `src/evidence/adapters/` | One client for NVIDIA Build and any OpenAI-compatible NIM; retrieval over the case file |
 | Runner | `src/evidence/runner.py` | Items × repeats → transcripts; resumable; writes the run manifest |
-| Judge | `src/evidence/judge.py` | Readability only; reported, not gated |
+| Judge | `src/evidence/judge.py` | Readability and oversight against retrieved regulation passages, with a required citation; reported, not gated |
+| Corpus | `src/evidence/corpus.py`, `regulations/<CC>/corpus.yaml` | Standalone build: source texts → passages → Milvus Lite index, hashed; the judge retrieves from it at run time |
 | Regulations | `src/evidence/regulations.py`, `regulations/` | Jurisdiction rule packs: evidence-presence checks selected by the pack's regulatory context |
 | Evidence | `src/evidence/evidence/` | Aggregation by obligation, the report, checksums, the verifier |
 | CLI | `src/evidence/cli.py` | `evidence run · report · verify · rules · checks · ui` |
