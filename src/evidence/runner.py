@@ -24,6 +24,7 @@ from evidence.adapters.nvidia_build import BUILD_HOST, chat, endpoint_for
 from evidence.checks import run_checks
 from evidence.contracts.item import BenchmarkItem
 from evidence.contracts.transcript import SUTPins, Transcript
+from evidence.corpus import Corpus
 from evidence.judge import judge_readability
 from evidence.pack import Pack
 from evidence.regulations import assess
@@ -95,8 +96,14 @@ def run_pack(
     limit: int | None = None,
     log: Callable[[str], None] = print,
     should_stop: Callable[[], bool] | None = None,
+    corpus: Corpus | str | None = "EU",
 ) -> dict[str, Any]:
     """Execute the pack. Returns the run manifest; writes transcripts and results.jsonl.
+
+    ``corpus`` is the regulation corpus the judge retrieves from — a built
+    :class:`Corpus`, a jurisdiction code, or None for a judge with no passages.
+    A jurisdiction whose index is not built is reported and the judge runs
+    without passages.
 
     ``should_stop`` is polled before every model call. When it returns True the
     run stops cleanly: what was completed is scored and sealed, the manifest
@@ -119,6 +126,17 @@ def run_pack(
                 rec = json.loads(line)
                 if rec.get("check") == "readability" and rec.get("value") is not None:
                     prior_judge[(rec["item_id"], rec["repeat"])] = rec
+    corpus_obj: Corpus | None = None
+    corpus_note: str | None = None
+    if judge and corpus is not None:
+        if isinstance(corpus, Corpus):
+            corpus_obj = corpus
+        else:
+            try:
+                corpus_obj = Corpus(corpus)
+            except FileNotFoundError as exc:
+                corpus_note = str(exc)
+                log(f"  warning: {exc}; judge runs without regulation passages")
     results: list[dict[str, Any]] = []
     transcripts: list[Transcript] = []
     judge_seen: dict[str, Any] | None = None
@@ -149,7 +167,7 @@ def run_pack(
                 rec = prior_judge.get((item.item_id, rep))
                 if rec is None:
                     rec = {"item_id": item.item_id, "repeat": rep, "check": "readability"}
-                    rec |= judge_readability(output=t.output, item=item)
+                    rec |= judge_readability(output=t.output, item=item, corpus=corpus_obj)
                 results.append(rec)
                 judge_seen = judge_seen or {
                     "model_id": rec["judge"].removeprefix("model:"),
@@ -192,6 +210,17 @@ def run_pack(
         judge_block = {
             "model_id": judge_seen["model_id"],
             "endpoint": judge_seen["endpoint"],
+            "corpus": (
+                {
+                    "jurisdiction": corpus_obj.jurisdiction,
+                    "corpus_sha256": corpus_obj.sha256,
+                    "passages": corpus_obj.manifest["passages"],
+                    "embed_model": corpus_obj.manifest["embed_model"],
+                }
+                if corpus_obj
+                else None
+            ),
+            "corpus_note": corpus_note,
             "on_prem": bool(judge_seen["endpoint"])
             and BUILD_HOST not in (judge_seen["endpoint"] or ""),
             "rubric": "readability",
@@ -234,4 +263,6 @@ def run_pack(
     }
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     (out / "regulations.json").write_text(regulatory.model_dump_json(indent=2), encoding="utf-8")
+    if corpus_obj is not None:
+        corpus_obj.close()
     return manifest

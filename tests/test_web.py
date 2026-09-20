@@ -25,7 +25,7 @@ pytestmark = pytest.mark.skipif(
 
 
 @pytest.fixture
-def client(tmp_path, monkeypatch):
+def client(tmp_path, monkeypatch, regulations_root):
     # A throwaway copy of the packs directory, so uploads and builds never touch the repo.
     import shutil
 
@@ -63,6 +63,9 @@ def client(tmp_path, monkeypatch):
 
     monkeypatch.setattr("evidence.runner.chat", chat)
     monkeypatch.setattr("evidence.judge.chat", chat)
+    monkeypatch.setattr(
+        "evidence.corpus.embed", lambda texts, input_type: [[1.0, 0, 0, 0]] * len(texts)
+    )
     return TestClient(web.app)
 
 

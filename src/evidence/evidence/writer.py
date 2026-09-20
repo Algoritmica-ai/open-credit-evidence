@@ -111,10 +111,18 @@ def _report(
             if c["failing_items"]:
                 out.append("  - failing: " + ", ".join(i.split(":")[2] for i in c["failing_items"]))
             return out
-        return [
+        line = (
             f"- `{name}` — mean {c['mean_value']} (0–1), reported not gated; "
             f"{c['results']} judge calls, all auditable"
-        ]
+        )
+        if c.get("citations") is not None:
+            line += (
+                f"; cited a passage it was given in {c['citations']}/{c['results']}"
+                f" ({', '.join(c['cited'])})"
+                if c["cited"]
+                else ""
+            )
+        return [line]
 
     for ob in by_obligation(pack_obligations, checks):
         level = (ob["level"] or "").upper().replace("_", " ")

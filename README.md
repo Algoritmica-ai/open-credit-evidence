@@ -21,8 +21,9 @@ marking key is what makes an omission check possible.
 **Deterministic checks are the evidence.** Each briefing is compared with the
 marking key by plain code: did it state the facts the decision turned on, are
 its numbers in the file, did it cite a decoy as a reason, did it name what would
-change the outcome. A judge model grades readability only, and is reported, not
-gated.
+change the outcome. A judge model grades readability and oversight against the
+regulation passage retrieved for it — and must cite that passage — but is
+reported, not gated.
 
 **The output is an evidence pack**, organised by EU AI Act article, with every
 result traceable to a transcript and every file covered by a checksum. Anyone
@@ -86,7 +87,7 @@ report is [`evidence/report.md`](runs/2026-09-20-build/evidence/report.md).
 | Role | Model | Where |
 |---|---|---|
 | Assistant under test | `nvidia/nemotron-3.5-lightning` | The NIM on the team's GPU node (`.env.example` points there); or NVIDIA Build |
-| Judge (readability only) | `nvidia/nemotron-3-ultra-550b-a55b` | NVIDIA Build; a distilled Nemotron Nano can replace it on-prem |
+| Judge (readability and oversight, citing the regulation) | `nvidia/nemotron-3-ultra-550b-a55b` | NVIDIA Build; a distilled Nemotron Nano replaces it on-prem |
 | Retriever | `nvidia/nemotron-3-embed-1b` | NVIDIA Build |
 
 Any role moves between cloud and on-prem with two lines in `.env`
@@ -101,7 +102,7 @@ which endpoint produced it. See [`docs/models.md`](docs/models.md) and
 | `packs/underwriter-sample/` | The sample pack: 20 items, three documents each, marking keys, obligations map, regulatory context |
 | `specs/credit_underwriting.yaml` | The Synthetic Data Designer recipe the pack was generated from |
 | `src/evidence/` | Contracts, checks, runner, judge, evidence pack writer and verifier, CLI, web UI |
-| `regulations/` | Jurisdiction rule packs and obligation registries (Italy first) |
+| `regulations/` | Jurisdiction rule packs and obligation registries (Italy), and the regulation corpus the judge cites (EU AI Act), built with `evidence corpus build` |
 | `scripts/` | Pack builder, the no-model demo, cluster serving scripts, LoRA fine-tuning |
 | `notebooks/` | Executed notebooks: the three models on one case; the on-prem setup |
 | `runs/` | A committed evidence pack from a real run |

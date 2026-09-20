@@ -29,7 +29,7 @@ def summarise_checks(results: list[dict[str, Any]]) -> dict[str, dict[str, Any]]
         values = [r["value"] for r in rows if isinstance(r.get("value"), (int, float))]
         items = sorted({r["item_id"] for r in rows})
         failing = sorted({r["item_id"] for r in gated if not r["passed"]})
-        summary[name] = {
+        entry = {
             "results": len(rows),
             "items": len(items),
             "passed": sum(1 for r in gated if r["passed"]),
@@ -39,6 +39,15 @@ def summarise_checks(results: list[dict[str, Any]]) -> dict[str, dict[str, Any]]
             "failing_items": failing,
             "gated": bool(gated),
         }
+        if not gated and any("passages" in r for r in rows):
+            cites = [
+                r["evidence"][0].get("citation")
+                for r in rows
+                if r.get("evidence") and r["evidence"][0].get("citation_in_passages")
+            ]
+            entry["citations"] = len(cites)
+            entry["cited"] = sorted({c for c in cites if c})
+        summary[name] = entry
     return summary
 
 

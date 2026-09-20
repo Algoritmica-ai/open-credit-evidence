@@ -64,7 +64,7 @@ def _stub_chat(item_lookup):
 
 
 @pytest.fixture
-def stubbed(monkeypatch):
+def stubbed(monkeypatch, regulations_root):
     pack = load_pack(PACK)
     by_prompt = {i.documents_text(): i for i in pack.items}
 
