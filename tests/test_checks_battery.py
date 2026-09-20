@@ -142,3 +142,20 @@ def test_lever_absent_is_zero():
     out = "The bureau score would need to improve."
     (r,) = run_checks(["flip_accuracy"], output=out, item=item())
     assert not r.passed and r.score == 0.0
+
+
+def test_two_step_underwriter_arithmetic_is_grounded():
+    # headroom under the limit, the income that meets it, months as years, chained rounding
+    out = (
+        "The instalment would need to be capped at £214.73; the income would need to reach "
+        "£18,900 a year. The file is 75 months old (about 6.2 years). "
+        "40% of monthly income is £530.90."
+    )
+    (r,) = run_checks(["numeric_fidelity"], output=out, item=item())
+    assert r.passed, r.detail
+
+
+def test_tolerance_does_not_excuse_a_wrong_ratio():
+    out = "The ratio is 47.2%."  # true 47.5%; 0.6% off, well outside chained rounding
+    (r,) = run_checks(["numeric_fidelity"], output=out, item=item())
+    assert not r.passed

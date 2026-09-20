@@ -15,14 +15,19 @@ Grounding order for each number in the output:
    thousands separators and currency signs).
 2. **Rounded** — a document value rounds or truncates to it at the output's
    precision (``1,326.83`` → ``1,327``; ``47.48%`` → ``47.5%``, ``47.4%`` or ``47%``).
-3. **Derived** — it equals a single arithmetic step over document values:
-   a sum or difference of two amounts, a ratio of two as a percentage, a
-   twelfth or twelvefold of an annual amount, a percentage of an amount, or a
-   debt-service ratio ``(a + b) / (c / 12)``. Each derivation is written out
-   in the evidence. Derivations are typed: a percentage in the briefing can
-   only be grounded by a ratio, an amount only by amount arithmetic, and small
-   operands (counts, months, age bands) are excluded so that coincidences
-   between three-digit results and arbitrary small numbers do not count.
+3. **Derived** — it equals the arithmetic an underwriter would do over
+   document values: a sum or difference of two amounts, a ratio of two as a
+   percentage, a twelfth or twelvefold of an annual amount, a percentage of an
+   amount, a debt-service ratio ``(a + b) / (c / 12)``, the headroom under a
+   limit ``c / 12 × r% − a``, the income that would meet a limit
+   ``(a + b) / r% × 12``, or months expressed as years. Each derivation is
+   written out in the evidence. A derived value may differ from the stated one
+   by up to 0.15% — chained rounding (a monthly income rounded before the next
+   step) is not a wrong number, but 48.4% for 48.5% is. Derivations are typed:
+   a percentage in the briefing can only be grounded by a ratio, an amount only
+   by amount arithmetic, and small operands (counts, age bands) are excluded so
+   that coincidences between three-digit results and arbitrary small numbers do
+   not count.
 4. **Ungrounded** — none of the above. That is the finding.
 
 Numbers that are structurally not claims are skipped: list markers, years,
@@ -54,6 +59,8 @@ _MONTH_AFTER = re.compile(rf"^\s*{_MONTH}\b", re.I)
 # and must not combine into coincidental matches.
 _AMOUNT_MIN = 100.0
 _ANNUAL_MIN = 600.0
+# Relative slack for derived values: absorbs chained rounding, not wrong sums.
+_DERIVED_REL_TOL = 0.0015
 
 
 def _parse(m: re.Match[str]) -> float:
@@ -94,8 +101,15 @@ def _rounds_to(value: float, target: float, decimals: int) -> bool:
     return round(value, decimals) == round(target, decimals) or 0 <= value - target < unit
 
 
+def _close(value: float, target: float, decimals: int) -> bool:
+    """``value`` presents as ``target`` at the stated precision, or within tolerance."""
+    if _rounds_to(value, target, decimals):
+        return True
+    return target != 0 and abs(value - target) / abs(target) <= _DERIVED_REL_TOL
+
+
 def _matches(x: float, decimals: int, candidates: list[float]) -> bool:
-    return any(_rounds_to(c, x, decimals) for c in candidates)
+    return any(_close(c, x, decimals) for c in candidates)
 
 
 def _derivations(doc: list[float], pcts: list[float]) -> list[tuple[float, str, str]]:
@@ -128,6 +142,15 @@ def _derivations(doc: list[float], pcts: list[float]) -> list[tuple[float, str, 
             for a in amounts:
                 d.append((c / 12 * r / 100 - a, "amt", f"{c:g} / 12 × {r:g}% − {a:g}"))
                 d.append((c * r / 100 - a, "amt", f"{c:g} × {r:g}% − {a:g}"))
+    # The income that would bring a debt service inside a limit, annual and monthly.
+    for a, b in itertools.combinations(amounts, 2):
+        for r in rates:
+            d.append(((a + b) / (r / 100) * 12, "amt", f"({a:g} + {b:g}) / {r:g}% × 12"))
+            d.append(((a + b) / (r / 100), "amt", f"({a:g} + {b:g}) / {r:g}%"))
+    # Months expressed as years (a file age or tenure), bare numbers only.
+    for m in doc:
+        if 12 <= m < _AMOUNT_MIN * 10 and m == int(m):
+            d.append((m / 12, "num", f"{m:g} months / 12"))
     # Prefer derivations over larger operands: when two expressions give the
     # same result, the one built from the bigger amounts is the plausible one.
     d.sort(key=lambda t: -min(float(x) for x in re.findall(r"\d+(?:\.\d+)?", t[2])))
@@ -163,9 +186,9 @@ def numeric_fidelity(*, output: str, item: BenchmarkItem, **_: Any) -> CheckResu
         elif _matches(value, decimals, pool[kind]):
             record.update(grounded=True, method="rounded")
         else:
-            wanted = {"pct": {"pct"}, "amt": {"amt"}, "num": {"pct", "amt"}}[kind]
+            wanted = {"pct": {"pct"}, "amt": {"amt"}, "num": {"pct", "amt", "num"}}[kind]
             hit = next(
-                (expr for d, k, expr in derived if k in wanted and _rounds_to(d, value, decimals)),
+                (expr for d, k, expr in derived if k in wanted and _close(d, value, decimals)),
                 None,
             )
             if hit:

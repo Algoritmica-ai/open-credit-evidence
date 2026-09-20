@@ -1,0 +1,27 @@
+{
+  "item_id": "underwriter-sample:case_review:APP000120:complete",
+  "run_id": "2026-09-20-onprem",
+  "repeat": 1,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "http://10.130.232.20:8000/v1"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000120\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mrs |\n| Age band | 55-64 |\n| Employment type | permanent |\n| Employer | Harrow Estates |\n| Time in current role | 47 months |\n| Postcode district | LS6 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | £22,259 |\n| Income verified | Yes |\n| Existing monthly credit commitments | £653 |\n| Dependants | 0 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | £10,360 |\n| Term | 48 months |\n| Stated purpose | home improvement |\n| Indicative monthly instalment | £277 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000120\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**685** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | January 2025 (14 months) |\n| Accounts on file | 3 |\n| Searches, last 6 months | 1 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 0 |\n| Most recent delinquency | None |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, £2,000 to £40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application has been referred for manual underwriter review because the automated rules could not settle it. Specifically, the applicant’s total monthly debt service exceeds the policy threshold of 40% of gross monthly income.\n\n**What the File Shows:**\n\n*   **Against the Applicant (The Referral Trigger):**\n    *   **Affordability:** The applicant’s gross annual income is £22,259. The requested loan instalment is £277 per month, and existing monthly credit commitments are £653. This results in total monthly debt service of £930. As a percentage of the applicant’s gross monthly income (£1,855), this equals **50.1%**, which exceeds the 40% policy threshold.\n    *   **Credit File Age:** The credit file was opened in January 2025, making it 14 months old. The policy classifies a file under 24 months as a \"thin file,\" which triggers a review flag.\n\n*   **In Favour of the Applicant:**\n    *   **Credit History:** The credit bureau score is 685, which is above the 600 threshold requiring review. There are no defaults, CCJs, or missed payments in the last 24 months.\n    *   **Employment:** The applicant has permanent employment with Harrow Estates and has been in their current role for 47 months, demonstrating stability.\n    *   **Income Verification:** Income has been verified.\n\n**What Would Need to Change for a Different Outcome:**\nFor the application to fall within automated policy without underwriter intervention, the total monthly debt service must be reduced to 40% or less of gross monthly income. This could be achieved by:\n1.  **Reducing the loan amount or extending the term** to lower the monthly instalment below £333 (which would bring the total debt service ratio to 40%).\n2.  **Providing additional verified income** to increase the gross monthly income baseline.\n3.  **Reducing existing credit commitments** if possible.",
+  "latency_ms": 1897,
+  "tokens_in": 685,
+  "tokens_out": 454,
+  "provider_id": "chatcmpl-a125130b8abcbe88",
+  "started_at": "2026-09-20T09:29:31+00:00",
+  "sha256": "b6bcb9f7cd6e4bde38dfebf7389b2593edfe7364698c4485eff9de97b2dd9b93"
+}
