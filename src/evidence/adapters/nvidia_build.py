@@ -79,7 +79,16 @@ class ChatResponse:
     endpoint: str = BASE_URL  # where it ran — cloud or on-prem
 
 
+_ENV_LOADED = False
+
+
 def _load_env() -> None:
+    """Read .env once per process. A run must not change endpoint because the
+    file was edited while it was in flight."""
+    global _ENV_LOADED
+    if _ENV_LOADED:
+        return
+    _ENV_LOADED = True
     try:
         from dotenv import load_dotenv
 

@@ -1,0 +1,27 @@
+{
+  "item_id": "underwriter-sample:case_review:APP000522:complete",
+  "run_id": "2026-09-20-build",
+  "repeat": 2,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "https://integrate.api.nvidia.com/v1"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000522\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mr |\n| Age band | 65+ |\n| Employment type | self_employed |\n| Employer | Meridian Health |\n| Time in current role | 167 months |\n| Postcode district | LS6 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | £35,041 |\n| Income verified | Yes |\n| Existing monthly credit commitments | £217 |\n| Dependants | 3 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | £31,550 |\n| Term | 36 months |\n| Stated purpose | debt consolidation |\n| Indicative monthly instalment | £1,062 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000522\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**679** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | January 2022 (50 months) |\n| Accounts on file | 4 |\n| Searches, last 6 months | 2 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 1 |\n| Most recent delinquency | 7 months ago |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, £2,000 to £40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application has been referred for manual underwriter review because it triggers two policy thresholds that require human assessment:\n1.  **User**",
+  "latency_ms": 62338,
+  "tokens_in": 691,
+  "tokens_out": 42,
+  "provider_id": "chatcmpl-cf57ab82-c592-477c-be27-90c697bcb672",
+  "started_at": "2026-09-20T05:32:10+00:00",
+  "sha256": "da297d3d34245f69e2ee6e4c8c006349c4782764e9c2dd2dd97416b059137073"
+}

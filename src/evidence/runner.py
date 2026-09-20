@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from evidence import __version__
-from evidence.adapters.nvidia_build import chat, endpoint_for
+from evidence.adapters.nvidia_build import BUILD_HOST, chat, endpoint_for
 from evidence.checks import run_checks
 from evidence.contracts.item import BenchmarkItem
 from evidence.contracts.transcript import SUTPins, Transcript
@@ -110,7 +110,18 @@ def run_pack(
     started = _now()
 
     results_path = out / "results.jsonl"
+    # Judge records from an earlier pass over this directory are reused, like
+    # transcripts: re-scoring a run must not cost model calls.
+    prior_judge: dict[tuple[str, int], dict[str, Any]] = {}
+    if results_path.is_file():
+        for line in results_path.read_text(encoding="utf-8").splitlines():
+            if line:
+                rec = json.loads(line)
+                if rec.get("check") == "readability" and rec.get("value") is not None:
+                    prior_judge[(rec["item_id"], rec["repeat"])] = rec
     results: list[dict[str, Any]] = []
+    transcripts: list[Transcript] = []
+    judge_seen: dict[str, Any] | None = None
     calls_made = 0
     total = len(items) * repeats
     done = 0
@@ -129,15 +140,21 @@ def run_pack(
                 t = call_assistant(item, run_id, rep)
                 path.write_text(t.model_dump_json(indent=2), encoding="utf-8")
                 calls_made += 1
+            transcripts.append(t)
             for c in run_checks(names, output=t.output, item=item):
                 results.append(
                     {"item_id": item.item_id, "repeat": rep, "check": c.name} | c.to_score()
                 )
             if want_judge:
-                rec = judge_readability(output=t.output, item=item)
-                results.append(
-                    {"item_id": item.item_id, "repeat": rep, "check": "readability"} | rec
-                )
+                rec = prior_judge.get((item.item_id, rep))
+                if rec is None:
+                    rec = {"item_id": item.item_id, "repeat": rep, "check": "readability"}
+                    rec |= judge_readability(output=t.output, item=item)
+                results.append(rec)
+                judge_seen = judge_seen or {
+                    "model_id": rec["judge"].removeprefix("model:"),
+                    "endpoint": rec.get("endpoint"),
+                }
             done += 1
             log(
                 f"  {done}/{total}  {item.item_id.split(':')[2]} r{rep}  {t.latency_ms / 1000:.1f}s"
@@ -147,8 +164,38 @@ def run_pack(
         for rec in results:
             fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
-    assistant_ep = endpoint_for("assistant")
-    judge_ep = endpoint_for("judge") if judge else None
+    # What ran is what the transcripts say ran. The environment may have changed
+    # since the first call; the manifest must describe the calls, not the .env.
+    if transcripts:
+        first = transcripts[0].sut
+        sut_block = {
+            "role": "assistant",
+            "model_id": first.model_id,
+            "endpoint": first.endpoint,
+            "on_prem": bool(first.endpoint) and BUILD_HOST not in (first.endpoint or ""),
+            "prompt_version": first.prompt_version,
+            "params": first.params,
+            "max_tokens": ASSISTANT_MAX_TOKENS,
+            "endpoints_seen": sorted({t.sut.endpoint or "" for t in transcripts}),
+        }
+    else:
+        ep = endpoint_for("assistant")
+        sut_block = {
+            "role": "assistant",
+            "model_id": ep.model_id,
+            "endpoint": ep.base_url,
+            "on_prem": not ep.is_build,
+            "max_tokens": ASSISTANT_MAX_TOKENS,
+        }
+    judge_block = None
+    if judge and judge_seen:
+        judge_block = {
+            "model_id": judge_seen["model_id"],
+            "endpoint": judge_seen["endpoint"],
+            "on_prem": bool(judge_seen["endpoint"])
+            and BUILD_HOST not in (judge_seen["endpoint"] or ""),
+            "rubric": "readability",
+        }
     regulatory = assess(pack.regulatory_context)
     manifest: dict[str, Any] = {
         "run_id": run_id,
@@ -166,23 +213,8 @@ def run_pack(
             "scorecard_version": pack.manifest.get("scorecard_version"),
             "sdd": pack.manifest.get("sdd"),
         },
-        "sut": {
-            "role": "assistant",
-            "model_id": assistant_ep.model_id,
-            "endpoint": assistant_ep.base_url,
-            "on_prem": not assistant_ep.is_build,
-            "max_tokens": ASSISTANT_MAX_TOKENS,
-        },
-        "judge": (
-            {
-                "model_id": judge_ep.model_id,
-                "endpoint": judge_ep.base_url,
-                "on_prem": not judge_ep.is_build,
-                "rubric": "readability",
-            }
-            if judge_ep
-            else None
-        ),
+        "sut": sut_block,
+        "judge": judge_block,
         "checks": checks if checks is not None else pack.checks_declared(),
         "repeats": repeats,
         "transcripts": done,

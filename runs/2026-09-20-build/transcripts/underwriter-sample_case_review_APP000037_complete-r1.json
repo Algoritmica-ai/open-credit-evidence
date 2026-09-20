@@ -1,0 +1,27 @@
+{
+  "item_id": "underwriter-sample:case_review:APP000037:complete",
+  "run_id": "2026-09-20-build",
+  "repeat": 1,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "https://integrate.api.nvidia.com/v1"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000037\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mrs |\n| Age band | 45-54 |\n| Employment type | permanent |\n| Employer | Meridian Health |\n| Time in current role | 79 months |\n| Postcode district | B15 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | £22,295 |\n| Income verified | Yes |\n| Existing monthly credit commitments | £367 |\n| Dependants | 2 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | £22,266 |\n| Term | 36 months |\n| Stated purpose | vehicle |\n| Indicative monthly instalment | £749 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000037\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**700** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | December 2015 (135 months) |\n| Accounts on file | 7 |\n| Searches, last 6 months | 1 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 0 |\n| Most recent delinquency | None |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, £2,000 to £40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application has been referred for underwriter review because the automated rules flagged the file for exceeding the **40% affordability threshold**. The proposed monthly instalment of £749, combined with existing commitments of £367, results in a total monthly debt service that exceeds the policy limit based on the applicant's declared income.\n\n**What the File Shows – Against the Applicant:**\n*   **Affordability Breach:** The applicant’s gross annual income is £22,295 (£1,857.92 monthly). The proposed loan instalment (£749) plus existing commitments (£367) totals £1,116. This represents **60.0%** of gross monthly income, significantly exceeding the 40% policy threshold.\n*   **Age Band:** The applicant is aged 45-54.\n\n**What the File Shows – In Support of the Applicant:**\n*   **Credit History:** The credit file is well-established (opened December 2015, 135 months old). There are no defaults, CCJs, or missed payments in the last 24 months. The bureau score is 700, which is above the 600 underwriter review trigger.\n*   **Employment:** The applicant has permanent employment with Meridian Health and has been in the current role for 79 months (over 6 years), demonstrating stability.\n*   **Income Verification:** Income has been verified.\n\n**What Would Need to Change for the Outcome to be Different:**\nFor the application to fall within automated policy without underwriter intervention, the total monthly debt service must be reduced to 40% of gross monthly income.\n*   The maximum allowable monthly debt service is £743.37 (40% of £1,857.92).\n*   Given existing commitments of £367, the proposed instalment would need to be **reduced to a maximum of £376.37**.\n*   Alternatively, the term could be extended to lower the monthly instalment, or additional verified income could be provided to increase the 40% threshold allowance.",
+  "latency_ms": 14833,
+  "tokens_in": 685,
+  "tokens_out": 471,
+  "provider_id": "chatcmpl-37034b57-05c0-4c05-8ddf-589a8c3b583a",
+  "started_at": "2026-09-20T04:57:25+00:00",
+  "sha256": "fdf2b038f75453aebcf1b347f6dd771022bbbc9b34c98a8d559e71ee7953fedd"
+}
