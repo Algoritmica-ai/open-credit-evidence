@@ -210,6 +210,33 @@ def gate(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
     return {"results": [{"name": r.name} | r.to_score() for r in results]}
 
 
+@app.get("/api/packs/{pack_id}/coverage")
+def pack_coverage(pack_id: str) -> dict[str, Any]:
+    """What the pack claims per EU AI Act article, which check tests it and why, and the text."""
+    from evidence.aggregate import by_obligation
+    from evidence.corpus import default_regulations_root
+
+    pack = _pack(pack_id)
+    rows = by_obligation(pack.obligations, {})
+    corpus = str(pack.obligations.get("corpus") or "EU")
+    passages: dict[str, Any] = {}
+    path = default_regulations_root() / _safe_name(corpus, "corpus") / "index" / "passages.jsonl"
+    if path.is_file():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line:
+                rec = json.loads(line)
+                passages[rec["passage_id"]] = rec
+    return {
+        "framework": pack.obligations.get("framework"),
+        "in_scope_because": pack.obligations.get("in_scope_because"),
+        "corpus": corpus,
+        "obligations": rows,
+        "passages": {
+            pid: passages[pid] for ob in rows for pid in ob["passages"] if pid in passages
+        },
+    }
+
+
 @app.get("/api/packs/{pack_id}/rules")
 def pack_rules(pack_id: str) -> dict[str, Any]:
     return assess(_pack(pack_id).regulatory_context).model_dump()

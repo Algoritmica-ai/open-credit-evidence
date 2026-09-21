@@ -3,7 +3,7 @@
   "engine": {
     "package": "credit-evidence-engine",
     "version": "0.1.0.dev0",
-    "git_commit": "415cf24"
+    "git_commit": "47f6f98"
   },
   "pack": {
     "pack_id": "underwriter-sample",
@@ -45,7 +45,7 @@
       "corpus_sha256": "1c42832279bbbee81d3f66568ac4b5ccd3488613bab5351e0536781f4bfb0535",
       "passages": 26,
       "embed_model": "nvidia/nemotron-3-embed-1b",
-      "index_backend": "cosine"
+      "index_backend": "milvus-lite"
     },
     "corpus_note": null,
     "on_prem": false,
@@ -70,6 +70,6 @@
     "context_sha256": "36fc622bbe57acd7726200978dc4611c57e81e64935f87c14c5cf424f207f0f5",
     "status": "pass"
   },
-  "started_at": "2026-09-20T13:08:14+00:00",
-  "finished_at": "2026-09-20T13:08:14+00:00"
+  "started_at": "2026-09-21T00:33:02+00:00",
+  "finished_at": "2026-09-21T00:33:03+00:00"
 }
