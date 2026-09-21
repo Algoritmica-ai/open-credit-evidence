@@ -1,0 +1,27 @@
+{
+  "item_id": "underwriter-sample:case_review:APP000684:complete",
+  "run_id": "2026-09-20-onprem",
+  "repeat": 0,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "http://10.130.232.20:8000/v1"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000684\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mrs |\n| Age band | 35-44 |\n| Employment type | permanent |\n| Employer | Harrow Estates |\n| Time in current role | 52 months |\n| Postcode district | B15 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | £25,925 |\n| Income verified | Yes |\n| Existing monthly credit commitments | £426 |\n| Dependants | 2 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | £15,815 |\n| Term | 36 months |\n| Stated purpose | home improvement |\n| Indicative monthly instalment | £532 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000684\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**549** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | November 2019 (88 months) |\n| Accounts on file | 5 |\n| Searches, last 6 months | 1 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 0 |\n| Most recent delinquency | None |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, £2,000 to £40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application has been referred for manual underwriter review because the automated rules could not settle it. Specifically, the applicant’s total monthly debt service exceeds the 40% affordability threshold set by the Personal Loan Lending Policy.\n\n**What the File Shows:**\n\n*   **Against the Applicant (Affordability):**\n    *   **Gross Annual Income:** £25,925.\n    *   **Existing Monthly Commitments:** £426.\n    *   **Proposed Monthly Instalment:** £532.\n    *   **Total Monthly Debt Service:** £958 (£426 + £532).\n    *   **Affordability Calculation:** The total monthly debt service represents **3.7%** of the applicant's gross monthly income (£958 / £2,160.42). While this is technically under the 40% threshold, the application was referred, suggesting a potential discrepancy or a need for further scrutiny regarding the income or outgoings.\n    *   **Credit Score:** 549 (Below the 600 threshold requiring underwriter review).\n    *   **Credit File:** Opened in November 2019 (88 months old), which is not considered a \"thin file.\"\n\n*   **In Favour of the Applicant:**\n    *   **Payment History:** No delinquencies in the last 24 months; no defaults or CCJs recorded.\n    *   **Employment:** Permanent employment with Harrow Estates for 52 months.\n    *   **Income Verification:** Confirmed as \"Yes.\"\n\n**What Would Need to Change for the Outcome to be Different:**\nFor the application to fall within standard policy without further underwriter intervention, the following would need to change:\n1.  **Affordability:** The total monthly debt service must remain comfortably under the 40% threshold. Given the current figures, the application is currently within limits, but the referral indicates the system may have flagged other risk factors or the underwriter needs to verify the sustainability of the income relative to the outgoings.\n2.  **Credit Score:** The applicant's score of 549 is below the 600 benchmark. To move into automatic approval, the score would need to improve to at least 600.\n3.  **Credit History:** Maintaining the current clean payment record (no missed payments in the last 12 months) is essential.",
+  "latency_ms": 2155,
+  "tokens_in": 686,
+  "tokens_out": 535,
+  "provider_id": "chatcmpl-8ac448c978c1f809",
+  "started_at": "2026-09-20T09:26:48+00:00",
+  "sha256": "4af3fd899da49cfb8279e1ee9a61f76a752f33a9a130e12e0fbf675fa00c4712"
+}

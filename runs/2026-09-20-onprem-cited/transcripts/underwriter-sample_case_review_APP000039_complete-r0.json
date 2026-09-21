@@ -1,0 +1,27 @@
+{
+  "item_id": "underwriter-sample:case_review:APP000039:complete",
+  "run_id": "2026-09-20-onprem",
+  "repeat": 0,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "http://10.130.232.20:8000/v1"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000039\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mr |\n| Age band | 35-44 |\n| Employment type | permanent |\n| Employer | Ashby Group |\n| Time in current role | 164 months |\n| Postcode district | NE2 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | £23,723 |\n| Income verified | Yes |\n| Existing monthly credit commitments | £462 |\n| Dependants | 1 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | £13,738 |\n| Term | 60 months |\n| Stated purpose | other |\n| Indicative monthly instalment | £312 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000039\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**570** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | September 2025 (18 months) |\n| Accounts on file | 3 |\n| Searches, last 6 months | 1 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 0 |\n| Most recent delinquency | None |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, £2,000 to £40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application has been referred for manual underwriter review because the automated rules could not settle it. Specifically, the applicant’s total monthly debt service exceeds the policy threshold of 40% of gross monthly income, and the bureau score of 570 falls below the 600 cutoff requiring review.\n\n**What the File Shows – Against the Applicant:**\n*   **Affordability:** The proposed monthly instalment is £312, combined with existing monthly credit commitments of £462, resulting in total monthly debt service of £774. Against gross monthly income of £1,977 (derived from the annual figure of £23,723), this represents a debt service ratio of **39.15%**. While this is just under the 40% threshold, it is very close, and the system may have flagged it for review due to the proximity to the limit or other internal calculations.\n*   **Credit History:** The applicant has a bureau score of **570**, which is below the policy threshold of 600. This automatically triggers underwriter review.\n*   **File Age:** The credit file was opened in September 2025, making it **18 months old**. The policy considers files under 24 months to be \"thin files,\" which is another factor contributing to the referral.\n\n**What Would Need to Change for a Different Outcome:**\nFor the application to be approved automatically without underwriter intervention, the following would need to change:\n1.  **Increase Income:** The total debt service would need to drop below 40% of gross monthly income. Given the current commitments, the applicant’s gross annual income would need to increase significantly (to approximately £28,000+ based on current outgoings) to bring the ratio under the threshold.\n2.  **Reduce Commitments:** The applicant would need to reduce or clear existing credit commitments (the £462 monthly amount) to lower the total debt service ratio.\n3.  **Increase Deposit/Downpayment:** If applicable, a larger deposit could reduce the loan amount and the monthly instalment.\n4.  **Improve Credit Score:** While the score threshold is the primary driver for review, improving the score above 600 would remove that specific policy barrier, though the affordability issue would remain.",
+  "latency_ms": 2089,
+  "tokens_in": 684,
+  "tokens_out": 505,
+  "provider_id": "chatcmpl-a5723719656634f4",
+  "started_at": "2026-09-20T09:19:59+00:00",
+  "sha256": "53dc66e4572e2727b8e4cef367345b073318b2dd772a6d933f59751efe481ddc"
+}

@@ -44,6 +44,12 @@ async function loadMeta() {
   const w = m.roles.assistant.where;
   $("sut-where").textContent = `assistant: ${w}`;
   $("sut-where").hidden = false;
+  if (m.shared) {
+    const note = document.createElement("div");
+    note.className = "note warn";
+    note.innerHTML = `<strong>This is a hosted, shared demo.</strong> The models run wherever this instance is configured — NVIDIA Build, not your hardware — and runs are capped at ${m.limits.items} cases × ${m.limits.repeats} repeats. Packs you upload and runs you start are visible to other visitors and are wiped when the Space restarts. To evaluate on your own GPU, <a href="https://github.com/Algoritmica-ai/open-credit-evidence" target="_blank" rel="noopener">install it locally</a>: two commands.`;
+    document.querySelector("#view-pack .head").after(note);
+  }
   if (!m.has_key && w === "cloud") $("run-error").innerHTML = `<div class="note warn"><strong>NVIDIA_API_KEY is not set.</strong> Runs against NVIDIA Build need it in <code>.env</code>. The gate works without it.</div>`;
 }
 
@@ -64,11 +70,50 @@ async function choosePack(id, meta) {
   state.pack = id; state.packMeta = meta; state.caseIndex = -1; state.caseData = null;
   $("pack-name").textContent = `${id} v${meta.version}`; $("pack-name").hidden = false;
   enable("pack", true); enable("case"); enable("run");
+  try {
+    const cov = await api(`/api/packs/${id}/coverage`);
+    Object.values(cov.passages).forEach((p) => (passageIndex[p.passage_id] = p));
+    $("coverage-scope").textContent = cov.in_scope_because || cov.framework || "";
+    $("coverage").innerHTML = renderCoverage(cov.obligations, {}, null, 1);
+    $("coverage-card").hidden = false;
+  } catch (e) { $("coverage-card").hidden = true; }
   await loadCases();
   show("case");
 }
 
 let passageIndex = {};
+
+/* The EU AI Act coverage block: one panel per article. `results` is the run's
+   check summary (or {} on the Pack screen), `agreement` the repeat agreement. */
+function renderCoverage(obligations, results, agreement, repeats) {
+  const levelCls = (l) => (l === "evidences" ? "good" : l === "contributes" ? "warn" : "");
+  const noRun = !Object.keys(results).some((k) => !k.startsWith("__"));
+  const resultTag = (c) => {
+    const r = results[c.name];
+    if (!c.ran || !r) return c.registered ? `<span class="badge ${noRun ? "good" : ""}">${noRun ? "built" : "not run"}</span>` : `<span class="badge">planned</span>`;
+    if (!r.gated) return `<span class="tag">mean ${r.mean_value}</span>`;
+    const a = agreement && agreement[c.name];
+    return `<span class="${r.failed ? "miss" : "found"}">${pct(r.passed, r.passed + r.failed)} pass</span>${a && repeats > 1 ? ` <span class="tag">stable ${pct(a.stable, a.items)}</span>` : ""}`;
+  };
+  return obligations.map((o) => {
+    const art = o.id.replace("eu-ai-act:", "Article ");
+    let body = "";
+    if (o.level === "does_not_cover") body = `<ul><li>${esc(o.reason)}</li></ul>`;
+    else {
+      const req = o.requires ? `<p style="margin:6px 0 4px; font-size:12.5px"><i>What the Act requires:</i> ${esc(o.requires)}${o.passages.length ? ` <span style="color:var(--ink-3)">(${o.passages.map((p) => `<code>${esc(p)}</code>`).join(" ")})</span>` : ""}</p>` : "";
+      const rows = o.check_basis.map((c) => `<tr><td><code class="inline">${esc(c.name)}</code></td><td>${resultTag(c)}</td><td class="wrap" style="color:var(--ink-2)"><b style="color:var(--ink)">${esc(c.ref || "")}</b> ${esc(c.tests || "")}</td></tr>`);
+      if (o.judge) rows.push(`<tr><td><code class="inline">judge · ${esc(o.judge.name)}</code></td><td>${o.judge.result ? `<span class="tag">mean ${o.judge.result.mean_value}</span> reported` : `<span class="badge ${noRun ? "good" : ""}">${noRun ? "built" : "not run"}</span>`}</td><td class="wrap" style="color:var(--ink-2)"><b style="color:var(--ink)">${esc(o.judge.ref)}</b> ${esc(o.judge.tests)}</td></tr>`);
+      if (o.metrics) for (const [k, m] of Object.entries(o.metrics)) {
+        const vals = agreement ? Object.values(agreement) : [];
+        const worst = vals.length ? vals.reduce((a, b) => (a.agreement < b.agreement ? a : b)) : null;
+        rows.push(`<tr><td><code class="inline">${esc(k)}</code></td><td>${worst && repeats > 1 ? `<span class="tag">lowest ${pct(worst.stable, worst.items)}</span>` : `<span class="badge">needs repeats</span>`}</td><td class="wrap" style="color:var(--ink-2)"><b style="color:var(--ink)">${esc(m.ref)}</b> ${esc(m.tests)}</td></tr>`);
+      }
+      if (o.process) rows.push(`<tr><td><code class="inline">lender's process</code></td><td>${results.__rules ? `<span class="badge ${results.__rules === "pass" ? "good" : results.__rules === "fail" ? "bad" : ""}">${esc(results.__rules)}</span>` : `<span class="badge">rule pack</span>`}</td><td class="wrap" style="color:var(--ink-2)"><b style="color:var(--ink)">${esc(o.process.ref)}</b> ${esc(o.process.tests)}</td></tr>`);
+      body = req + (rows.length ? `<table class="grid-table coverage"><thead><tr><th>test</th><th>result</th><th>what it tests, and why that is evidence</th></tr></thead><tbody>${rows.join("")}</tbody></table>` : `<p class="hint">No test declared.</p>`);
+    }
+    return `<div class="ob"><div class="ob-head">${esc(art)} — ${esc(o.title)} <span class="badge ${levelCls(o.level)}">${esc((o.level || "").replace("_", " "))}</span></div>${body}</div>`;
+  }).join("");
+}
 async function loadCorpora() {
   const cs = await api("/api/corpora");
   const t = $("corpora-table");
@@ -239,20 +284,10 @@ async function openRun(runId) {
     ["assistant", m.sut.model_id, m.sut.on_prem ? "on-prem" : "cloud"],
     ["briefings", m.transcripts, `${m.pack.items} cases × ${m.repeats}`],
     ["judge", m.judge ? m.judge.model_id : "off", m.judge ? `${m.judge.on_prem ? "on-prem" : "cloud"}${m.judge.corpus ? ` · cites ${m.judge.corpus.jurisdiction} ${m.judge.corpus.corpus_sha256.slice(0, 8)}` : ""}` : ""],
-    ["rule pack", d.regulations ? `${d.regulations.status}` : "—", d.regulations?.ruleset_id || ""],
+    ["lender's process (rule pack)", d.regulations ? `${d.regulations.status}` : "—", d.regulations?.ruleset_id ? `${d.regulations.ruleset_id} · ${d.regulations.applicable_rules} rules apply` : "no regulatory context"],
   ].map(([k, v, sub]) => `<div class="stat"><div class="k">${esc(k)}</div><div class="v sm">${esc(v)}</div><div class="v sm" style="color:var(--ink-3)">${esc(sub)}</div></div>`).join("");
   const ag = s.repeat_agreement || {};
-  $("ev-obligations").innerHTML = s.obligations.map((o) => {
-    const level = (o.level || "").replace("_", " ");
-    const cls = o.level === "evidences" ? "good" : o.level === "contributes" ? "warn" : "";
-    const lines = o.level === "does_not_cover" ? `<ul><li>${esc(o.reason)}</li></ul>` :
-      `<ul>${o.checks.map((n) => { const c = s.checks[n]; if (!c) return ""; if (!c.gated) return `<li><b>${esc(n)}</b> mean ${c.mean_value} · reported, not gated</li>`;
-        const a = ag[n]; return `<li><b>${esc(n)}</b> <span class="${c.failed ? "miss" : "found"}">${pct(c.passed, c.passed + c.failed)} pass</span> · mean ${c.mean_value}${c.needs_audit ? ` · ${c.needs_audit} audit` : ""}${a && m.repeats > 1 ? ` · stable ${pct(a.stable, a.items)}` : ""}</li>`; }).join("")}
-        ${o.not_run.length ? `<li style="color:var(--ink-3)">declared, not run: ${o.not_run.join(", ")}</li>` : ""}</ul>`;
-    return `<div class="ob"><div class="ob-head">${esc(o.title)} <span class="tag">${esc(o.id)}</span> <span class="badge ${cls}">${esc(level)}</span></div>${lines}</div>`;
-  }).join("");
-  const extra = Object.keys(s.checks).filter((n) => !s.obligations.some((o) => o.checks.includes(n)));
-  if (extra.length) $("ev-obligations").innerHTML += `<div class="ob"><div class="ob-head">Reported outside the grid</div><ul>${extra.map((n) => `<li><b>${esc(n)}</b> mean ${s.checks[n].mean_value}</li>`).join("")}</ul></div>`;
+  $("ev-obligations").innerHTML = renderCoverage(s.obligations, { ...s.checks, __rules: d.regulations && d.regulations.status }, ag, m.repeats);
   $("ev-failures").innerHTML = s.failing.length
     ? `<thead><tr><th>case</th><th>check</th><th class="num">repeats failed</th><th>detail</th></tr></thead><tbody>` + s.failing.map((f) => `<tr data-item="${esc(f.item_id)}" style="cursor:pointer"><td><code class="inline">${esc(short(f.item_id))}</code></td><td>${esc(f.check)}</td><td class="num">${f.repeats_failed}</td><td class="wrap">${esc(f.detail)}</td></tr>`).join("") + "</tbody>"
     : `<tr><td class="nul">No failures.</td></tr>`;

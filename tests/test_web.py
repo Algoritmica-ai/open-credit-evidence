@@ -165,3 +165,38 @@ def test_cancel_keeps_completed_briefings(client):
         d = client.get(f"/api/runs/{job['run_id']}").json()
         assert d["manifest"]["cancelled"] and d["sealed"]
         assert client.post(f"/api/runs/{job['run_id']}/verify", json={}).json()["ok"]
+
+
+def test_shared_workspace_mode(tmp_path, monkeypatch, regulations_root):
+    """EVIDENCE_WORKSPACE seeds a writable copy; EVIDENCE_SHARED caps runs and flags the page."""
+    import importlib
+
+    monkeypatch.setenv("EVIDENCE_ROOT", str(ROOT))
+    monkeypatch.setenv("EVIDENCE_WORKSPACE", str(tmp_path / "ws"))
+    monkeypatch.setenv("EVIDENCE_SHARED", "1")
+    monkeypatch.delenv("EVIDENCE_RULESETS_DIR", raising=False)
+    mod = importlib.reload(web)
+    try:
+        assert (tmp_path / "ws" / "packs" / "underwriter-sample" / "items.jsonl").is_file()
+        assert mod.PACKS == tmp_path / "ws" / "packs"
+        c = TestClient(mod.app)
+        m = c.get("/api/meta").json()
+        assert m["shared"] and m["limits"] == {"items": 5, "repeats": 2}
+    finally:
+        monkeypatch.delenv("EVIDENCE_WORKSPACE")
+        monkeypatch.delenv("EVIDENCE_SHARED")
+        importlib.reload(web)
+
+
+def test_coverage_names_article_requirements_and_check_basis(client):
+    cov = client.get("/api/packs/underwriter-sample/coverage").json()
+    by_id = {o["id"]: o for o in cov["obligations"]}
+    art14 = by_id["eu-ai-act:14"]
+    assert art14["level"] == "evidences" and "override" in art14["requires"]
+    names = {c["name"]: c for c in art14["check_basis"]}
+    assert names["material_omission"]["registered"] and names["material_omission"]["tests"]
+    assert art14["judge"]["name"] == "readability"
+    art15 = {c["name"]: c for c in by_id["eu-ai-act:15"]["check_basis"]}
+    assert art15["driver_recall"]["registered"] is False  # planned, never counted
+    assert by_id["eu-ai-act:10"]["level"] == "does_not_cover"
+    assert "ai-act-art-14#4" in cov["passages"]

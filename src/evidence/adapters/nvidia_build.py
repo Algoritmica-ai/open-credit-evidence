@@ -205,10 +205,19 @@ def embed(texts: list[str], *, input_type: str) -> list[list[float]]:
         raise ValueError("input_type must be 'passage' (indexing) or 'query' (searching)")
     ep = endpoint_for("embed")
     client = _client(ep)
-    resp = client.embeddings.create(
-        model=ep.model_id,
-        input=texts,
-        encoding_format="float",
-        extra_body={"input_type": input_type, "truncate": "END"},
-    )
+    if ep.is_build:
+        # NVIDIA Build takes the role as a parameter.
+        resp = client.embeddings.create(
+            model=ep.model_id,
+            input=texts,
+            encoding_format="float",
+            extra_body={"input_type": input_type, "truncate": "END"},
+        )
+    else:
+        # A self-hosted checkpoint (vLLM) takes it as a text prefix, per the model card.
+        resp = client.embeddings.create(
+            model=ep.model_id,
+            input=[f"{input_type}: {t}" for t in texts],
+            encoding_format="float",
+        )
     return [d.embedding for d in resp.data]

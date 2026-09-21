@@ -49,7 +49,7 @@ Synthetic Data Designer ──▶ scorecard ──▶ pack (documents + sealed m
 git clone https://github.com/Algoritmica-ai/open-credit-evidence.git
 cd open-credit-evidence
 python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"
-cp .env.example .env            # NVIDIA_API_KEY; assistant points at the team's NIM (VPN)
+cp .env.example .env            # points all three roles at the team's node (VPN); no key needed
 .venv/bin/pytest -q             # 40 tests, no network
 ```
 
@@ -79,16 +79,24 @@ obligation), verify (with a tamper demo on a copy of the run):
 .venv/bin/evidence ui               # http://127.0.0.1:8765
 ```
 
-A committed run is in [`runs/2026-09-20-build/`](runs/2026-09-20-build/); its
-report is [`evidence/report.md`](runs/2026-09-20-build/evidence/report.md).
+Committed runs of the sample pack, all sealed and verifiable:
+
+| Run | Assistant | Judge |
+|---|---|---|
+| [`runs/2026-09-20-build/`](runs/2026-09-20-build/) | Lightning on NVIDIA Build | Ultra, no corpus |
+| [`runs/2026-09-20-onprem/`](runs/2026-09-20-onprem/) | Lightning NIM on the team's node | Ultra, no corpus |
+| [`runs/2026-09-20-onprem-cited/`](runs/2026-09-20-onprem-cited/) | same briefings as above | Ultra, citing the EU AI Act corpus (55/60 citations) |
+
+A hosted, shared demo of the UI is on Hugging Face:
+<https://huggingface.co/spaces/Algoritmica/open-credit-evidence> (`deploy/huggingface/`).
 
 ## Models and where they run
 
 | Role | Model | Where |
 |---|---|---|
 | Assistant under test | `nvidia/nemotron-3.5-lightning` | The NIM on the team's GPU node (`.env.example` points there); or NVIDIA Build |
-| Judge (readability and oversight, citing the regulation) | `nvidia/nemotron-3-ultra-550b-a55b` | NVIDIA Build; a distilled Nemotron Nano replaces it on-prem |
-| Retriever | `nvidia/nemotron-3-embed-1b` | NVIDIA Build |
+| Judge (readability and oversight, citing the regulation) | Nemotron Nano 9B v2 (`nano-judge`), un-tuned today | vLLM on the team's node (`.env.example` points there); Nemotron 3 Ultra on NVIDIA Build is the teacher for the fine-tune |
+| Retriever (corpus build, judge retrieval) | Nemotron 3 Embed 1B | vLLM on the team's node; or NVIDIA Build |
 
 Any role moves between cloud and on-prem with two lines in `.env`
 (`EVIDENCE_<ROLE>_BASE_URL`, `EVIDENCE_<ROLE>_MODEL`); every transcript records

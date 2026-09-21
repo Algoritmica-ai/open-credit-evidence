@@ -1,0 +1,75 @@
+{
+  "run_id": "2026-09-20-onprem-cited",
+  "engine": {
+    "package": "credit-evidence-engine",
+    "version": "0.1.0.dev0",
+    "git_commit": "47f6f98"
+  },
+  "pack": {
+    "pack_id": "underwriter-sample",
+    "version": "0.2.0",
+    "items_sha256": "eea1671b477736b91dea655c85e13e3a6f9f8cd81841a802fc49de8fcf63c9ed",
+    "items": 20,
+    "domain": "credit_underwriting",
+    "scorecard_version": "underwriter-scorecard-0.1.0",
+    "sdd": {
+      "spec": "specs/credit_underwriting.yaml",
+      "spec_sha256": "5a827b5de979bad9",
+      "generated": 700,
+      "seed": 7
+    }
+  },
+  "sut": {
+    "role": "assistant",
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "endpoint": "http://10.130.232.20:8000/v1",
+    "on_prem": true,
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "max_tokens": 900,
+    "endpoints_seen": [
+      "http://10.130.232.20:8000/v1"
+    ]
+  },
+  "judge": {
+    "model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+    "endpoint": "https://integrate.api.nvidia.com/v1",
+    "corpus": {
+      "jurisdiction": "EU",
+      "corpus_sha256": "1c42832279bbbee81d3f66568ac4b5ccd3488613bab5351e0536781f4bfb0535",
+      "passages": 26,
+      "embed_model": "nvidia/nemotron-3-embed-1b",
+      "index_backend": "milvus-lite"
+    },
+    "corpus_note": null,
+    "on_prem": false,
+    "rubric": "readability"
+  },
+  "checks": [
+    "material_omission",
+    "numeric_fidelity",
+    "decoy_citation",
+    "flip_accuracy"
+  ],
+  "repeats": 3,
+  "transcripts": 60,
+  "planned": 60,
+  "cancelled": false,
+  "model_calls_made": 0,
+  "regulatory": {
+    "jurisdiction": "IT",
+    "ruleset_id": "IT-CREDIT-LENDING",
+    "ruleset_version": "1.0.0",
+    "ruleset_sha256": "f547b8e333fed05408151120ec9279c062bf8b505915c9781e1854eeb3d02c63",
+    "context_sha256": "36fc622bbe57acd7726200978dc4611c57e81e64935f87c14c5cf424f207f0f5",
+    "status": "pass"
+  },
+  "started_at": "2026-09-21T00:33:03+00:00",
+  "finished_at": "2026-09-21T00:33:03+00:00"
+}

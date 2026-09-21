@@ -400,3 +400,15 @@ table.grid-table { border-collapse: separate; border-spacing: 0; width: 100%; fo
   .rail-link { display: none; }
 }
 #gate-text { white-space: pre-wrap; font: 13px/1.55 var(--sans); }
+
+/* ------------------------------------------------------- act coverage */
+
+table.coverage { table-layout: fixed; width: 100%; margin-top: 6px; }
+table.coverage th, table.coverage td { white-space: normal; vertical-align: top; }
+table.coverage td:first-child { width: 150px; word-break: break-word; }
+table.coverage td:nth-child(2) { width: 130px; }
+table.coverage td:nth-child(2) .tag, table.coverage td:nth-child(2) .badge { display: inline-block; margin: 1px 2px 1px 0; white-space: nowrap; }
+@media (max-width: 720px) {
+  table.coverage td:first-child { width: 110px; }
+  table.coverage td:nth-child(2) { width: 90px; }
+}

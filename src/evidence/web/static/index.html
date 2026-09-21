@@ -89,6 +89,11 @@
             <a href="/api/schema/item" target="_blank" rel="noopener">JSON schema</a> · <a href="https://github.com/Algoritmica-ai/open-credit-evidence/blob/main/docs/contracts.md" target="_blank" rel="noopener">contracts.md</a></div>
         </div>
       </div>
+      <div class="card" id="coverage-card" hidden>
+        <div class="card-head"><h2>What this pack tests against the EU AI Act</h2><span class="tag subtle" id="coverage-scope"></span></div>
+        <p class="hint">Per article: what the Act requires, the level the pack claims — <b>evidences</b>, <b>contributes</b>, or <b>not covered</b> — and for each check what it tests and why that is evidence for the article. Planned checks are named as planned, never counted.</p>
+        <div id="coverage"></div>
+      </div>
       <div class="card">
         <div class="card-head"><h2>Regulation corpus for the judge</h2></div>
         <p class="hint">The passages the judge is handed and must cite. Built from the source texts under
@@ -205,15 +210,14 @@
           <div id="ev-verdicts"></div>
         </div>
       </div>
-      <div class="grid two">
-        <div class="card">
-          <div class="card-head"><h2>By obligation</h2></div>
-          <div id="ev-obligations"></div>
-        </div>
-        <div class="card">
-          <div class="card-head"><h2>Failures, by case</h2></div>
-          <div class="scroll tall"><table class="grid-table" id="ev-failures"></table></div>
-        </div>
+      <div class="card">
+        <div class="card-head"><h2>By EU AI Act article</h2></div>
+        <p class="hint">Each article: what it requires, what the pack claims, each check's result and why the check is evidence for it.</p>
+        <div id="ev-obligations"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Failures, by case</h2></div>
+        <div class="scroll tall"><table class="grid-table" id="ev-failures"></table></div>
       </div>
       <div class="card">
         <div class="card-head"><h2>report.md</h2></div>

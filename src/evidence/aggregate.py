@@ -93,19 +93,47 @@ def items_failing_any(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def by_obligation(
     obligations: dict[str, Any], check_summary: dict[str, dict[str, Any]]
 ) -> list[dict[str, Any]]:
-    """Attach ran checks to each obligation in the pack's grid, in the pack's order."""
+    """Attach ran checks to each obligation in the pack's grid, in the pack's order.
+
+    Carries the pack's own statement of what the article requires and, per check,
+    the basis — what the check tests and why that is evidence for the article.
+    A check in the grid that is not registered in this build is *planned*.
+    """
+    from evidence.checks import available_checks
+
+    registered = set(available_checks())
     out: list[dict[str, Any]] = []
     for ob in obligations.get("obligations", []):
-        grid = [c for c in ob.get("grid", []) if c in check_summary]
-        not_run = [c for c in ob.get("grid", []) if c not in check_summary]
+        basis = ob.get("basis", {})
+        checks = []
+        for name in ob.get("grid", []):
+            checks.append(
+                {
+                    "name": name,
+                    "ran": name in check_summary,
+                    "registered": name in registered,
+                    "ref": basis.get(name, {}).get("ref"),
+                    "tests": basis.get(name, {}).get("tests"),
+                    "result": check_summary.get(name),
+                }
+            )
+        judge = ob.get("judge")
+        if judge:
+            judge = dict(judge) | {"result": check_summary.get(judge["name"])}
         out.append(
             {
                 "id": ob["id"],
                 "title": ob.get("title", ob["id"]),
                 "level": ob.get("level"),
                 "reason": ob.get("reason"),
-                "checks": grid,
-                "not_run": not_run,
+                "requires": ob.get("requires"),
+                "passages": ob.get("passages", []),
+                "checks": [c["name"] for c in checks if c["ran"]],
+                "not_run": [c["name"] for c in checks if not c["ran"]],
+                "check_basis": checks,
+                "judge": judge,
+                "metrics": ob.get("metrics"),
+                "process": ob.get("process"),
             }
         )
     return out

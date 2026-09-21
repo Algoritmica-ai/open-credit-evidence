@@ -1,0 +1,27 @@
+{
+  "item_id": "underwriter-sample:case_review:APP000678:complete",
+  "run_id": "2026-09-20-onprem",
+  "repeat": 0,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "http://10.130.232.20:8000/v1"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000678\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Ms |\n| Age band | 45-54 |\n| Employment type | self_employed |\n| Employer | Fenwick & Co |\n| Time in current role | 69 months |\n| Postcode district | M14 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | £20,045 |\n| Income verified | Yes |\n| Existing monthly credit commitments | £288 |\n| Dependants | 0 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | £22,732 |\n| Term | 60 months |\n| Stated purpose | debt consolidation |\n| Indicative monthly instalment | £516 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000678\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**653** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | December 2020 (75 months) |\n| Accounts on file | 5 |\n| Searches, last 6 months | 1 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 0 |\n| Most recent delinquency | None |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, £2,000 to £40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application was referred for underwriter review because the automated rules could not settle it. The primary trigger is that the applicant's debt-to-income ratio exceeds the policy threshold of 40%.\n\n**File Analysis:**\n\n*   **Against the applicant:**\n    *   **Affordability:** The proposed monthly instalment of £516, combined with existing monthly credit commitments of £288, results in total monthly debt service of £804. Against the applicant's gross monthly income of £1,670 (derived from the annual income of £20,045), this represents a debt service ratio of **48.1%**. This exceeds the policy maximum of 40% by 8.1 percentage points.\n    *   **Credit History:** While the credit file is established (opened December 2020, 75 months old) and shows a clean payment history with no defaults or CCJs, the bureau score of 653 is below the 600 threshold, which automatically requires underwriter review per policy.\n\n*   **In favour of the applicant:**\n    *   **Credit History:** The applicant has a stable credit file with no missed payments in the last 24 months and no defaults or County Court Judgments (CCJs).\n    *   **Employment:** The applicant has been in their current role for 69 months (over 5 years), demonstrating stability.\n    *   **Purpose:** The requested amount (£22,732) is for debt consolidation, which is a standard and often favourable use case.\n\n**Required Changes for Policy Compliance:**\nFor the application to fall within the automated approval guidelines without underwriter intervention, the total monthly debt service must be reduced to 40% of gross monthly income (£668). Given existing commitments of £288, the proposed instalment would need to be **reduced to £380** (approximately a 26% reduction from the requested £516). Alternatively, a longer loan term could be considered to lower the monthly instalment.",
+  "latency_ms": 2033,
+  "tokens_in": 689,
+  "tokens_out": 450,
+  "provider_id": "chatcmpl-b97373447577723c",
+  "started_at": "2026-09-20T09:11:55+00:00",
+  "sha256": "1155c367b2dc3df83465290ee6578a7135b016dd53f541b8c14e21ef70cdab20"
+}

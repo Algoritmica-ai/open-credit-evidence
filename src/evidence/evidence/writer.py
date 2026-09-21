@@ -74,17 +74,24 @@ def _report(
         f"— run {manifest['run_id']}"
     )
     L.append("")
+    judge_line = "No judge."
+    if judge:
+        judge_line = (
+            f"Judge: `{judge['model_id']}` ({'on-prem' if judge['on_prem'] else 'cloud'}), "
+            "readability and oversight only"
+        )
+        corpus = judge.get("corpus")
+        judge_line += (
+            f", citing regulation corpus {corpus['jurisdiction']} "
+            f"(sha256 `{corpus['corpus_sha256'][:12]}…`, {corpus['passages']} passages)."
+            if corpus
+            else ", no regulation corpus."
+        )
     L.append(
         f"Assistant under test: `{sut['model_id']}` at `{sut['endpoint']}` "
         f"({'on-prem' if sut['on_prem'] else 'cloud'}). "
         f"{manifest['pack']['items']} items × {manifest['repeats']} repeat(s) = "
-        f"{manifest['transcripts']} briefings. "
-        + (
-            f"Judge: `{judge['model_id']}` ({'on-prem' if judge['on_prem'] else 'cloud'}), "
-            f"readability only."
-            if judge
-            else "No judge."
-        )
+        f"{manifest['transcripts']} briefings. " + judge_line
     )
     L.append("")
     L.append(
@@ -130,20 +137,61 @@ def _report(
         L.append("")
         if ob["level"] == "does_not_cover":
             L.append(f"Not covered. {ob['reason']}")
-        elif not ob["checks"]:
+            L.append("")
+            continue
+        if ob.get("requires"):
+            L.append(f"*What the Act requires:* {ob['requires']}")
+            if ob.get("passages"):
+                L.append(f"*Text:* {', '.join(ob['passages'])} in the regulation corpus.")
+            L.append("")
+        for c in ob["check_basis"]:
+            if c["ran"]:
+                lines = check_lines(c["name"])
+                if c.get("tests"):
+                    lines[0] += f" — *{c['ref']}:* {c['tests']}"
+                L.extend(lines)
+            else:
+                state = "planned, not yet built" if not c["registered"] else "not run in this pack"
+                L.append(
+                    f"- `{c['name']}` — {state}"
+                    + (f" — *{c['ref']}:* {c['tests']}" if c.get("tests") else "")
+                )
+        if ob.get("judge"):
+            j = ob["judge"]
+            r = j.get("result")
+            L.append(
+                f"- judge `{j['name']}` — "
+                + (f"mean {r['mean_value']} (0–1), reported not gated" if r else "not run")
+                + f" — *{j['ref']}:* {j['tests']}"
+            )
+        if ob.get("metrics"):
+            for name, m in ob["metrics"].items():
+                a = agreement
+                if name == "repeat_agreement" and a and manifest["repeats"] > 1:
+                    worst = min(a.values(), key=lambda x: x["agreement"])
+                    L.append(
+                        f"- `repeat_agreement` — lowest across checks "
+                        f"{_pct(worst['stable'], worst['items'])} — *{m['ref']}:* {m['tests']}"
+                    )
+                else:
+                    L.append(
+                        f"- `{name}` — needs more than one repeat — *{m['ref']}:* {m['tests']}"
+                    )
+        if ob.get("process"):
+            pr = ob["process"]
+            L.append(
+                f"- lender's process (jurisdiction rule pack) — "
+                f"**{regulatory.get('status', '—')}** — *{pr['ref']}:* {pr['tests']}"
+            )
+        if not ob["check_basis"] and not ob.get("judge") and not ob.get("process"):
             L.append("No check that evidences this obligation ran in this pack.")
-        else:
-            for name in ob["checks"]:
-                L.extend(check_lines(name))
-        if ob["not_run"] and ob["level"] != "does_not_cover":
-            L.append(f"- Declared in the grid, not run: {', '.join(ob['not_run'])}")
         L.append("")
 
-    extra = [
-        n
-        for n in checks
-        if not any(n in ob["checks"] for ob in by_obligation(pack_obligations, checks))
-    ]
+    placed = {n for ob in by_obligation(pack_obligations, checks) for n in ob["checks"]}
+    placed |= {
+        ob["judge"]["name"] for ob in by_obligation(pack_obligations, checks) if ob.get("judge")
+    }
+    extra = [n for n in checks if n not in placed]
     if extra:
         L.append("## Reported outside the obligation grid")
         L.append("")
@@ -170,7 +218,16 @@ def _report(
             L.append(f"- `{name}`: {_pct(a['stable'], a['items'])} ({a['agreement']}){flips}")
         L.append("")
 
-    L.append("## Jurisdiction rule pack")
+    juris = regulatory.get("jurisdiction") or "—"
+    L.append(f"## Lender's process evidence — jurisdiction rule pack ({juris})")
+    L.append("")
+    L.append(
+        "Separate from the obligations above, which concern the assistant's briefings. "
+        "This section evaluates the *deploying lender's* process against the national rule "
+        "pack selected by the pack's `regulatory_context.json`: for each rule that applies to "
+        "this lender and product, is every required evidence reference present? It does not "
+        "read the referenced artefacts or interpret the law."
+    )
     L.append("")
     if regulatory.get("status") in ("unscoped", "ruleset_not_found"):
         L.append(f"{regulatory['status']}: {regulatory.get('note')}")
