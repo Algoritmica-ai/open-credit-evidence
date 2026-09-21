@@ -28,6 +28,26 @@ What we have, verified 16 Sep 2026, and how the framework uses it.
 Switching a role is two lines in `.env`; see `.env.example`. Every `ChatResponse`
 records its `endpoint`, so a transcript can always say cloud or on-prem.
 
+## The servers as one SLURM job (the way to run them)
+
+Containers started by hand sit outside SLURM: `sacct` shows nothing for them,
+the cluster sees the team as idle, and SLURM may allocate the GPUs they hold to
+another team. `scripts/cluster/servers.sbatch` runs the assistant NIM, the Nano
+judge and the embedder as one job that holds a whole node (the team's
+allocation) for up to seven days, picks the three emptiest GPUs, takes free
+ports from 8200, and writes the endpoints to `/data/team08/runs/servers.env`.
+
+```
+sbatch ~/open-credit-evidence/scripts/cluster/servers.sbatch
+squeue --me                               # RUNNING while the servers are up
+cat /data/team08/runs/servers.env         # the six lines for the laptop's .env
+scancel <jobid>                           # stops all three
+```
+
+The node changes between submissions; always copy `servers.env`, never assume
+the address. The sections below describe the hand-started containers and are
+kept for debugging one server at a time.
+
 ## Serving the Nano judge
 
 ```
