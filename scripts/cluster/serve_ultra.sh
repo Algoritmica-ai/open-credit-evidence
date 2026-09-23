@@ -165,7 +165,7 @@ else
   docker run -d \
     --name "$NAME" \
     --gpus all \
-    --shm-size=16GB \
+    --shm-size=64GB \
     -p "${PORT}:${PORT}" \
     -e NGC_API_KEY \
     -e NIM_SERVED_MODEL_NAME=nvidia/nemotron-3-ultra-550b-a55b \

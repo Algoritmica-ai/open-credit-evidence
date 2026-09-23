@@ -155,6 +155,11 @@ public `NIM_SERVER_PORT` is exposed (auto-selected from 8000, 8002+, or 18000+).
 ~300 GB of weights. The health waiter defaults to ~3 hours; override with
 `HEALTH_WAIT_TRIES=N` (N × 10 seconds).
 
+**Memory requirements**: Ultra 550B NVFP4 needs substantial host RAM during engine
+init. `ultra.sbatch` requests `--mem=0 --exclusive` (full node). Slurm OOM-kill
+during vLLM engine init means the memory quota was too low — check that `--mem=0`
+is supported, or override with `sbatch --mem=900G`.
+
 This is **not** the RTX cluster — different nodes, different storage paths.
 
 After Ultra labels the training set, the fine-tuned Nano+LoRA (`serve_nano.sh`

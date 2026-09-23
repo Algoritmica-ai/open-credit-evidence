@@ -33,8 +33,15 @@
 #SBATCH --partition=hackathon
 #SBATCH --gpus=4
 #SBATCH --ntasks=1
+#SBATCH --cpus-per-task=64
+#SBATCH --mem=0
+#SBATCH --exclusive
 #SBATCH --time=2-00:00:00
 #SBATCH --output=/storage/hackathon_teams/omc-team08/runs/ultra-%j.log
+
+# Memory note: Ultra 550B NVFP4 TP4 needs substantial host RAM during engine init.
+# --mem=0 requests all memory on the node. --exclusive ensures no contention.
+# Override with: sbatch --mem=900G ... if --mem=0 is not supported.
 
 set -euo pipefail
 
