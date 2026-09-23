@@ -23,8 +23,8 @@
 #
 # Directory layout:
 #   $HOME/open-credit-evidence/         # repo clone (can live anywhere)
-#   /storage/hackathon_teams/omc-team08/  # TEAM_ROOT (shared team storage)
-#     nim-cache-ultra/                    # NIM weight cache
+#   $HOME/nim-cache-ultra/              # NIM weight cache (default, avoids ACL issues)
+#   /storage/hackathon_teams/omc-team08/  # TEAM_ROOT (runs/logs only)
 #     runs/
 #       ultra-%j.log                      # job output
 #       ultra.env                         # EVIDENCE_JUDGE_* for labeling
@@ -41,10 +41,11 @@ set -euo pipefail
 # --- Repo location (override with OPEN_CREDIT_REPO if cloned elsewhere) ---
 REPO_ROOT="${OPEN_CREDIT_REPO:-$HOME/open-credit-evidence}"
 
-# --- Team shared storage (cache and runs only, not the repo) ---
+# --- Team shared storage (runs/logs only; cache defaults to $HOME) ---
 TEAM_ROOT=/storage/hackathon_teams/omc-team08
 RUNS_DIR="$TEAM_ROOT/runs"
-NIM_CACHE="$TEAM_ROOT/nim-cache-ultra"
+# Default cache under $HOME avoids team-storage ACL + GID 0 conflicts
+NIM_CACHE="${LOCAL_NIM_CACHE:-$HOME/nim-cache-ultra}"
 
 CONTAINER_NAME=team08_nt-ultra
 ENV_FILE="${RUNS_DIR}/ultra.env"

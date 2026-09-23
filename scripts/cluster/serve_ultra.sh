@@ -19,8 +19,8 @@
 #
 # Directory layout on Curiosity B300:
 #   $HOME/open-credit-evidence/           # repo clone (can live anywhere)
-#   /storage/hackathon_teams/omc-team08/  # TEAM_ROOT (shared team storage)
-#     nim-cache-ultra/                    # NIM weight cache (LOCAL_NIM_CACHE)
+#   $HOME/nim-cache-ultra/                # NIM weight cache (default, avoids ACL issues)
+#   /storage/hackathon_teams/omc-team08/  # TEAM_ROOT (runs/logs only)
 #     runs/                               # sbatch logs and ultra.env
 #
 # What it does:
@@ -39,7 +39,8 @@ set -euo pipefail
 NAME=${NAME:-team08_nt-ultra}
 IMAGE=${IMAGE:-nvcr.io/nim/nvidia/nemotron-3-ultra-550b-a55b:2.0.12}
 PORT=${NIM_PORT:-8001}
-CACHE=${LOCAL_NIM_CACHE:-/storage/hackathon_teams/omc-team08/nim-cache-ultra}
+# Default cache under $HOME avoids team-storage ACL + GID 0 conflicts
+CACHE=${LOCAL_NIM_CACHE:-$HOME/nim-cache-ultra}
 PROXY=${HTTPS_PROXY:-http://10.130.232.8:3128}
 
 # NIM_MODEL_PROFILE may be required for B300 NVFP4 TP4 deployment. If the NIM
@@ -105,7 +106,7 @@ else
     -e http_proxy="$PROXY" -e https_proxy="$PROXY" \
     -e NO_PROXY="${NO_PROXY:-localhost,127.0.0.1}" -e no_proxy="${no_proxy:-localhost,127.0.0.1}" \
     "${PROFILE_ENV[@]}" \
-    -u "$(id -u):0" \
+    -u "$(id -u):0" --group-add "$(id -g)" \
     -v "$CACHE:/opt/nim/.cache" \
     "$IMAGE" >/dev/null
 fi

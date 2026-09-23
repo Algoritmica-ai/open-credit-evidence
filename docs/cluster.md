@@ -63,15 +63,15 @@ can be served on Curiosity B300 with 4 GPUs (NVFP4 TP4).
 
 ```
 $HOME/open-credit-evidence/           # repo clone (can live anywhere)
-/storage/hackathon_teams/omc-team08/  # TEAM_ROOT (shared team storage)
-  nim-cache-ultra/                    # NIM weight cache
+$HOME/nim-cache-ultra/                # NIM weight cache (default, avoids ACL issues)
+/storage/hackathon_teams/omc-team08/  # TEAM_ROOT (runs/logs only)
   runs/
     ultra-%j.log                      # sbatch job output
     ultra.env                         # EVIDENCE_JUDGE_* for labeling
 ```
 
-The repo clone lives in `$HOME` (e.g. `/home/omc-termh/open-credit-evidence`).
-TEAM_ROOT is only for the NIM cache and run outputs — not the git checkout.
+The NIM cache defaults to `$HOME/nim-cache-ultra` to avoid team-storage ACL conflicts
+with GID 0. Override with `LOCAL_NIM_CACHE` if needed.
 
 ### Curiosity B300 docker
 
@@ -137,11 +137,7 @@ your srun session; stop it manually: `docker stop team08_nt-ultra` on the B300 n
 |---|---|
 | Port | 8001 (Lightning owns 8000) |
 | Container | `team08_nt-ultra` |
-| Cache | `/storage/hackathon_teams/omc-team08/nim-cache-ultra` |
-
-The NIM container runs as `UID:GID 0` for cache access. If cache permission errors
-persist, ensure team storage is group-writable or set `LOCAL_NIM_CACHE` to a
-user-owned path.
+| Cache | `$HOME/nim-cache-ultra` (override with `LOCAL_NIM_CACHE`) |
 
 This is **not** the RTX cluster — different nodes, different storage paths.
 
