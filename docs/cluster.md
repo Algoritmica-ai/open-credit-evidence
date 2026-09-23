@@ -144,6 +144,11 @@ your srun session; stop it manually: `docker stop team08_nt-ultra` on the B300 n
 | Port | 8001 (Lightning owns 8000) |
 | Container | `team08_nt-ultra` |
 | Cache | `$HOME/nim-cache-ultra` (override with `LOCAL_NIM_CACHE`) |
+| Health wait | ~3 hours (override with `HEALTH_WAIT_TRIES`) |
+
+**First-time cold cache** can take well over 50 minutes as the NIM downloads
+~300 GB of weights. The health waiter defaults to ~3 hours; override with
+`HEALTH_WAIT_TRIES=N` (N × 10 seconds).
 
 This is **not** the RTX cluster — different nodes, different storage paths.
 

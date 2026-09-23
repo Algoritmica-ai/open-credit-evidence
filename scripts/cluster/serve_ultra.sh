@@ -120,8 +120,12 @@ else
     "$IMAGE" >/dev/null
 fi
 
-echo -n "waiting for health"
-for _ in $(seq 1 300); do
+# First-time Ultra NVFP4 cold cache can take well over 50 minutes; default ~3h wait
+HEALTH_WAIT_TRIES=${HEALTH_WAIT_TRIES:-1080}
+HEALTH_READY=false
+
+echo -n "waiting for health (up to $((HEALTH_WAIT_TRIES * 10 / 60)) min)"
+for _ in $(seq 1 "$HEALTH_WAIT_TRIES"); do
   if [[ "$(docker inspect -f '{{.State.Running}}' "$NAME" 2>/dev/null)" != "true" ]]; then
     echo " $NAME has stopped. Last lines of its log:" >&2
     docker logs --tail 15 "$NAME" >&2
@@ -129,16 +133,24 @@ for _ in $(seq 1 300); do
   fi
   if curl -s --noproxy '*' --max-time 3 "http://127.0.0.1:${PORT}/v1/health/ready" | grep -q '"ready"'; then
     echo " ready"
+    HEALTH_READY=true
     break
   fi
   echo -n "."
   sleep 10
 done
 
+if [[ "$HEALTH_READY" != "true" ]]; then
+  echo
+  echo "timed out waiting for /v1/health/ready after $HEALTH_WAIT_TRIES tries (~$((HEALTH_WAIT_TRIES * 10 / 3600))h)" >&2
+  echo "check progress: docker logs -f $NAME" >&2
+  exit 1
+fi
+
 echo
 echo "models served:"
 curl -s --noproxy '*' "http://127.0.0.1:${PORT}/v1/models" | python3 -c 'import json,sys; [print("  " + m["id"]) for m in json.load(sys.stdin)["data"]]' \
-  || { echo "  (not ready yet — docker logs -f $NAME)"; exit 1; }
+  || echo "  (could not list models)"
 
 echo
 echo "Ultra is the one-time teacher for ~400 readability labels."
