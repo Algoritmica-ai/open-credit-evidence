@@ -43,28 +43,67 @@ CACHE=${LOCAL_NIM_CACHE:-$HOME/nim-cache-ultra}
 # Curiosity B300 has direct NGC egress; do not default to RTX proxy (times out)
 PROXY="${HTTPS_PROXY:-}"
 
-# Port selection: use NIM_PORT if set, otherwise scan for a free port starting at 8001
-find_free_port() {
-  local start=${1:-8001}
-  local end=${2:-8100}
-  for port in $(seq "$start" "$end"); do
-    if ! ss -tln 2>/dev/null | grep -q ":${port} "; then
-      echo "$port"
-      return 0
-    fi
-  done
-  return 1
+# === NIM Port Architecture ===
+# NIM uses TWO ports under --network host:
+#   - NIM_SERVER_PORT: nginx proxy (public API + /v1/health/ready)
+#   - Port 8001: vLLM backend (internal, always 8001)
+# NEVER set NIM_SERVER_PORT=8001 — nginx and vLLM will fight for it.
+# Do NOT set NIM_HEALTH_PORT; health is served by nginx on NIM_SERVER_PORT.
+VLLM_BACKEND_PORT=8001
+
+# Python-based port check (ss grep is unreliable for IPv6/edge cases)
+check_port_free() {
+  python3 -c "
+import socket, sys
+port = int(sys.argv[1])
+try:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(('0.0.0.0', port))
+        sys.exit(0)
+except OSError as e:
+    print(f'port {port} not available: {e}', file=sys.stderr)
+    sys.exit(1)
+" "$1"
 }
 
+# Find a free port, skipping 8001 (reserved for vLLM backend)
+find_free_port() {
+  python3 -c "
+import socket, sys
+candidates = sys.argv[1].split(',')
+for p in candidates:
+    port = int(p)
+    if port == 8001:
+        continue  # reserved for vLLM backend
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.bind(('0.0.0.0', port))
+            print(port)
+            sys.exit(0)
+    except OSError:
+        continue
+sys.exit(1)
+" "$1"
+}
+
+# Port selection for NIM_SERVER_PORT (public API)
 if [[ -n "${NIM_PORT:-}" ]]; then
   PORT="$NIM_PORT"
-  echo "using NIM_PORT=$PORT (from environment)"
+  if [[ "$PORT" == "8001" ]]; then
+    echo "ERROR: NIM_PORT=8001 is reserved for vLLM backend. Use 8000, 8002+, or 18000+." >&2
+    exit 1
+  fi
+  echo "NIM_SERVER_PORT=$PORT (from NIM_PORT environment)"
 else
-  PORT=$(find_free_port 8001 8100) || {
-    echo "no free port found in range 8001-8100" >&2
+  # Preference: 8000 (if free), then 8002-8020, then 18000-18100
+  CANDIDATES="8000,$(seq -s, 8002 8020),$(seq -s, 18000 18100)"
+  PORT=$(find_free_port "$CANDIDATES") || {
+    echo "no free port found for NIM_SERVER_PORT (tried 8000, 8002-8020, 18000-18100)" >&2
     exit 1
   }
-  echo "selected free port $PORT"
+  echo "NIM_SERVER_PORT=$PORT (auto-selected; 8001 reserved for vLLM backend)"
 fi
 
 # B300 4-GPU NVFP4 throughput profile (vllm-nvidia-b300-sxm6-ac-nvfp4-tp4-pp1-throughput-90.0)
@@ -104,11 +143,18 @@ if docker ps --format '{{.Names}}' | grep -qx "$NAME"; then
   echo "$NAME is already running:"
   docker ps --filter "name=$NAME" --format '  {{.Image}}  {{.Status}}'
 else
-  # Final check: port may have been taken since find_free_port (race)
-  if ss -tln 2>/dev/null | grep -q ":${PORT} "; then
-    echo "port $PORT became unavailable (race). Re-run to try another port." >&2
+  # Verify NIM_SERVER_PORT is still free (race check)
+  if ! check_port_free "$PORT"; then
+    echo "NIM_SERVER_PORT=$PORT became unavailable (race). Re-run to try another port." >&2
     exit 1
   fi
+  # Verify vLLM backend port 8001 is free (NIM requires it internally)
+  if ! check_port_free "$VLLM_BACKEND_PORT"; then
+    echo "ERROR: port $VLLM_BACKEND_PORT is in use but required for vLLM backend." >&2
+    echo "Another NIM or service is using it. Stop that first or use a different node." >&2
+    exit 1
+  fi
+  echo "vLLM backend port $VLLM_BACKEND_PORT is free"
   docker rm -f "$NAME" >/dev/null 2>&1 || true
 
   PROFILE_ENV=()
@@ -127,8 +173,9 @@ else
     echo "using proxy $PROXY"
   fi
 
-  echo "starting $NAME on GPU(s) $CUDA_VISIBLE_DEVICES, cache $CACHE, port $PORT"
+  echo "starting $NAME: NIM_SERVER_PORT=$PORT, vLLM backend on $VLLM_BACKEND_PORT"
   # Use --gpus all; Slurm sets CUDA_VISIBLE_DEVICES. The quoted device form fails under rootless Docker.
+  # Do NOT set NIM_HEALTH_PORT — health is served by nginx on NIM_SERVER_PORT.
   docker run -d \
     --name "$NAME" \
     --gpus all \
@@ -136,7 +183,7 @@ else
     --network host \
     -e NGC_API_KEY \
     -e NIM_SERVED_MODEL_NAME=nvidia/nemotron-3-ultra-550b-a55b \
-    -e NIM_SERVER_PORT="$PORT" -e NIM_HEALTH_PORT="$PORT" \
+    -e NIM_SERVER_PORT="$PORT" \
     "${PROXY_ENV[@]}" \
     "${PROFILE_ENV[@]}" \
     -u "$(id -u):0" --group-add "$(id -g)" \

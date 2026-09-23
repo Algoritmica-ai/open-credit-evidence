@@ -141,11 +141,15 @@ your srun session; stop it manually: `docker stop team08_nt-ultra` on the B300 n
 
 | Setting | Value |
 |---|---|
-| Port | Auto-selects free port from 8001-8100 (override with `NIM_PORT`) |
+| Port | Auto-selects 8000/8002+/18000+ (override with `NIM_PORT`; **never 8001**) |
 | Container | `team08_nt-ultra` |
 | Cache | `$HOME/nim-cache-ultra` (override with `LOCAL_NIM_CACHE`) |
 | Health wait | ~3 hours (override with `HEALTH_WAIT_TRIES`) |
 | Model profile | B300 NVFP4 TP4 throughput (override with `NIM_MODEL_PROFILE`) |
+
+**Port 8001 is reserved** for NIM's vLLM backend (internal). The public API port
+(`NIM_SERVER_PORT`) must be different — the script refuses 8001 and auto-selects
+from 8000, 8002+, or 18000+.
 
 **First-time cold cache** can take well over 50 minutes as the NIM downloads
 ~300 GB of weights. The health waiter defaults to ~3 hours; override with
