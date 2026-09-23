@@ -141,7 +141,7 @@ your srun session; stop it manually: `docker stop team08_nt-ultra` on the B300 n
 
 | Setting | Value |
 |---|---|
-| Port | 8001 (Lightning owns 8000) |
+| Port | Auto-selects free port from 8001-8100 (override with `NIM_PORT`) |
 | Container | `team08_nt-ultra` |
 | Cache | `$HOME/nim-cache-ultra` (override with `LOCAL_NIM_CACHE`) |
 | Health wait | ~3 hours (override with `HEALTH_WAIT_TRIES`) |

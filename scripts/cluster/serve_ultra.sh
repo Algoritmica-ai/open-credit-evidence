@@ -38,11 +38,34 @@ set -euo pipefail
 
 NAME=${NAME:-team08_nt-ultra}
 IMAGE=${IMAGE:-nvcr.io/nim/nvidia/nemotron-3-ultra-550b-a55b:2.0.12}
-PORT=${NIM_PORT:-8001}
 # Default cache under $HOME avoids team-storage ACL + GID 0 conflicts
 CACHE=${LOCAL_NIM_CACHE:-$HOME/nim-cache-ultra}
 # Curiosity B300 has direct NGC egress; do not default to RTX proxy (times out)
 PROXY="${HTTPS_PROXY:-}"
+
+# Port selection: use NIM_PORT if set, otherwise scan for a free port starting at 8001
+find_free_port() {
+  local start=${1:-8001}
+  local end=${2:-8100}
+  for port in $(seq "$start" "$end"); do
+    if ! ss -tln 2>/dev/null | grep -q ":${port} "; then
+      echo "$port"
+      return 0
+    fi
+  done
+  return 1
+}
+
+if [[ -n "${NIM_PORT:-}" ]]; then
+  PORT="$NIM_PORT"
+  echo "using NIM_PORT=$PORT (from environment)"
+else
+  PORT=$(find_free_port 8001 8100) || {
+    echo "no free port found in range 8001-8100" >&2
+    exit 1
+  }
+  echo "selected free port $PORT"
+fi
 
 # B300 4-GPU NVFP4 throughput profile (vllm-nvidia-b300-sxm6-ac-nvfp4-tp4-pp1-throughput-90.0)
 # Auto profile match fails on Curiosity; default to the known working profile id.
@@ -74,14 +97,16 @@ fi
 mkdir -p "$CACHE"
 chmod -R u+rwX,g+rwX "$CACHE" 2>/dev/null || true
 
+# Write selected port to cache dir for ultra.sbatch to read
+echo "$PORT" > "$CACHE/.nim_port"
+
 if docker ps --format '{{.Names}}' | grep -qx "$NAME"; then
   echo "$NAME is already running:"
   docker ps --filter "name=$NAME" --format '  {{.Image}}  {{.Status}}'
 else
+  # Final check: port may have been taken since find_free_port (race)
   if ss -tln 2>/dev/null | grep -q ":${PORT} "; then
-    echo "port $PORT is already in use on $(hostname):" >&2
-    docker ps --format '  {{.Names}}  {{.Image}}  {{.Status}}' 2>/dev/null >&2 || true
-    echo "either use that server, or start ours on another port: NIM_PORT=8002 $0" >&2
+    echo "port $PORT became unavailable (race). Re-run to try another port." >&2
     exit 1
   fi
   docker rm -f "$NAME" >/dev/null 2>&1 || true

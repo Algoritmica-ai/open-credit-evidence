@@ -49,7 +49,7 @@ NIM_CACHE="${LOCAL_NIM_CACHE:-$HOME/nim-cache-ultra}"
 
 CONTAINER_NAME=team08_nt-ultra
 ENV_FILE="${RUNS_DIR}/ultra.env"
-PORT=${NIM_PORT:-8001}
+# PORT is determined by serve_ultra.sh (auto-selects free port if NIM_PORT unset)
 
 cleanup() {
     echo "$(date): stopping $CONTAINER_NAME"
@@ -113,6 +113,15 @@ export LOCAL_NIM_CACHE="$NIM_CACHE"
 if ! bash "$SERVE_SCRIPT"; then
     echo "$(date): serve_ultra.sh failed" >&2
     exit 1
+fi
+
+# Read the port that serve_ultra.sh selected (written to $NIM_CACHE/.nim_port)
+if [[ -f "$NIM_CACHE/.nim_port" ]]; then
+    PORT=$(cat "$NIM_CACHE/.nim_port")
+    echo "$(date): serve_ultra.sh selected port $PORT"
+else
+    echo "$(date): warning: could not read selected port from $NIM_CACHE/.nim_port" >&2
+    PORT=8001
 fi
 
 NODE_IP=$(hostname -i 2>/dev/null || hostname)
