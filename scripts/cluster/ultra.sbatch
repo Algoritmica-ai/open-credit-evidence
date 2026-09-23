@@ -8,9 +8,13 @@
 # holds 4 B300 GPUs for its lifetime and stops the Ultra container on EXIT or
 # scancel, so the GPUs are properly released back to the cluster.
 #
-# Submit from the login node:
+# Setup and submit from the login node:
 #
-#   sbatch ~/open-credit-evidence/scripts/cluster/ultra.sbatch
+#   git clone -b cursor/serve-ultra-b300-da12 --single-branch \
+#     https://github.com/Algoritmica-ai/open-credit-evidence.git \
+#     /storage/hackathon_teams/omc-team08/open-credit-evidence
+#   # edit #SBATCH --partition=<b300-partition> below
+#   sbatch /storage/hackathon_teams/omc-team08/open-credit-evidence/scripts/cluster/ultra.sbatch
 #   squeue --me          # check status
 #   scancel <jobid>      # stop when the labeling pass is done
 #
@@ -20,6 +24,14 @@
 #
 # ~400 readability labels should finish well before the 2-day limit. scancel
 # when done to release the GPUs.
+#
+# Team directory layout (single source of truth):
+#   /storage/hackathon_teams/omc-team08/
+#     open-credit-evidence/   # recommended clone location
+#     nim-cache-ultra/        # NIM weight cache
+#     runs/
+#       ultra-%j.log          # job output
+#       ultra.env             # EVIDENCE_JUDGE_* for labeling
 
 #SBATCH --job-name=team08-ultra-teacher
 #SBATCH --partition=<b300-partition>
@@ -33,8 +45,13 @@
 
 set -euo pipefail
 
+# --- Team directory layout (single source of truth) ---
+TEAM_ROOT=/storage/hackathon_teams/omc-team08
+RUNS_DIR="$TEAM_ROOT/runs"
+NIM_CACHE="$TEAM_ROOT/nim-cache-ultra"
+REPO_DIR="$TEAM_ROOT/open-credit-evidence"
+
 CONTAINER_NAME=team08_nt-ultra
-RUNS_DIR=/storage/hackathon_teams/omc-team08/runs
 ENV_FILE="${RUNS_DIR}/ultra.env"
 PORT=${NIM_PORT:-8001}
 
@@ -47,6 +64,7 @@ trap cleanup EXIT
 
 echo "$(date): job $SLURM_JOB_ID starting on $(hostname)"
 echo "$(date): CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+echo "$(date): TEAM_ROOT=$TEAM_ROOT"
 
 source ~/.ngc_key
 if [[ -z "${NGC_API_KEY:-}" ]]; then
@@ -55,12 +73,27 @@ if [[ -z "${NGC_API_KEY:-}" ]]; then
 fi
 
 module load docker 2>/dev/null || true
-mkdir -p "$RUNS_DIR"
+mkdir -p "$RUNS_DIR" "$NIM_CACHE"
 
+# Find serve_ultra.sh: same directory as this sbatch, then $REPO_DIR, then fail.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-echo "$(date): calling serve_ultra.sh"
+if [[ -x "${SCRIPT_DIR}/serve_ultra.sh" ]]; then
+    SERVE_SCRIPT="${SCRIPT_DIR}/serve_ultra.sh"
+elif [[ -x "${REPO_DIR}/scripts/cluster/serve_ultra.sh" ]]; then
+    SERVE_SCRIPT="${REPO_DIR}/scripts/cluster/serve_ultra.sh"
+else
+    echo "$(date): cannot find serve_ultra.sh" >&2
+    echo "Clone the branch under $REPO_DIR:" >&2
+    echo "  git clone -b cursor/serve-ultra-b300-da12 --single-branch \\" >&2
+    echo "    https://github.com/Algoritmica-ai/open-credit-evidence.git \\" >&2
+    echo "    $REPO_DIR" >&2
+    exit 1
+fi
 
-if ! bash "${SCRIPT_DIR}/serve_ultra.sh"; then
+echo "$(date): calling $SERVE_SCRIPT"
+export LOCAL_NIM_CACHE="$NIM_CACHE"
+
+if ! bash "$SERVE_SCRIPT"; then
     echo "$(date): serve_ultra.sh failed" >&2
     exit 1
 fi

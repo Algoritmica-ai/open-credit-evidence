@@ -59,14 +59,34 @@ Ultra (550B) is too large for a single RTX GPU, so by default it runs on NVIDIA
 Build. For the one-time teacher/judge labeling pass (~400 readability labels), it
 can be served on Curiosity B300 with 4 GPUs (NVFP4 TP4).
 
+### Curiosity B300 directory layout
+
+All Ultra scripts use this layout as the single source of truth:
+
+```
+/storage/hackathon_teams/omc-team08/
+  open-credit-evidence/     # recommended clone location
+  nim-cache-ultra/          # NIM weight cache
+  runs/
+    ultra-%j.log            # sbatch job output
+    ultra.env               # EVIDENCE_JUDGE_* for labeling
+```
+
 ### Option 1: sbatch (preferred)
 
 Submit a batch job that holds the GPUs under Slurm accounting and cleans up on
 cancel:
 
 ```bash
-# From the login node (replace <b300-partition> in the script first)
-sbatch ~/open-credit-evidence/scripts/cluster/ultra.sbatch
+# Clone the branch (once)
+git clone -b cursor/serve-ultra-b300-da12 --single-branch \
+  https://github.com/Algoritmica-ai/open-credit-evidence.git \
+  /storage/hackathon_teams/omc-team08/open-credit-evidence
+
+# Edit #SBATCH --partition=<b300-partition> in ultra.sbatch
+
+# Submit from the login node
+sbatch /storage/hackathon_teams/omc-team08/open-credit-evidence/scripts/cluster/ultra.sbatch
 squeue --me          # check status
 scancel <jobid>      # stop when the labeling pass is done
 ```
@@ -90,7 +110,7 @@ For debugging or quick tests:
 # On Curiosity B300 — replace <b300-partition> with the real partition name
 srun --gres=gpu:4 -n1 -p <b300-partition> --time=04:00:00 --pty bash
 source ~/.ngc_key
-bash ~/open-credit-evidence/scripts/cluster/serve_ultra.sh
+bash /storage/hackathon_teams/omc-team08/open-credit-evidence/scripts/cluster/serve_ultra.sh
 ```
 
 The script prints `.env` lines for `EVIDENCE_JUDGE_*`. The container outlives
