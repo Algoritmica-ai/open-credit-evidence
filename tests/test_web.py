@@ -200,3 +200,22 @@ def test_coverage_names_article_requirements_and_check_basis(client):
     assert art15["driver_recall"]["registered"] is False  # planned, never counted
     assert by_id["eu-ai-act:10"]["level"] == "does_not_cover"
     assert "ai-act-art-14#4" in cov["passages"]
+
+
+def test_run_detail_carries_decision_and_compare_works(tmp_path, monkeypatch):
+    """The Evidence step reads decision/diagnosis/recommendations; Compare pairs two runs."""
+    import shutil
+
+    runs = tmp_path / "runs"
+    for name in ("2026-09-20-build", "2026-09-20-onprem"):
+        shutil.copytree(ROOT / "runs" / name, runs / name)
+    monkeypatch.setattr(web, "RUNS", runs)
+    c = TestClient(web.app)
+    d = c.get("/api/runs/2026-09-20-onprem").json()
+    assert d["decision"]["verdict"] in ("GO", "GO WITH CONDITIONS", "NO-GO", "INCONCLUSIVE")
+    assert d["diagnosis"]["causes"] and d["recommendations"]
+    cmp = c.get("/api/compare", params={"before": "2026-09-20-build",
+                                         "after": "2026-09-20-onprem"}).json()
+    assert cmp["verdict"] in ("ACCEPT", "REJECT", "INCONCLUSIVE", "NO EFFECT")
+    assert any(ch["what"] == "assistant endpoint" for ch in cmp["changed"])
+    assert c.get("/api/compare", params={"before": "x", "after": "x"}).status_code == 400

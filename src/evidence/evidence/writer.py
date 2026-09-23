@@ -11,12 +11,23 @@ Layout inside a run directory::
     evidence/
       report.md          the pack, by obligation — for a validator or supervisor
       summary.json       the numbers behind the report
+      decision.json      GO / GO WITH CONDITIONS / NO-GO / INCONCLUSIVE, against thresholds.yaml
+      diagnosis.json     a root cause for every failing result
+      recommendations.json  what to change, and who can
+      thresholds.yaml    the bank's go / no-go thresholds (defaults if none given)
       obligations.yaml   the pack's claims, copied verbatim
     checksums.sha256     every file above; ``evidence verify`` recomputes and compares
 
 The report says, for each obligation, whether the run *evidences* it,
 *contributes* to it, or *does not cover* it — the pack's own claim levels —
-and gives the numbers only for checks that actually ran.
+and gives the numbers only for checks that actually ran. It opens with the
+decision, the root cause of each failure and what to change
+(``evidence.evidence.assess``).
+
+Everything under ``evidence/`` except the two inputs (``obligations.yaml``,
+``thresholds.yaml``) is derived from the run by one pure function,
+``build_evidence``. The writer calls it; ``evidence verify --recompute`` calls it
+again and names the first number that no longer follows from the results.
 """
 
 from __future__ import annotations
@@ -27,7 +38,16 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from evidence.aggregate import by_obligation, items_failing_any, repeat_agreement, summarise_checks
+from evidence.evidence.assess import (
+    DEFAULT_THRESHOLDS,
+    decide,
+    diagnose,
+    recommend,
+    report_sections,
+)
 
 CHECKSUMS = "checksums.sha256"
 
@@ -63,6 +83,7 @@ def _report(
     summary: dict[str, Any],
     pack_obligations: dict[str, Any],
     regulatory: dict[str, Any],
+    lead: list[str] | None = None,
 ) -> str:
     checks = summary["checks"]
     agreement = summary["repeat_agreement"]
@@ -99,6 +120,7 @@ def _report(
         "transcript in `transcripts/`; `checksums.sha256` covers all of them."
     )
     L.append("")
+    L.extend(lead or [])
 
     def check_lines(name: str) -> list[str]:
         c = checks.get(name)
@@ -297,8 +319,16 @@ def _report(
     return "\n".join(L) + "\n"
 
 
-def write_evidence(run: Path, pack_obligations: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Build evidence/ from manifest + results, copy obligations, then seal the run."""
+def _dump(obj: Any) -> str:
+    return json.dumps(obj, indent=2) + "\n"
+
+
+def build_evidence(run: Path) -> dict[str, str]:
+    """Every derived file under evidence/, from the run's own files. Pure: same run, same bytes.
+
+    Reads manifest.json, results.jsonl, regulations.json and the two inputs in
+    evidence/ (obligations.yaml, thresholds.yaml). Returns {relative path: content}.
+    """
     manifest = json.loads((run / "manifest.json").read_text(encoding="utf-8"))
     results = _read_results(run)
     regulatory = (
@@ -307,31 +337,65 @@ def write_evidence(run: Path, pack_obligations: dict[str, Any] | None = None) ->
         else {"status": "unscoped", "note": "no assessment"}
     )
     ev = run / "evidence"
-    ev.mkdir(exist_ok=True)
-    obligations = pack_obligations or {}
-    if pack_obligations is not None:
-        import yaml
+    obligations = (
+        yaml.safe_load((ev / "obligations.yaml").read_text(encoding="utf-8")) or {}
+        if (ev / "obligations.yaml").is_file()
+        else {}
+    )
+    thresholds = (
+        yaml.safe_load((ev / "thresholds.yaml").read_text(encoding="utf-8")) or {}
+        if (ev / "thresholds.yaml").is_file()
+        else DEFAULT_THRESHOLDS
+    )
+    checks = summarise_checks(results)
+    summary = {
+        "checks": checks,
+        "repeat_agreement": repeat_agreement(results),
+        "failing": items_failing_any(results),
+        "obligations": by_obligation(obligations, checks),
+    }
+    diagnosis = diagnose(results)
+    recs = recommend(diagnosis)
+    decision = decide(summary, diagnosis, thresholds, obligations)
+    return {
+        "evidence/summary.json": json.dumps(summary, indent=2),
+        "evidence/diagnosis.json": _dump(diagnosis),
+        "evidence/recommendations.json": _dump(recs),
+        "evidence/decision.json": _dump(decision),
+        "evidence/report.md": _report(manifest, summary, obligations, regulatory,
+                                      lead=report_sections(decision, diagnosis, recs)),
+    }
 
+
+def write_evidence(
+    run: Path,
+    pack_obligations: dict[str, Any] | None = None,
+    thresholds: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Write evidence/ from manifest + results, then seal the run.
+
+    ``pack_obligations`` and ``thresholds`` are written into evidence/ first when
+    given; otherwise what is already there is kept, and thresholds default to the
+    engine's.
+    """
+    ev = run / "evidence"
+    ev.mkdir(exist_ok=True)
+    if pack_obligations is not None:
         (ev / "obligations.yaml").write_text(
             yaml.safe_dump(pack_obligations, sort_keys=False, allow_unicode=True), encoding="utf-8"
         )
-    elif (ev / "obligations.yaml").is_file():
-        import yaml
-
-        obligations = yaml.safe_load((ev / "obligations.yaml").read_text(encoding="utf-8")) or {}
-
-    summary = {
-        "checks": summarise_checks(results),
-        "repeat_agreement": repeat_agreement(results),
-        "failing": items_failing_any(results),
-        "obligations": by_obligation(obligations, summarise_checks(results)),
-    }
-    (ev / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    (ev / "report.md").write_text(
-        _report(manifest, summary, obligations, regulatory), encoding="utf-8"
-    )
+    if thresholds is not None or not (ev / "thresholds.yaml").is_file():
+        (ev / "thresholds.yaml").write_text(
+            "# Go / no-go thresholds. They belong to the bank's model risk team.\n"
+            + yaml.safe_dump(thresholds or DEFAULT_THRESHOLDS, sort_keys=False),
+            encoding="utf-8",
+        )
+    files = build_evidence(run)
+    for rel, body in files.items():
+        (run / rel).write_text(body, encoding="utf-8")
     n = seal(run)
-    return {"files_sealed": n, "summary": summary}
+    return {"files_sealed": n, "summary": json.loads(files["evidence/summary.json"]),
+            "decision": json.loads(files["evidence/decision.json"])}
 
 
 def copy_pack_obligations(pack_dir: Path, run: Path) -> None:

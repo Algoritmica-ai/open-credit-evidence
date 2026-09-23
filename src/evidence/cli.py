@@ -3,8 +3,9 @@
 """``evidence`` — run a pack, write the evidence pack, verify it.
 
 evidence run packs/underwriter-sample --repeats 3 --out runs/2026-10-07
-evidence report runs/2026-10-07
+evidence report runs/2026-10-07 [--rewrite --thresholds bank_thresholds.yaml]
 evidence verify runs/2026-10-07 [--recompute --pack packs/underwriter-sample]
+evidence compare runs/before runs/after
 evidence rules packs/underwriter-sample
 evidence checks
 """
@@ -45,8 +46,24 @@ def _cmd_run(a: argparse.Namespace) -> int:
     res = write_evidence(out, pack.obligations)
     print(f"sealed   {res['files_sealed']} files -> {out / 'checksums.sha256'}")
     _print_summary(res["summary"], manifest["repeats"])
+    _print_decision(out)
     print(f"report   {out / 'evidence' / 'report.md'}")
     return 0
+
+
+def _print_decision(run: Path) -> None:
+    import json
+
+    ev = run / "evidence"
+    d = json.loads((ev / "decision.json").read_text(encoding="utf-8"))
+    recs = json.loads((ev / "recommendations.json").read_text(encoding="utf-8"))
+    print(f"decision {d['verdict']}")
+    for c in d["conditions"][:3]:
+        print(f"         - {c}")
+    if recs:
+        r = recs[0]
+        print(f"change   {r['title']} ({r['addresses']['results']} failing results, "
+              f"{r['owner']} can act)")
 
 
 def _print_summary(summary: dict, repeats: int) -> None:
@@ -65,6 +82,12 @@ def _print_summary(summary: dict, repeats: int) -> None:
 
 
 def _cmd_report(a: argparse.Namespace) -> int:
+    if a.rewrite:
+        import yaml
+
+        thresholds = yaml.safe_load(Path(a.thresholds).read_text()) if a.thresholds else None
+        res = write_evidence(Path(a.run), thresholds=thresholds)
+        print(f"rewrote  evidence/ and re-sealed {res['files_sealed']} files", file=sys.stderr)
     path = Path(a.run) / "evidence" / "report.md"
     if not path.is_file():
         print(f"{path} not found", file=sys.stderr)
@@ -80,9 +103,34 @@ def _cmd_verify(a: argparse.Namespace) -> int:
         return 2
     v = verify_run(Path(a.run), pack, recompute=a.recompute)
     print(v.message + ("   OK" if v.ok else "   FAIL"))
-    for d in v.disagreements[:20]:
+    for d in (v.disagreements + v.derived)[:20]:
         print(f"  {d}")
     return 0 if v.ok else 1
+
+
+def _cmd_compare(a: argparse.Namespace) -> int:
+    import json
+
+    from evidence.evidence.compare import compare_runs
+
+    c = compare_runs(Path(a.before), Path(a.after))
+    if a.json:
+        print(json.dumps(c, indent=2))
+        return 0
+    for w in c["warnings"]:
+        print(f"warning  {w}")
+    print(f"{c['before']['run_id']} -> {c['after']['run_id']}: {c['verdict']}")
+    for ch in c["changed"] or [{"what": "nothing recorded in the manifests", "before": "",
+                                "after": ""}]:
+        print(f"changed  {ch['what']}: {ch['before']} -> {ch['after']}")
+    for r in c["checks"]:
+        if r["status"] == "not_comparable":
+            continue
+        print(f"  {r['check']:20} {r['before']:>6.0%} -> {r['after']:>5.0%}  "
+              f"{r['change'] * 100:+4.0f} pts [{r['interval'][0] * 100:+.0f}, "
+              f"{r['interval'][1] * 100:+.0f}]  helped {r['helped']:2} hurt {r['hurt']:2}  "
+              f"{r['status'].replace('_', ' ')}")
+    return 0
 
 
 def _cmd_rules(a: argparse.Namespace) -> int:
@@ -162,7 +210,16 @@ def main(argv: list[str] | None = None) -> int:
 
     p = sub.add_parser("report", help="print evidence/report.md for a run")
     p.add_argument("run")
+    p.add_argument("--rewrite", action="store_true",
+                   help="rebuild evidence/ from the results first (no model calls) and re-seal")
+    p.add_argument("--thresholds", help="with --rewrite: the bank's thresholds.yaml")
     p.set_defaults(fn=_cmd_report)
+
+    cp = sub.add_parser("compare", help="did a change help? two runs, case by case")
+    cp.add_argument("before")
+    cp.add_argument("after")
+    cp.add_argument("--json", action="store_true")
+    cp.set_defaults(fn=_cmd_compare)
 
     v = sub.add_parser("verify", help="re-check a run's checksums, optionally re-derive results")
     v.add_argument("run")

@@ -70,9 +70,25 @@ readability judge — and the evidence pack it produces:
 
 Change one digit in any transcript and `verify` fails, naming the file.
 
+Every run's evidence pack now opens with **the decision** — GO / GO WITH CONDITIONS /
+NO-GO / INCONCLUSIVE against the bank's thresholds (`evidence/thresholds.yaml`) — then
+**why each failure happened** (a root cause per failing result, by fixed rules, no model)
+and **what to change and who can** (the bank through the assistant's instructions, what
+it is handed or its output template; the vendor when a failure survives those). To
+prove a change helped, run again and compare, case by case:
+
+```bash
+.venv/bin/evidence compare runs/before runs/after     # ACCEPT / REJECT / INCONCLUSIVE / NO EFFECT
+.venv/bin/evidence report runs/today --rewrite --thresholds bank.yaml   # re-decide, no model calls
+```
+
+`verify --recompute` rebuilds all of it from the results and names the first number
+that does not match — even if someone re-sealed the checksums after editing it.
+
 The same flow in a browser — pack (choose, build from a spec, or upload), cases,
-run (with cancel), evidence (every briefing with its verdicts, then the pack by
-obligation), verify (with a tamper demo on a copy of the run):
+run (with cancel), evidence (the decision, why it failed and what to change, every
+briefing with its verdicts, then the pack by obligation), verify (with a tamper demo on
+a copy of the run), compare (did a change help?):
 
 ```bash
 .venv/bin/pip install -e ".[web]"
