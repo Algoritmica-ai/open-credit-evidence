@@ -21,7 +21,7 @@ What we have, verified 16 Sep 2026, and how the framework uses it.
 | Role | Where | Why |
 |---|---|---|
 | Assistant (Lightning) | NIM on the team node | Fixed seed on a local vLLM is reproducible; the free endpoint was not, and took 8–150 s per call. Runner at volume needs both. |
-| Teacher (Ultra) | NVIDIA Build | 550B; serving it would take the whole node. Used once, to label the judge's training set. |
+| Teacher (Ultra) | NVIDIA Build, or Curiosity B300 (`scripts/cluster/serve_ultra.sh`) | 550B; too large for a single RTX GPU. Used once, to label the judge's training set. B300 option needs 4 GPUs (NVFP4 TP4). |
 | Judge (Nano) | vLLM on the team node, GPU 7, port 8002 (`scripts/cluster/serve_nano.sh`) | Nemotron Nano 9B v2, un-tuned today — the baseline; the fine-tuned adapter is served by the same script with `ADAPTER=`. Loan files never leave the box. |
 | Embed | vLLM on the team node, GPU 6, port 8003 (`scripts/cluster/serve_embed.sh`) | Nemotron 3 Embed 1B. With this, no case content and no query leaves the node, and a local run needs no NVIDIA key. |
 
@@ -52,6 +52,32 @@ bash ~/open-credit-evidence/scripts/cluster/serve_lightning.sh
 The script waits for the health check and prints the `.env` lines. From the login
 node or another GPU session, `scripts/cluster/check_endpoint.sh http://rtx-3se-05-36:8000/v1`
 makes one chat call. To stop: `docker stop nemotron-lightning` on the node.
+
+## Serving Ultra on Curiosity B300
+
+Ultra (550B) is too large for a single RTX GPU, so by default it runs on NVIDIA
+Build. For the one-time teacher/judge labeling pass (~400 readability labels), it
+can be served on Curiosity B300 with 4 GPUs (NVFP4 TP4):
+
+```bash
+# On Curiosity B300 — replace <b300-partition> with the real partition name
+srun --gres=gpu:4 -n1 -p <b300-partition> --time=04:00:00 --pty bash
+source ~/.ngc_key
+bash ~/open-credit-evidence/scripts/cluster/serve_ultra.sh
+```
+
+| Default | Value |
+|---|---|
+| Port | 8001 (Lightning owns 8000) |
+| Container | `team08_nt-ultra` |
+| Cache | `/storage/hackathon_teams/omc-team08/nim-cache-ultra` |
+
+This is **not** the RTX cluster — different nodes, different storage paths.
+The script prints `.env` lines for `EVIDENCE_JUDGE_*`. To stop:
+`docker stop team08_nt-ultra` on the B300 node.
+
+After Ultra labels the training set, the fine-tuned Nano+LoRA (`serve_nano.sh`
+with `ADAPTER=`) becomes the runtime judge, and Ultra is no longer needed.
 
 ## GPU budget (8 GPUs, three people)
 
