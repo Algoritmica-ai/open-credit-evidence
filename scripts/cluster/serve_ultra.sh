@@ -44,11 +44,9 @@ CACHE=${LOCAL_NIM_CACHE:-$HOME/nim-cache-ultra}
 # Curiosity B300 has direct NGC egress; do not default to RTX proxy (times out)
 PROXY="${HTTPS_PROXY:-}"
 
-# NIM_MODEL_PROFILE may be required for B300 NVFP4 TP4 deployment. If the NIM
-# logs show a profile selection error, set this to the profile id from NVIDIA's
-# NIM documentation for Ultra on B300.
-# Example: NIM_MODEL_PROFILE=nvfp4-tp4-b300 bash serve_ultra.sh
-MODEL_PROFILE=${NIM_MODEL_PROFILE:-}
+# B300 4-GPU NVFP4 throughput profile (vllm-nvidia-b300-sxm6-ac-nvfp4-tp4-pp1-throughput-90.0)
+# Auto profile match fails on Curiosity; default to the known working profile id.
+MODEL_PROFILE=${NIM_MODEL_PROFILE:-5b3441c9d0f55e8b4442537a4294304d5401d3a5542870bda16f3f8e18971878}
 
 if [[ "$(hostname)" == *login* ]]; then
   echo "This is the login node. Start an srun session first (see header)." >&2
@@ -105,9 +103,10 @@ else
   fi
 
   echo "starting $NAME on GPU(s) $CUDA_VISIBLE_DEVICES, cache $CACHE, port $PORT"
+  # Use --gpus all; Slurm sets CUDA_VISIBLE_DEVICES. The quoted device form fails under rootless Docker.
   docker run -d \
     --name "$NAME" \
-    --gpus "\"device=${CUDA_VISIBLE_DEVICES}\"" \
+    --gpus all \
     --shm-size=16GB \
     --network host \
     -e NGC_API_KEY \

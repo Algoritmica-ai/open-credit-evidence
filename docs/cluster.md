@@ -145,6 +145,7 @@ your srun session; stop it manually: `docker stop team08_nt-ultra` on the B300 n
 | Container | `team08_nt-ultra` |
 | Cache | `$HOME/nim-cache-ultra` (override with `LOCAL_NIM_CACHE`) |
 | Health wait | ~3 hours (override with `HEALTH_WAIT_TRIES`) |
+| Model profile | B300 NVFP4 TP4 throughput (override with `NIM_MODEL_PROFILE`) |
 
 **First-time cold cache** can take well over 50 minutes as the NIM downloads
 ~300 GB of weights. The health waiter defaults to ~3 hours; override with
