@@ -72,7 +72,7 @@ if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
 fi
 
 mkdir -p "$CACHE"
-chmod g+rwx "$CACHE" 2>/dev/null || true
+chmod -R u+rwX,g+rwX "$CACHE" 2>/dev/null || true
 
 if docker ps --format '{{.Names}}' | grep -qx "$NAME"; then
   echo "$NAME is already running:"
@@ -105,7 +105,7 @@ else
     -e http_proxy="$PROXY" -e https_proxy="$PROXY" \
     -e NO_PROXY="${NO_PROXY:-localhost,127.0.0.1}" -e no_proxy="${no_proxy:-localhost,127.0.0.1}" \
     "${PROFILE_ENV[@]}" \
-    -u "$(id -u)" \
+    -u "$(id -u):0" \
     -v "$CACHE:/opt/nim/.cache" \
     "$IMAGE" >/dev/null
 fi

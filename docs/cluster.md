@@ -139,6 +139,10 @@ your srun session; stop it manually: `docker stop team08_nt-ultra` on the B300 n
 | Container | `team08_nt-ultra` |
 | Cache | `/storage/hackathon_teams/omc-team08/nim-cache-ultra` |
 
+The NIM container runs as `UID:GID 0` for cache access. If cache permission errors
+persist, ensure team storage is group-writable or set `LOCAL_NIM_CACHE` to a
+user-owned path.
+
 This is **not** the RTX cluster — different nodes, different storage paths.
 
 After Ultra labels the training set, the fine-tuned Nano+LoRA (`serve_nano.sh`
