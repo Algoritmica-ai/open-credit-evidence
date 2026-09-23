@@ -73,6 +73,17 @@ $HOME/open-credit-evidence/           # repo clone (can live anywhere)
 The repo clone lives in `$HOME` (e.g. `/home/omc-termh/open-credit-evidence`).
 TEAM_ROOT is only for the NIM cache and run outputs — not the git checkout.
 
+### Curiosity B300 docker
+
+Curiosity B300 (dgx* nodes) uses rootless Docker, not the RTX `module load docker`:
+
+```bash
+module load rootless-docker/1.75
+```
+
+The serve/sbatch scripts try this automatically and fall back to `module load docker`
+for RTX compatibility.
+
 ### Option 1: sbatch (preferred)
 
 Submit a batch job that holds the GPUs under Slurm accounting and cleans up on

@@ -68,7 +68,16 @@ if [[ -z "${NGC_API_KEY:-}" ]]; then
     exit 1
 fi
 
-module load docker 2>/dev/null || true
+# Curiosity B300: rootless-docker; RTX fallback: docker
+if ! module load rootless-docker/1.75 2>/dev/null; then
+  module load docker 2>/dev/null || true
+fi
+if ! command -v docker >/dev/null 2>&1; then
+  echo "$(date): docker not found. Tried: module load rootless-docker/1.75, then module load docker" >&2
+  echo "Run: module avail 2>&1 | grep -i docker" >&2
+  exit 1
+fi
+
 mkdir -p "$RUNS_DIR" "$NIM_CACHE"
 
 # Find serve_ultra.sh. Under Slurm the batch script is copied to a spool path,
