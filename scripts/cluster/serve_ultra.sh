@@ -44,12 +44,10 @@ CACHE=${LOCAL_NIM_CACHE:-$HOME/nim-cache-ultra}
 PROXY="${HTTPS_PROXY:-}"
 
 # === NIM Port Architecture ===
-# NIM uses TWO ports under --network host:
-#   - NIM_SERVER_PORT: nginx proxy (public API + /v1/health/ready)
-#   - Port 8001: vLLM backend (internal, always 8001)
-# NEVER set NIM_SERVER_PORT=8001 — nginx and vLLM will fight for it.
+# NIM runs nginx (public API) + vLLM backend (fixed on port 8001, not configurable).
+# We use BRIDGE networking (-p) so vLLM's 8001 stays container-internal and never
+# collides with host services. Only the public NIM_SERVER_PORT is exposed.
 # Do NOT set NIM_HEALTH_PORT; health is served by nginx on NIM_SERVER_PORT.
-VLLM_BACKEND_PORT=8001
 
 # Python-based port check (ss grep is unreliable for IPv6/edge cases)
 check_port_free() {
@@ -67,15 +65,13 @@ except OSError as e:
 " "$1"
 }
 
-# Find a free port, skipping 8001 (reserved for vLLM backend)
+# Find a free port from candidates list
 find_free_port() {
   python3 -c "
 import socket, sys
 candidates = sys.argv[1].split(',')
 for p in candidates:
     port = int(p)
-    if port == 8001:
-        continue  # reserved for vLLM backend
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -91,20 +87,17 @@ sys.exit(1)
 # Port selection for NIM_SERVER_PORT (public API)
 if [[ -n "${NIM_PORT:-}" ]]; then
   PORT="$NIM_PORT"
-  if [[ "$PORT" == "8001" ]]; then
-    echo "ERROR: NIM_PORT=8001 is reserved for vLLM backend. Use 8000, 8002+, or 18000+." >&2
-    exit 1
-  fi
-  echo "NIM_SERVER_PORT=$PORT (from NIM_PORT environment)"
+  echo "public NIM_SERVER_PORT=$PORT (from NIM_PORT environment)"
 else
-  # Preference: 8000 (if free), then 8002-8020, then 18000-18100
-  CANDIDATES="8000,$(seq -s, 8002 8020),$(seq -s, 18000 18100)"
+  # Preference: 8000 (if free), then 8002-8100, then 18000-18100
+  CANDIDATES="8000,$(seq -s, 8002 8100),$(seq -s, 18000 18100)"
   PORT=$(find_free_port "$CANDIDATES") || {
-    echo "no free port found for NIM_SERVER_PORT (tried 8000, 8002-8020, 18000-18100)" >&2
+    echo "no free port found for NIM_SERVER_PORT (tried 8000, 8002-8100, 18000-18100)" >&2
     exit 1
   }
-  echo "NIM_SERVER_PORT=$PORT (auto-selected; 8001 reserved for vLLM backend)"
+  echo "public NIM_SERVER_PORT=$PORT (auto-selected)"
 fi
+echo "vLLM backend=8001 (container-internal, isolated via bridge network)"
 
 # B300 4-GPU NVFP4 throughput profile (vllm-nvidia-b300-sxm6-ac-nvfp4-tp4-pp1-throughput-90.0)
 # Auto profile match fails on Curiosity; default to the known working profile id.
@@ -143,18 +136,11 @@ if docker ps --format '{{.Names}}' | grep -qx "$NAME"; then
   echo "$NAME is already running:"
   docker ps --filter "name=$NAME" --format '  {{.Image}}  {{.Status}}'
 else
-  # Verify NIM_SERVER_PORT is still free (race check)
+  # Verify public port is still free (race check)
   if ! check_port_free "$PORT"; then
     echo "NIM_SERVER_PORT=$PORT became unavailable (race). Re-run to try another port." >&2
     exit 1
   fi
-  # Verify vLLM backend port 8001 is free (NIM requires it internally)
-  if ! check_port_free "$VLLM_BACKEND_PORT"; then
-    echo "ERROR: port $VLLM_BACKEND_PORT is in use but required for vLLM backend." >&2
-    echo "Another NIM or service is using it. Stop that first or use a different node." >&2
-    exit 1
-  fi
-  echo "vLLM backend port $VLLM_BACKEND_PORT is free"
   docker rm -f "$NAME" >/dev/null 2>&1 || true
 
   PROFILE_ENV=()
@@ -173,14 +159,14 @@ else
     echo "using proxy $PROXY"
   fi
 
-  echo "starting $NAME: NIM_SERVER_PORT=$PORT, vLLM backend on $VLLM_BACKEND_PORT"
-  # Use --gpus all; Slurm sets CUDA_VISIBLE_DEVICES. The quoted device form fails under rootless Docker.
+  echo "starting $NAME on port $PORT"
+  # Bridge networking: only public port exposed; vLLM's 8001 stays container-internal.
   # Do NOT set NIM_HEALTH_PORT — health is served by nginx on NIM_SERVER_PORT.
   docker run -d \
     --name "$NAME" \
     --gpus all \
     --shm-size=16GB \
-    --network host \
+    -p "${PORT}:${PORT}" \
     -e NGC_API_KEY \
     -e NIM_SERVED_MODEL_NAME=nvidia/nemotron-3-ultra-550b-a55b \
     -e NIM_SERVER_PORT="$PORT" \
