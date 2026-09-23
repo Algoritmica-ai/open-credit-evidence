@@ -87,6 +87,12 @@ docker is already running and skip the load.
 The serve/sbatch scripts try rootless-docker automatically and fall back to
 `module load docker` for RTX compatibility.
 
+### Curiosity B300 network
+
+Curiosity has direct egress to NGC — no proxy required. The RTX proxy
+(`10.130.232.8:3128`) times out from Curiosity nodes, so `serve_ultra.sh` does
+not set it by default. If a proxy is needed, set `HTTPS_PROXY` before running.
+
 ### Option 1: sbatch (preferred)
 
 Submit a batch job that holds the GPUs under Slurm accounting and cleans up on

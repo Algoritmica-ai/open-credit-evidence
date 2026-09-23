@@ -41,7 +41,8 @@ IMAGE=${IMAGE:-nvcr.io/nim/nvidia/nemotron-3-ultra-550b-a55b:2.0.12}
 PORT=${NIM_PORT:-8001}
 # Default cache under $HOME avoids team-storage ACL + GID 0 conflicts
 CACHE=${LOCAL_NIM_CACHE:-$HOME/nim-cache-ultra}
-PROXY=${HTTPS_PROXY:-http://10.130.232.8:3128}
+# Curiosity B300 has direct NGC egress; do not default to RTX proxy (times out)
+PROXY="${HTTPS_PROXY:-}"
 
 # NIM_MODEL_PROFILE may be required for B300 NVFP4 TP4 deployment. If the NIM
 # logs show a profile selection error, set this to the profile id from NVIDIA's
@@ -93,6 +94,16 @@ else
     echo "using NIM_MODEL_PROFILE=$MODEL_PROFILE"
   fi
 
+  PROXY_ENV=()
+  if [[ -n "$PROXY" ]]; then
+    PROXY_ENV=(
+      -e HTTP_PROXY="$PROXY" -e HTTPS_PROXY="$PROXY"
+      -e http_proxy="$PROXY" -e https_proxy="$PROXY"
+      -e NO_PROXY="${NO_PROXY:-localhost,127.0.0.1}" -e no_proxy="${no_proxy:-localhost,127.0.0.1}"
+    )
+    echo "using proxy $PROXY"
+  fi
+
   echo "starting $NAME on GPU(s) $CUDA_VISIBLE_DEVICES, cache $CACHE, port $PORT"
   docker run -d \
     --name "$NAME" \
@@ -102,9 +113,7 @@ else
     -e NGC_API_KEY \
     -e NIM_SERVED_MODEL_NAME=nvidia/nemotron-3-ultra-550b-a55b \
     -e NIM_SERVER_PORT="$PORT" -e NIM_HEALTH_PORT="$PORT" \
-    -e HTTP_PROXY="$PROXY" -e HTTPS_PROXY="$PROXY" \
-    -e http_proxy="$PROXY" -e https_proxy="$PROXY" \
-    -e NO_PROXY="${NO_PROXY:-localhost,127.0.0.1}" -e no_proxy="${no_proxy:-localhost,127.0.0.1}" \
+    "${PROXY_ENV[@]}" \
     "${PROFILE_ENV[@]}" \
     -u "$(id -u):0" --group-add "$(id -g)" \
     -v "$CACHE:/opt/nim/.cache" \
