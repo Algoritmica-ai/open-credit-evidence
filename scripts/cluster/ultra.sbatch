@@ -8,13 +8,10 @@
 # holds 4 B300 GPUs for its lifetime and stops the Ultra container on EXIT or
 # scancel, so the GPUs are properly released back to the cluster.
 #
-# Setup and submit from the login node:
+# Submit from the login node:
 #
-#   git clone -b cursor/serve-ultra-b300-da12 --single-branch \
-#     https://github.com/Algoritmica-ai/open-credit-evidence.git \
-#     /storage/hackathon_teams/omc-team08/open-credit-evidence
-#   # edit #SBATCH --partition=<b300-partition> below
-#   sbatch /storage/hackathon_teams/omc-team08/open-credit-evidence/scripts/cluster/ultra.sbatch
+#   # edit #SBATCH --partition=<b300-partition> below first
+#   sbatch ~/open-credit-evidence/scripts/cluster/ultra.sbatch
 #   squeue --me          # check status
 #   scancel <jobid>      # stop when the labeling pass is done
 #
@@ -25,13 +22,13 @@
 # ~400 readability labels should finish well before the 2-day limit. scancel
 # when done to release the GPUs.
 #
-# Team directory layout (single source of truth):
-#   /storage/hackathon_teams/omc-team08/
-#     open-credit-evidence/   # recommended clone location
-#     nim-cache-ultra/        # NIM weight cache
+# Directory layout:
+#   $HOME/open-credit-evidence/         # repo clone (can live anywhere)
+#   /storage/hackathon_teams/omc-team08/  # TEAM_ROOT (shared team storage)
+#     nim-cache-ultra/                    # NIM weight cache
 #     runs/
-#       ultra-%j.log          # job output
-#       ultra.env             # EVIDENCE_JUDGE_* for labeling
+#       ultra-%j.log                      # job output
+#       ultra.env                         # EVIDENCE_JUDGE_* for labeling
 
 #SBATCH --job-name=team08-ultra-teacher
 #SBATCH --partition=<b300-partition>
@@ -75,7 +72,8 @@ fi
 module load docker 2>/dev/null || true
 mkdir -p "$RUNS_DIR" "$NIM_CACHE"
 
-# Find serve_ultra.sh: same directory as this sbatch, then $REPO_DIR, then fail.
+# Find serve_ultra.sh: same directory as this sbatch (typical $HOME clone),
+# then $REPO_DIR under TEAM_ROOT as fallback.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -x "${SCRIPT_DIR}/serve_ultra.sh" ]]; then
     SERVE_SCRIPT="${SCRIPT_DIR}/serve_ultra.sh"
@@ -83,10 +81,7 @@ elif [[ -x "${REPO_DIR}/scripts/cluster/serve_ultra.sh" ]]; then
     SERVE_SCRIPT="${REPO_DIR}/scripts/cluster/serve_ultra.sh"
 else
     echo "$(date): cannot find serve_ultra.sh" >&2
-    echo "Clone the branch under $REPO_DIR:" >&2
-    echo "  git clone -b cursor/serve-ultra-b300-da12 --single-branch \\" >&2
-    echo "    https://github.com/Algoritmica-ai/open-credit-evidence.git \\" >&2
-    echo "    $REPO_DIR" >&2
+    echo "Ensure this sbatch was submitted from a repo clone containing serve_ultra.sh." >&2
     exit 1
 fi
 

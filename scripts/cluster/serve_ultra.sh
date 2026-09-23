@@ -15,13 +15,13 @@
 #
 #   srun --gres=gpu:4 -n1 -p <b300-partition> --time=04:00:00 --pty bash
 #   source ~/.ngc_key
-#   bash /storage/hackathon_teams/omc-team08/open-credit-evidence/scripts/cluster/serve_ultra.sh
+#   bash ~/open-credit-evidence/scripts/cluster/serve_ultra.sh
 #
-# Recommended directory layout on Curiosity B300:
-#   /storage/hackathon_teams/omc-team08/
-#     open-credit-evidence/   # clone of this repo
-#     nim-cache-ultra/        # NIM weight cache (LOCAL_NIM_CACHE)
-#     runs/                   # sbatch logs and ultra.env
+# Directory layout on Curiosity B300:
+#   $HOME/open-credit-evidence/           # repo clone (can live anywhere)
+#   /storage/hackathon_teams/omc-team08/  # TEAM_ROOT (shared team storage)
+#     nim-cache-ultra/                    # NIM weight cache (LOCAL_NIM_CACHE)
+#     runs/                               # sbatch logs and ultra.env
 #
 # What it does:
 #   - uses the GPUs SLURM gave you ($CUDA_VISIBLE_DEVICES), not "--gpus 4",
