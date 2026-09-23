@@ -79,10 +79,17 @@ Submit a batch job that holds the GPUs under Slurm accounting and cleans up on
 cancel:
 
 ```bash
-# Curiosity B300 partition is 'hackathon'
 sbatch ~/open-credit-evidence/scripts/cluster/ultra.sbatch
 squeue --me          # check status
 scancel <jobid>      # stop when the labeling pass is done
+```
+
+The sbatch script expects the repo at `$HOME/open-credit-evidence`. If cloned
+elsewhere, set `OPEN_CREDIT_REPO` before submitting:
+
+```bash
+export OPEN_CREDIT_REPO=/path/to/open-credit-evidence
+sbatch "$OPEN_CREDIT_REPO/scripts/cluster/ultra.sbatch"
 ```
 
 The job writes connection info to `/storage/hackathon_teams/omc-team08/runs/ultra.env`:

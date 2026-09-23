@@ -38,11 +38,13 @@
 
 set -euo pipefail
 
-# --- Team directory layout (single source of truth) ---
+# --- Repo location (override with OPEN_CREDIT_REPO if cloned elsewhere) ---
+REPO_ROOT="${OPEN_CREDIT_REPO:-$HOME/open-credit-evidence}"
+
+# --- Team shared storage (cache and runs only, not the repo) ---
 TEAM_ROOT=/storage/hackathon_teams/omc-team08
 RUNS_DIR="$TEAM_ROOT/runs"
 NIM_CACHE="$TEAM_ROOT/nim-cache-ultra"
-REPO_DIR="$TEAM_ROOT/open-credit-evidence"
 
 CONTAINER_NAME=team08_nt-ultra
 ENV_FILE="${RUNS_DIR}/ultra.env"
@@ -57,6 +59,7 @@ trap cleanup EXIT
 
 echo "$(date): job $SLURM_JOB_ID starting on $(hostname)"
 echo "$(date): CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+echo "$(date): REPO_ROOT=$REPO_ROOT"
 echo "$(date): TEAM_ROOT=$TEAM_ROOT"
 
 source ~/.ngc_key
@@ -68,16 +71,29 @@ fi
 module load docker 2>/dev/null || true
 mkdir -p "$RUNS_DIR" "$NIM_CACHE"
 
-# Find serve_ultra.sh: same directory as this sbatch (typical $HOME clone),
-# then $REPO_DIR under TEAM_ROOT as fallback.
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ -x "${SCRIPT_DIR}/serve_ultra.sh" ]]; then
+# Find serve_ultra.sh. Under Slurm the batch script is copied to a spool path,
+# so BASH_SOURCE[0] won't point to the repo. Resolution order:
+#   1. $REPO_ROOT (explicit or $HOME/open-credit-evidence)
+#   2. $SLURM_SUBMIT_DIR (if user ran sbatch from repo root)
+#   3. Same dir as BASH_SOURCE (last resort, rarely works under sbatch)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd 2>/dev/null || echo "")"
+SERVE_SCRIPT=""
+
+if [[ -f "${REPO_ROOT}/scripts/cluster/serve_ultra.sh" ]]; then
+    SERVE_SCRIPT="${REPO_ROOT}/scripts/cluster/serve_ultra.sh"
+elif [[ -n "${SLURM_SUBMIT_DIR:-}" && -f "${SLURM_SUBMIT_DIR}/scripts/cluster/serve_ultra.sh" ]]; then
+    SERVE_SCRIPT="${SLURM_SUBMIT_DIR}/scripts/cluster/serve_ultra.sh"
+elif [[ -n "$SCRIPT_DIR" && -f "${SCRIPT_DIR}/serve_ultra.sh" ]]; then
     SERVE_SCRIPT="${SCRIPT_DIR}/serve_ultra.sh"
-elif [[ -x "${REPO_DIR}/scripts/cluster/serve_ultra.sh" ]]; then
-    SERVE_SCRIPT="${REPO_DIR}/scripts/cluster/serve_ultra.sh"
-else
+fi
+
+if [[ -z "$SERVE_SCRIPT" ]]; then
     echo "$(date): cannot find serve_ultra.sh" >&2
-    echo "Ensure this sbatch was submitted from a repo clone containing serve_ultra.sh." >&2
+    echo "Paths tried:" >&2
+    echo "  REPO_ROOT:        ${REPO_ROOT}/scripts/cluster/serve_ultra.sh" >&2
+    echo "  SLURM_SUBMIT_DIR: ${SLURM_SUBMIT_DIR:-<unset>}/scripts/cluster/serve_ultra.sh" >&2
+    echo "  SCRIPT_DIR:       ${SCRIPT_DIR:-<unset>}/serve_ultra.sh" >&2
+    echo "Set OPEN_CREDIT_REPO to the repo root, or run 'sbatch' from the repo directory." >&2
     exit 1
 fi
 
