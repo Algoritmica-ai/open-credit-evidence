@@ -32,6 +32,8 @@
       <span class="n">4</span><span class="s"><b>Evidence</b><i>Briefings, verdicts, obligations</i></span></button>
     <button class="step" data-view="verify" disabled>
       <span class="n">5</span><span class="s"><b>Verify</b><i>Checksums and re-derivation</i></span></button>
+    <button class="step" data-view="compare" disabled>
+      <span class="n">6</span><span class="s"><b>Compare</b><i>Did a change help?</i></span></button>
 
     <a class="rail-link" href="https://github.com/Algoritmica-ai/open-credit-evidence"
        target="_blank" rel="noopener noreferrer">
@@ -196,6 +198,22 @@
            or not covered. Every number traces to a transcript.</p>
       </div>
       <div class="stats" id="ev-stats"></div>
+      <div class="card" id="ev-decision-card" hidden>
+        <div class="card-head"><h2>Decision</h2><span class="spacer"></span><span class="tag subtle">against evidence/thresholds.yaml — the bank's thresholds</span></div>
+        <div id="ev-decision"></div>
+      </div>
+      <div class="grid two" id="ev-act" hidden>
+        <div class="card">
+          <div class="card-head"><h2>Why it failed</h2></div>
+          <p class="hint">A root cause for every failing result, by fixed rules from what the assistant wrote — no model involved. Click a cause to open an example.</p>
+          <div id="ev-causes"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>What to change</h2></div>
+          <p class="hint">Ranked by how many failing results each would fix. Make the change, run the pack again, then prove it in <b>Compare</b>.</p>
+          <div id="ev-recs"></div>
+        </div>
+      </div>
       <div class="card">
         <div class="card-head">
           <button class="btn sm" id="ev-prev" title="previous case">‹</button>
@@ -250,6 +268,26 @@
           <div id="vf-tamper-result"></div>
         </div>
       </div>
+    </section>
+
+    <!-- ------------------------------------------------------- 7. compare -->
+    <section class="view" id="view-compare" hidden>
+      <div class="head">
+        <h1>Compare</h1>
+        <p>Did a change help? Pick the run before the change and the run after it — same pack, one
+           thing changed (the model, its instructions, what it is handed). Each case is compared with
+           itself, so the answer is per check: how many cases the change helped, how many it hurt, and
+           a 95% interval, so run-to-run noise is not mistaken for progress.</p>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Runs</h2></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end">
+          <label>Before<br><select id="cmp-before"></select></label>
+          <label>After<br><select id="cmp-after"></select></label>
+          <button class="btn primary" id="cmp-go">Compare</button>
+        </div>
+      </div>
+      <div id="cmp-result"></div>
     </section>
 
     <div class="footer-bar">Credit Evidence Engine · Apache 2.0 · every figure re-derives from the transcripts</div>

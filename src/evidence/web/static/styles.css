@@ -412,3 +412,19 @@ table.coverage td:nth-child(2) .tag, table.coverage td:nth-child(2) .badge { dis
   table.coverage td:first-child { width: 110px; }
   table.coverage td:nth-child(2) { width: 90px; }
 }
+
+/* ------------------------------------------------ decision, causes, compare */
+.verdict { border-radius: var(--radius); padding: 12px 14px; margin: 4px 0 12px; border: 1px solid var(--line); }
+.verdict .label { font-size: 20px; font-weight: 700; letter-spacing: .01em; }
+.verdict .sub { font-size: 12.5px; color: var(--ink-2); margin-top: 2px; }
+.verdict.go { background: var(--good-bg); color: var(--good); border-color: transparent; }
+.verdict.cond, .verdict.inc { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
+.verdict.nogo { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
+.verdict.none { background: var(--panel-2); color: var(--ink-2); }
+ul.conditions { margin: 8px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--ink-2); }
+.rec { border-top: 1px solid var(--line); padding: 10px 0; }
+.rec:first-child { border-top: 0; padding-top: 0; }
+.rec h3 { font-size: 13.5px; margin: 0 0 4px; }
+.rec p { margin: 4px 0; font-size: 12.5px; color: var(--ink-2); }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover td { background: var(--panel-2); }

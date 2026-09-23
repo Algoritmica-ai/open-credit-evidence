@@ -8,8 +8,11 @@ A single edited digit fails this, and the failure names the file.
 
 Level 2 — re-derivation (``recompute=True``): run every deterministic check
 again from the transcripts and the pack, and compare with ``results.jsonl``.
-This is what makes the numbers in the report evidence rather than assertion:
-anyone with the pack and the run can reproduce them.
+Then rebuild everything under ``evidence/`` — summary, decision, diagnosis,
+recommendations, report — from the results and compare byte for byte, naming
+the first value that differs. This is what makes the numbers in the report
+evidence rather than assertion: anyone with the pack and the run can reproduce
+them, and someone who edits a number *and* re-seals the checksums still fails.
 """
 
 from __future__ import annotations
@@ -21,7 +24,7 @@ from typing import Any
 
 from evidence.checks import run_checks
 from evidence.contracts.transcript import Transcript
-from evidence.evidence.writer import CHECKSUMS, _sha256_file
+from evidence.evidence.writer import CHECKSUMS, _sha256_file, build_evidence
 from evidence.pack import Pack
 
 
@@ -34,6 +37,9 @@ class Verification:
     unlisted: list[str] = field(default_factory=list)
     recomputed: int = 0
     disagreements: list[dict[str, Any]] = field(default_factory=list)
+    # evidence/ files that do not rebuild from the results — kept apart from check-result
+    # disagreements: an edited results.jsonl shows up in both, the first being the cause
+    derived: list[dict[str, Any]] = field(default_factory=list)
     message: str = ""
 
 
@@ -109,10 +115,66 @@ def verify_recompute(run: Path, pack: Pack, v: Verification | None = None) -> Ve
     return v
 
 
+def _first_difference(a: Any, b: Any, path: str = "") -> tuple[str, Any, Any] | None:
+    if type(a) is not type(b):
+        return path or "(root)", a, b
+    if isinstance(a, dict):
+        for k in sorted(set(a) | set(b), key=str):
+            if k not in a or k not in b:
+                return f"{path}.{k}".lstrip("."), a.get(k, "<missing>"), b.get(k, "<missing>")
+            d = _first_difference(a[k], b[k], f"{path}.{k}")
+            if d:
+                return d
+        return None
+    if isinstance(a, list):
+        if len(a) != len(b):
+            return f"{path} (length)".lstrip("."), len(a), len(b)
+        for i, (x, y) in enumerate(zip(a, b, strict=True)):
+            d = _first_difference(x, y, f"{path}[{i}]")
+            if d:
+                return d
+        return None
+    return None if a == b else (path.lstrip("."), a, b)
+
+
+def verify_derived(run: Path, v: Verification | None = None) -> Verification:
+    """Rebuild every derived file under evidence/ from the run and compare with what is there."""
+    v = v or Verification(ok=True)
+    rebuilt = 0
+    for rel, fresh in build_evidence(run).items():
+        path = run / rel
+        if not path.is_file():
+            v.derived.append({"file": rel, "reason": "missing — written by an older engine; "
+                                                     "re-write with `evidence report --rewrite`"})
+            continue
+        stored = path.read_text(encoding="utf-8")
+        rebuilt += 1
+        if stored == fresh:
+            continue
+        where: dict[str, Any] = {"file": rel}
+        d = (_first_difference(json.loads(stored), json.loads(fresh))
+             if rel.endswith(".json") else None)
+        if d:
+            where.update(value=d[0], recorded=d[1], recomputed=d[2])
+        else:
+            where["reason"] = "does not match what the results produce"
+        v.derived.append(where)
+    if v.derived:
+        v.ok = False
+        first = v.derived[0]
+        v.message += (f"; {first['file']}: {first['value']} recorded {first['recorded']!r}, "
+                      f"recomputed {first['recomputed']!r}" if "value" in first
+                      else f"; {first['file']}: {first['reason']}")
+    else:
+        v.message += f"; {rebuilt} evidence files rebuilt from the results and match"
+    return v
+
+
 def verify_run(run: Path, pack: Pack | None = None, *, recompute: bool = False) -> Verification:
     v = verify_integrity(run)
     if recompute and v.files_checked:
         if pack is None:
             raise ValueError("recompute needs the pack")
         v = verify_recompute(run, pack, v)
+        v = verify_derived(run, v)
     return v

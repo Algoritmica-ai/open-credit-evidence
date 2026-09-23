@@ -535,9 +535,24 @@ def run_detail(run_id: str) -> dict[str, Any]:
         "regulations": _read_json(path / "regulations.json")
         if (path / "regulations.json").is_file()
         else None,
+        # decision, root causes, recommendations — absent on runs written by an older engine
+        **{
+            name: _read_json(ev / f"{name}.json") if (ev / f"{name}.json").is_file() else None
+            for name in ("decision", "diagnosis", "recommendations")
+        },
         "transcripts": sorted(p.name for p in (path / "transcripts").glob("*.json")),
         "sealed": (path / "checksums.sha256").is_file(),
     }
+
+
+@app.get("/api/compare")
+def compare(before: str, after: str) -> dict[str, Any]:
+    """Did a change help? Two runs of the same pack, case by case."""
+    from evidence.evidence.compare import compare_runs
+
+    if before == after:
+        raise HTTPException(400, "choose two different runs")
+    return compare_runs(_run_dir(before), _run_dir(after))
 
 
 @app.get("/api/runs/{run_id}/results")

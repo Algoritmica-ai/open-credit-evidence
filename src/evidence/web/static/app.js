@@ -151,7 +151,33 @@ async function loadRuns() {
       names.map((n) => { const c = r.checks[n]; if (!c) return `<td class="nul">—</td>`; return c.gated ? `<td class="num ${c.failed ? "fail" : "pass"}">${pct(c.passed, c.passed + c.failed)}</td>` : `<td class="num">${c.mean_value ?? "—"}</td>`; }).join("") +
       `<td><button class="btn sm" data-run="${esc(r.run_id)}" ${r.sealed ? "" : "disabled"}>Open</button></td></tr>`).join("") + "</tbody>";
   t.querySelectorAll("button[data-run]").forEach((b) => b.addEventListener("click", () => openRun(b.dataset.run)));
+  const sealed = runs.filter((r) => r.sealed);
+  const opts = sealed.map((r) => `<option value="${esc(r.run_id)}">${esc(r.run_id)} — ${esc(r.sut.model_id || "")} (${r.sut.on_prem ? "on-prem" : "cloud"})</option>`).join("");
+  $("cmp-before").innerHTML = opts; $("cmp-after").innerHTML = opts;
+  if (sealed.length > 1) { $("cmp-before").selectedIndex = 1; $("cmp-after").selectedIndex = 0; enable("compare"); }
 }
+
+$("cmp-go").addEventListener("click", async () => {
+  const before = $("cmp-before").value, after = $("cmp-after").value;
+  if (before === after) { $("cmp-result").innerHTML = `<div class="card"><p class="nul">Choose two different runs.</p></div>`; return; }
+  $("cmp-result").innerHTML = `<div class="card"><span class="spin"></span>comparing…</div>`;
+  try {
+    const c = await api(`/api/compare?before=${encodeURIComponent(before)}&after=${encodeURIComponent(after)}`);
+    const rule = c.rule;
+    $("cmp-result").innerHTML =
+      (c.warnings.length ? `<div class="card">${c.warnings.map((w) => `<p class="hint" style="color:var(--warn)">${esc(w)}</p>`).join("")}</div>` : "") +
+      `<div class="card"><div class="verdict ${VERDICT_CLASS[c.verdict] || "none"}"><div class="label">${esc(c.verdict)}</div>` +
+      `<div class="sub">Accept when a check improves by at least ${Math.round(rule.min_gain * 100)} points with the whole interval above zero, and no check falls by more than ${Math.round(rule.max_regression * 100)} points. A fall whose interval reaches zero is <i>possibly worse</i>: run more repeats to settle it.</div></div>` +
+      `<p class="hint"><b>What changed:</b> ${c.changed.length ? c.changed.map((x) => `${esc(x.what)}: <code class="inline">${esc(JSON.stringify(x.before))}</code> → <code class="inline">${esc(JSON.stringify(x.after))}</code>`).join(" · ") : "nothing recorded in the two manifests — any difference is run-to-run variation"}</p>` +
+      `<div class="scroll"><table class="grid-table"><thead><tr><th>check</th><th class="num">cases</th><th class="num">before</th><th class="num">after</th><th class="num">change</th><th class="num">95% interval</th><th class="num">helped</th><th class="num">hurt</th><th>status</th></tr></thead><tbody>` +
+      c.checks.map((r) => r.status === "not_comparable" ? `<tr><td><code class="inline">${esc(r.check)}</code></td><td colspan="7" class="nul">not in both runs</td><td></td></tr>` :
+        `<tr><td><code class="inline">${esc(r.check)}</code></td><td class="num">${r.cases}</td><td class="num">${pc(r.before)}</td><td class="num">${pc(r.after)}</td><td class="num">${r.change >= 0 ? "+" : ""}${Math.round(r.change * 100)} pts</td><td class="num">${Math.round(r.interval[0] * 100)} to ${Math.round(r.interval[1] * 100)}</td><td class="num">${r.helped}</td><td class="num">${r.hurt}</td><td><span class="badge ${STATUS_BADGE[r.status] || ""}">${esc(r.status.replace(/_/g, " "))}</span></td></tr>`).join("") +
+      `</tbody></table></div></div>` +
+      `<div class="card"><div class="card-head"><h2>Causes, before and after</h2></div><div class="scroll"><table class="grid-table"><thead><tr><th>cause</th><th>lever</th><th class="num">before</th><th class="num">after</th></tr></thead><tbody>` +
+      (c.causes.length ? c.causes.map((x) => `<tr><td>${esc(x.label)}</td><td>${esc(x.lever)}</td><td class="num">${x.before}</td><td class="num">${x.after}</td></tr>`).join("") : `<tr><td class="nul" colspan="4">No failures in either run.</td></tr>`) +
+      `</tbody></table></div></div>`;
+  } catch (e) { $("cmp-result").innerHTML = `<div class="card"><p class="nul">${esc(e.message || e)}</p></div>`; }
+});
 
 /* ------------------------------------------------------------------ case */
 
@@ -293,11 +319,46 @@ async function openRun(runId) {
     : `<tr><td class="nul">No failures.</td></tr>`;
   $("ev-failures").querySelectorAll("tr[data-item]").forEach((tr) => tr.addEventListener("click", () => { showEvCase(state.evCases.indexOf(tr.dataset.item), 0); window.scrollTo({ top: 0, behavior: "smooth" }); }));
   $("ev-report").innerHTML = md(d.report || "");
+  renderDecision(d.decision); renderAct(d.diagnosis, d.recommendations);
   if (state.evCases.length) showEvCase(0, 0);
   enable("evidence", true); enable("verify");
   $("vf-result").innerHTML = ""; $("vf-tamper-result").innerHTML = "";
   show("evidence");
 }
+const VERDICT_CLASS = { "GO": "go", "GO WITH CONDITIONS": "cond", "NO-GO": "nogo", "INCONCLUSIVE": "inc", "ACCEPT": "go", "REJECT": "nogo", "NO EFFECT": "none" };
+const STATUS_BADGE = { go: "good", conditional: "warn", no_go: "bad", insufficient: "", not_run: "", improved: "good", regressed: "bad", possibly_worse: "warn", no_clear_change: "", not_comparable: "" };
+const pc = (x) => (x == null ? "—" : `${Math.round(x * 100)}%`);
+
+function renderDecision(dec) {
+  $("ev-decision-card").hidden = !dec;
+  if (!dec) return;
+  $("ev-decision").innerHTML =
+    `<div class="verdict ${VERDICT_CLASS[dec.verdict] || "none"}"><div class="label">${esc(dec.verdict)}</div>` +
+    (dec.conditions.length ? `<ul class="conditions">${dec.conditions.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : "") + `</div>` +
+    `<div class="scroll"><table class="grid-table"><thead><tr><th>check</th><th>what a failure means</th><th class="num">pass rate</th><th class="num">GO at</th><th>status</th></tr></thead><tbody>` +
+    dec.checks.map((r) => `<tr><td><code class="inline">${esc(r.check)}</code></td><td class="wrap">${esc(r.meaning)}</td><td class="num">${pc(r.pass_rate)}</td><td class="num">${pc(r.go)}</td><td><span class="badge ${STATUS_BADGE[r.status] || ""}">${esc(r.status.replace(/_/g, " "))}</span></td></tr>`).join("") +
+    `</tbody></table></div>` +
+    `<details style="margin-top:10px"><summary class="hint" style="cursor:pointer">What this does not test</summary><ul class="conditions">${dec.not_tested.map((n) => `<li>${esc(n.what)}${n.why ? ` — ${esc(n.why)}` : ""}</li>`).join("")}</ul></details>`;
+}
+
+function renderAct(diag, recs) {
+  $("ev-act").hidden = !diag;
+  if (!diag) return;
+  if (!diag.causes.length) { $("ev-causes").innerHTML = `<p class="nul">No failures.</p>`; $("ev-recs").innerHTML = `<p class="nul">Nothing to change.</p>`; return; }
+  const example = {};
+  diag.records.forEach((r) => { if (!(r.cause in example)) example[r.cause] = r; });
+  $("ev-causes").innerHTML = `<div class="scroll"><table class="grid-table"><thead><tr><th>cause · who can act</th><th class="num">failing results</th><th class="num">cases</th></tr></thead><tbody>` +
+    diag.causes.map((c) => `<tr class="clickable" data-cause="${esc(c.cause)}" title="${esc(c.why)}"><td class="wrap">${esc(c.label)}<br><span class="badge ${c.owner === "vendor" ? "bad" : "good"}">${esc(c.owner)}</span> <span class="badge">${esc(c.lever)}</span></td><td class="num">${c.results}</td><td class="num">${c.items}</td></tr>`).join("") +
+    `</tbody></table></div>`;
+  $("ev-causes").querySelectorAll("tr[data-cause]").forEach((tr) => tr.addEventListener("click", () => {
+    const ex = example[tr.dataset.cause];
+    if (ex) { showEvCase(state.evCases.indexOf(ex.item_id), ex.repeat); $("ev-case").scrollIntoView({ behavior: "smooth", block: "center" }); }
+  }));
+  $("ev-recs").innerHTML = (recs || []).map((r) => `<div class="rec"><h3>${r.rank}. ${esc(r.title)}</h3>` +
+    `<p><span class="badge good">${esc(r.owner)} can act</span> <span class="badge">${esc(r.lever)}</span>${r.raise_with_vendor ? ` <span class="badge warn">vendor, if it persists</span>` : ""} · fixes ${r.addresses.results} failing results on ${r.addresses.items} cases</p>` +
+    `<p>${esc(r.action)}</p></div>`).join("");
+}
+
 async function showEvCase(k, rep) {
   if (!state.evCases.length) return;
   k = (k + state.evCases.length) % state.evCases.length;

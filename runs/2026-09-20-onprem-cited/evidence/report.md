@@ -4,6 +4,41 @@ Assistant under test: `nvidia/nemotron-3.5-lightning` at `http://10.130.232.20:8
 
 Every figure below is computed from `results.jsonl`; every result points to a transcript in `transcripts/`; `checksums.sha256` covers all of them.
 
+## Decision
+
+**NO-GO** against the bank's thresholds.
+
+| check | pass rate | GO at | status |
+|---|---|---|---|
+| `material_omission` | 98% | 95% | GO |
+| `numeric_fidelity` | 45% | 98% | NO-GO |
+| `decoy_citation` | 77% | 95% | NO-GO |
+| `flip_accuracy` | 73% | 90% | NO-GO |
+
+Conditions:
+
+- numeric_fidelity: the same case got different verdicts across repeats for 85% of cases (limit 10%).
+- decoy_citation: the same case got different verdicts across repeats for 45% of cases (limit 10%).
+- flip_accuracy: the same case got different verdicts across repeats for 60% of cases (limit 10%).
+
+## Why it failed
+
+A root cause for every failing result, by fixed rules from what the assistant wrote and which checks failed on the same briefing — no model involved.
+
+| cause | failing results | cases | who can act | lever |
+|---|---|---|---|---|
+| Figure worked out wrongly | 35 | 19 | bank | context |
+| Wrong or no way to change the outcome | 15 | 12 | bank | template |
+| Irrelevant field blamed | 14 | 10 | bank | instructions |
+
+## What to change
+
+1. **Hand the assistant the figures your systems already computed** — addresses 35 failing results on 19 cases; bank can act; raise with the vendor if it persists. Pass in the figures the rules engine already computed — the debt-to-income ratio and the limit it breaches — instead of relying on the model's arithmetic. If wrong figures persist once the correct ones are in front of it, that is the vendor's to fix.
+2. **Require a 'what would change the outcome' section** — addresses 15 failing results on 12 cases; bank can act. Require a final section, "What would change the outcome", naming the levers the policy allows — for example: bureau score increase; gross annual increase.
+3. **Tell the assistant which fields must not be used as reasons** — addresses 14 failing results on 10 cases; bank can act. Add to the assistant's instructions: "Do not cite age band, dependants, purpose as reasons; under the policy they have no bearing on the outcome."
+
+Run the pack again with the change, then compare the two runs (Compare step, or `evidence compare <before> <after>`). Accept it only if it helps and nothing else gets worse.
+
 ## Human oversight (eu-ai-act:14) — EVIDENCES
 
 *What the Act requires:* The system must be provided so that the person overseeing it can understand its output, interpret it correctly, stay aware of the tendency to over-rely on it, and decide to disregard, override or reverse it.

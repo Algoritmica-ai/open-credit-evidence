@@ -1,0 +1,948 @@
+{
+  "failures": 64,
+  "causes": [
+    {
+      "cause": "miscalculated",
+      "label": "Figure worked out wrongly",
+      "lever": "context",
+      "owner": "bank",
+      "why": "The assistant worked a figure out itself and got it wrong.",
+      "results": 35,
+      "items": 19,
+      "checks": [
+        "flip_accuracy",
+        "material_omission",
+        "numeric_fidelity"
+      ]
+    },
+    {
+      "cause": "wrong_lever",
+      "label": "Wrong or no way to change the outcome",
+      "lever": "template",
+      "owner": "bank",
+      "why": "The assistant did not name a valid way to change the outcome.",
+      "results": 15,
+      "items": 12,
+      "checks": [
+        "flip_accuracy"
+      ]
+    },
+    {
+      "cause": "decoy_blamed",
+      "label": "Irrelevant field blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "why": "The assistant blamed a field that has no bearing on the outcome.",
+      "results": 14,
+      "items": 10,
+      "checks": [
+        "decoy_citation"
+      ]
+    }
+  ],
+  "records": [
+    {
+      "item_id": "underwriter-sample:case_review:APP000028:complete",
+      "repeat": 0,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "Specifically, the applicant\u2019s debt-to-income ratio exceeds the policy threshold of 40%, and the applicant falls within the \"thin file\" category due to the age of their credit file."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000028:complete",
+      "repeat": 1,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "Although 44 months exceeds the \"thin file\" limit of 24 months, the young age combined with the \"self_employed\" employment type may be contributing factors."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000028:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "\u00a332,300",
+          "\u00a39,500",
+          "\u00a3833"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000028:complete",
+      "repeat": 2,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "While not an automatic decline, this age group is often viewed as higher risk, and combined with the affordability breach, it contributes to the referral."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000037:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "48.8%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000037:complete",
+      "repeat": 0,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "dependants"
+        ],
+        "sentences": [
+          "*   **Profile Strength:** The applicant is a 45-54 year old with permanent employment at Meridian Health, has been in their current role for 79 months, and has 2 dependants."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000037:complete",
+      "repeat": 1,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "dependants"
+        ],
+        "sentences": [
+          "*   The applicant has 2 dependants, which, while not explicitly quantified in the policy rules provided, supports the underwriter's assessment of financial pressure."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000037:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "\u00a3385"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000039:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "\u00a328,000"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000039:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "32.6%",
+          "\u00a32,372.33"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000039:complete",
+      "repeat": 2,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "bureau_score increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000044:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "700"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000044:complete",
+      "repeat": 1,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band",
+          "purpose"
+        ],
+        "sentences": [
+          "While this is not \"thin\" (under 24 months), the age of the file combined with the affordability breach contributes to the need for manual review.",
+          "*   **Clear Purpose:** The stated purpose is debt consolidation, which typically aims to improve financial stability."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000044:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "41.58%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000045:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "43.5%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000059:complete",
+      "repeat": 0,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "bureau_score increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000059:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "\u00a3295",
+          "\u00a3854",
+          "\u00a32,135",
+          "\u00a325,620"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000059:complete",
+      "repeat": 2,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "bureau_score increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000107:complete",
+      "repeat": 0,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "While this is *below* the 40% threshold, the system flagged the file for review likely due to the combination of the thin file age and delinquencies."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000107:complete",
+      "repeat": 1,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "**File Age:** The credit file would need to be established for at least 24 months to be considered a \"thick file.\""
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000120:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "41.5%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000120:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "\u00a3333"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000155:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "51.5%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000155:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "\u00a3613"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000155:complete",
+      "repeat": 1,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band",
+          "dependants"
+        ],
+        "sentences": [
+          "While this exceeds the \"thin file\" threshold of 24 months, the age of the file combined with the delinquency may be considered.",
+          "*   **Low Dependants:** The applicant has no dependants, which supports affordability."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000155:complete",
+      "repeat": 1,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "gross_annual increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000172:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "48.5%",
+          "\u00a31,241",
+          "\u00a32,060",
+          "\u00a3824",
+          "\u00a3497"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000172:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "51.5%",
+          "\u00a31,311",
+          "11.5",
+          "\u00a38,000"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000172:complete",
+      "repeat": 1,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "dependants"
+        ],
+        "sentences": [
+          "*   **No Dependants:** The applicant has no dependants, which typically supports repayment capacity."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000172:complete",
+      "repeat": 1,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "gross_annual increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000172:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "\u00a3511"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000185:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "42.1%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000185:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "35.2%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000185:complete",
+      "repeat": 2,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band",
+          "purpose"
+        ],
+        "sentences": [
+          "*   **File Age:** The credit file is 63 months old, which is sufficient to not be classified as a \"thin file,\" but the age of the most recent delinquency (14 months ago) is a concern.",
+          "*   **Purpose:** The stated purpose is debt consolidation, which typically improves borrower stability."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000323:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "41.6%",
+          "\u00a3415"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000323:complete",
+      "repeat": 0,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "gross_annual increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000323:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "41.5%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000323:complete",
+      "repeat": 2,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "gross_annual increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000407:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "36.67%",
+          "35%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000407:complete",
+      "repeat": 2,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "gross_annual increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000448:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "48.4%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000448:complete",
+      "repeat": 0,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "gross_annual increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000448:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "43.54%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000454:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "42.58%",
+          "\u00a3886"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000522:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "45.7%",
+          "\u00a32,799"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000522:complete",
+      "repeat": 1,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "gross_annual increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000522:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "43.6%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000522:complete",
+      "repeat": 2,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "**Credit History:** The applicant would need to demonstrate a period of clean payment behaviour (no missed payments) for at least 12 months to satisfy the \"missed payment within last 12 months\" review requirement, though the underwriter may use discretion given the age of the file and other positive factors."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000543:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "\u00a32,054",
+          "48.7%",
+          "\u00a3821"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000543:complete",
+      "repeat": 0,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "gross_annual increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000543:complete",
+      "repeat": 1,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "**Credit File Age:** Given the age band, the file age would need to be reassessed, though this is largely dependent on the applicant's exact age at application."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000543:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "45.5%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000543:complete",
+      "repeat": 2,
+      "check": "material_omission",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "missing": [
+          "dti_ratio"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000543:complete",
+      "repeat": 2,
+      "check": "flip_accuracy",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "gross_annual increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000588:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "43.5%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000588:complete",
+      "repeat": 0,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "bureau_score increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000588:complete",
+      "repeat": 1,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "bureau_score increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000678:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "8.1"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000678:complete",
+      "repeat": 0,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "gross_annual increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000678:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "40.1%",
+          "\u00a32,003.75",
+          "\u00a3801.60",
+          "\u00a3513.60",
+          "\u00a32.40"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000678:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "4.02%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000684:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "3.72%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000684:complete",
+      "repeat": 2,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "*   **File Age:** The credit file is mature (88 months), which is positive despite the low score."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000684:complete",
+      "repeat": 2,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "bureau_score increase"
+        ]
+      }
+    }
+  ]
+}
