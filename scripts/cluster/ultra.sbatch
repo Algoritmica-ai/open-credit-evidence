@@ -35,13 +35,13 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=64
 #SBATCH --mem=0
-#SBATCH --exclusive
 #SBATCH --time=2-00:00:00
 #SBATCH --output=/storage/hackathon_teams/omc-team08/runs/ultra-%j.log
 
 # Memory note: Ultra 550B NVFP4 TP4 needs substantial host RAM during engine init.
-# --mem=0 requests all memory on the node. --exclusive ensures no contention.
-# Override with: sbatch --mem=900G ... if --mem=0 is not supported.
+# --mem=0 requests all memory on the node (override with sbatch --mem=900G if unsupported).
+# GPU note: requests 4 GPUs for TP4 profile. If Slurm shows more (e.g. whole node),
+# serve_ultra.sh pins to the first 4. Do NOT use --exclusive (wastes 4 GPUs).
 
 set -euo pipefail
 

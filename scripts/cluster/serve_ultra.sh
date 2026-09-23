@@ -113,6 +113,18 @@ if [[ -z "${NGC_API_KEY:-}" ]]; then
 fi
 : "${CUDA_VISIBLE_DEVICES:?not inside an srun allocation — no GPU assigned}"
 
+# Pin to NIM_GPU_COUNT GPUs (default 4 for Ultra TP4). If Slurm allocated more
+# (e.g. --exclusive gives 8), use only the first N to match the TP4 profile.
+NIM_GPU_COUNT=${NIM_GPU_COUNT:-4}
+IFS=',' read -ra GPU_ARRAY <<< "$CUDA_VISIBLE_DEVICES"
+if (( ${#GPU_ARRAY[@]} > NIM_GPU_COUNT )); then
+  PINNED_GPUS=$(IFS=','; echo "${GPU_ARRAY[*]:0:$NIM_GPU_COUNT}")
+  echo "pinning to first $NIM_GPU_COUNT of ${#GPU_ARRAY[@]} GPUs: $PINNED_GPUS (TP4 profile)"
+else
+  PINNED_GPUS="$CUDA_VISIBLE_DEVICES"
+  echo "using all $NIM_GPU_COUNT GPUs: $PINNED_GPUS"
+fi
+
 # Curiosity B300: rootless-docker; RTX fallback: docker
 # Only load if docker daemon not already running (reloading rootless-docker kills the daemon)
 if ! docker info >/dev/null 2>&1; then
@@ -159,12 +171,13 @@ else
     echo "using proxy $PROXY"
   fi
 
-  echo "starting $NAME on port $PORT"
+  echo "starting $NAME on port $PORT with GPUs $PINNED_GPUS"
   # Bridge networking: only public port exposed; vLLM's 8001 stays container-internal.
   # Do NOT set NIM_HEALTH_PORT — health is served by nginx on NIM_SERVER_PORT.
+  # Pin to specific GPUs for TP4 profile (Slurm may allocate more than needed).
   docker run -d \
     --name "$NAME" \
-    --gpus all \
+    --gpus "\"device=${PINNED_GPUS}\"" \
     --shm-size=64GB \
     -p "${PORT}:${PORT}" \
     -e NGC_API_KEY \

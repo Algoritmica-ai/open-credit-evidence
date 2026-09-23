@@ -156,9 +156,11 @@ public `NIM_SERVER_PORT` is exposed (auto-selected from 8000, 8002+, or 18000+).
 `HEALTH_WAIT_TRIES=N` (N × 10 seconds).
 
 **Memory requirements**: Ultra 550B NVFP4 needs substantial host RAM during engine
-init. `ultra.sbatch` requests `--mem=0 --exclusive` (full node). Slurm OOM-kill
-during vLLM engine init means the memory quota was too low — check that `--mem=0`
-is supported, or override with `sbatch --mem=900G`.
+init. `ultra.sbatch` requests `--mem=0` (all node memory). Slurm OOM-kill during
+vLLM engine init means the memory quota was too low — override with `sbatch --mem=900G`.
+
+**GPU pinning**: The TP4 profile needs exactly 4 GPUs. If Slurm allocates more
+(e.g. whole node), `serve_ultra.sh` pins to the first 4. Override with `NIM_GPU_COUNT`.
 
 This is **not** the RTX cluster — different nodes, different storage paths.
 
