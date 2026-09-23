@@ -79,7 +79,7 @@ Submit a batch job that holds the GPUs under Slurm accounting and cleans up on
 cancel:
 
 ```bash
-# Edit #SBATCH --partition=<b300-partition> in ultra.sbatch first
+# Curiosity B300 partition is 'hackathon'
 sbatch ~/open-credit-evidence/scripts/cluster/ultra.sbatch
 squeue --me          # check status
 scancel <jobid>      # stop when the labeling pass is done
@@ -101,8 +101,8 @@ when done to release the GPUs — the trap stops the container automatically.
 For debugging or quick tests:
 
 ```bash
-# On Curiosity B300 — replace <b300-partition> with the real partition name
-srun --gres=gpu:4 -n1 -p <b300-partition> --time=04:00:00 --pty bash
+# On Curiosity B300 (partition: hackathon)
+srun --gres=gpu:4 -n1 -p hackathon --time=04:00:00 --pty bash
 source ~/.ngc_key
 bash ~/open-credit-evidence/scripts/cluster/serve_ultra.sh
 ```

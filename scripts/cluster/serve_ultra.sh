@@ -11,9 +11,9 @@
 # on the RTX cluster that serve_lightning.sh uses.
 #
 # Run this INSIDE an srun session on a Curiosity B300 GPU node, never on a
-# login node. Example (replace <b300-partition> with the real partition name):
+# login node. Example (Curiosity B300 partition is 'hackathon'):
 #
-#   srun --gres=gpu:4 -n1 -p <b300-partition> --time=04:00:00 --pty bash
+#   srun --gres=gpu:4 -n1 -p hackathon --time=04:00:00 --pty bash
 #   source ~/.ngc_key
 #   bash ~/open-credit-evidence/scripts/cluster/serve_ultra.sh
 #

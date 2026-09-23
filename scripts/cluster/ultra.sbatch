@@ -10,7 +10,6 @@
 #
 # Submit from the login node:
 #
-#   # edit #SBATCH --partition=<b300-partition> below first
 #   sbatch ~/open-credit-evidence/scripts/cluster/ultra.sbatch
 #   squeue --me          # check status
 #   scancel <jobid>      # stop when the labeling pass is done
@@ -31,14 +30,11 @@
 #       ultra.env                         # EVIDENCE_JUDGE_* for labeling
 
 #SBATCH --job-name=team08-ultra-teacher
-#SBATCH --partition=<b300-partition>
+#SBATCH --partition=hackathon
 #SBATCH --gres=gpu:4
 #SBATCH --ntasks=1
 #SBATCH --time=2-00:00:00
 #SBATCH --output=/storage/hackathon_teams/omc-team08/runs/ultra-%j.log
-
-# TODO: Replace <b300-partition> above with the real Curiosity B300 partition
-# name once known. This is NOT the RTX defq partition.
 
 set -euo pipefail
 
