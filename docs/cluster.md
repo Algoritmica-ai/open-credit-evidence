@@ -57,7 +57,34 @@ makes one chat call. To stop: `docker stop nemotron-lightning` on the node.
 
 Ultra (550B) is too large for a single RTX GPU, so by default it runs on NVIDIA
 Build. For the one-time teacher/judge labeling pass (~400 readability labels), it
-can be served on Curiosity B300 with 4 GPUs (NVFP4 TP4):
+can be served on Curiosity B300 with 4 GPUs (NVFP4 TP4).
+
+### Option 1: sbatch (preferred)
+
+Submit a batch job that holds the GPUs under Slurm accounting and cleans up on
+cancel:
+
+```bash
+# From the login node (replace <b300-partition> in the script first)
+sbatch ~/open-credit-evidence/scripts/cluster/ultra.sbatch
+squeue --me          # check status
+scancel <jobid>      # stop when the labeling pass is done
+```
+
+The job writes connection info to `/storage/hackathon_teams/omc-team08/runs/ultra.env`:
+
+```bash
+source /storage/hackathon_teams/omc-team08/runs/ultra.env
+# sets EVIDENCE_JUDGE_BASE_URL and EVIDENCE_JUDGE_MODEL
+```
+
+Logs go to `/storage/hackathon_teams/omc-team08/runs/ultra-<jobid>.log`. The job
+has a 2-day time limit; ~400 labels should finish well before that. `scancel`
+when done to release the GPUs — the trap stops the container automatically.
+
+### Option 2: interactive srun
+
+For debugging or quick tests:
 
 ```bash
 # On Curiosity B300 — replace <b300-partition> with the real partition name
@@ -66,15 +93,18 @@ source ~/.ngc_key
 bash ~/open-credit-evidence/scripts/cluster/serve_ultra.sh
 ```
 
-| Default | Value |
+The script prints `.env` lines for `EVIDENCE_JUDGE_*`. The container outlives
+your srun session; stop it manually: `docker stop team08_nt-ultra` on the B300 node.
+
+### Defaults
+
+| Setting | Value |
 |---|---|
 | Port | 8001 (Lightning owns 8000) |
 | Container | `team08_nt-ultra` |
 | Cache | `/storage/hackathon_teams/omc-team08/nim-cache-ultra` |
 
 This is **not** the RTX cluster — different nodes, different storage paths.
-The script prints `.env` lines for `EVIDENCE_JUDGE_*`. To stop:
-`docker stop team08_nt-ultra` on the B300 node.
 
 After Ultra labels the training set, the fine-tuned Nano+LoRA (`serve_nano.sh`
 with `ADAPTER=`) becomes the runtime judge, and Ultra is no longer needed.
