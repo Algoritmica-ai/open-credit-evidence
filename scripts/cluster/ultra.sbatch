@@ -31,7 +31,7 @@
 
 #SBATCH --job-name=team08-ultra-teacher
 #SBATCH --partition=hackathon
-#SBATCH --gres=gpu:4
+#SBATCH --gpus=4
 #SBATCH --ntasks=1
 #SBATCH --time=2-00:00:00
 #SBATCH --output=/storage/hackathon_teams/omc-team08/runs/ultra-%j.log
