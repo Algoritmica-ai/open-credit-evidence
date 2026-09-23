@@ -81,8 +81,11 @@ Curiosity B300 (dgx* nodes) uses rootless Docker, not the RTX `module load docke
 module load rootless-docker/1.75
 ```
 
-The serve/sbatch scripts try this automatically and fall back to `module load docker`
-for RTX compatibility.
+**Do not reload the module** — reloading stops the daemon. The scripts detect if
+docker is already running and skip the load.
+
+The serve/sbatch scripts try rootless-docker automatically and fall back to
+`module load docker` for RTX compatibility.
 
 ### Option 1: sbatch (preferred)
 

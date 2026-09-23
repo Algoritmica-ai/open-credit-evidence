@@ -59,11 +59,14 @@ fi
 : "${CUDA_VISIBLE_DEVICES:?not inside an srun allocation — no GPU assigned}"
 
 # Curiosity B300: rootless-docker; RTX fallback: docker
-if ! module load rootless-docker/1.75 2>/dev/null; then
-  module load docker 2>/dev/null || true
+# Only load if docker daemon not already running (reloading rootless-docker kills the daemon)
+if ! docker info >/dev/null 2>&1; then
+  if ! module load rootless-docker/1.75 2>/dev/null; then
+    module load docker 2>/dev/null || true
+  fi
 fi
-if ! command -v docker >/dev/null 2>&1; then
-  echo "docker not found. Tried: module load rootless-docker/1.75, then module load docker" >&2
+if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
+  echo "docker daemon not available. Tried: module load rootless-docker/1.75, then module load docker" >&2
   echo "Run: module avail 2>&1 | grep -i docker" >&2
   exit 1
 fi
