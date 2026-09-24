@@ -110,6 +110,41 @@ def test_rerun_is_resumable_without_new_calls(stubbed, tmp_path):
     assert m2["model_calls_made"] == 0
 
 
+def test_every_briefing_names_the_model_that_wrote_it(stubbed, tmp_path):
+    from conftest import STUB_FINGERPRINT
+
+    out = tmp_path / "fp"
+    m = run_pack(stubbed, out, repeats=1, limit=2, log=lambda s: None)
+    for p in (out / "transcripts").glob("*.json"):
+        assert json.loads(p.read_text())["sut"]["fingerprint"] == STUB_FINGERPRINT
+    assert m["models"]["assistant"]["fingerprint"] == STUB_FINGERPRINT
+    assert m["models"]["judge"]["fingerprint"] == STUB_FINGERPRINT
+    assert not m["models"]["assistant"].get("changed_during_run")
+    judged = [json.loads(x) for x in (out / "results.jsonl").read_text().splitlines()]
+    assert {r["model_fingerprint"] for r in judged if r["check"] == "readability"} == {
+        STUB_FINGERPRINT}
+    # a re-score makes no calls: it keeps the fingerprints of the pass that made them
+    m2 = run_pack(stubbed, out, repeats=1, limit=2, log=lambda s: None)
+    assert m2["model_calls_made"] == 0 and m2["models"] == m["models"]
+    write_evidence(out, stubbed.obligations)
+    assert "Assistant model fingerprint: `ffffffffffffffff…`" in (
+        out / "evidence" / "report.md").read_text()
+
+
+def test_a_model_swapped_mid_run_is_flagged(stubbed, tmp_path, monkeypatch):
+    calls = {"n": 0}
+
+    def drifting(role):
+        calls["n"] += 1
+        return {"role": role, "level": "weights", "components": {},
+                "fingerprint": ("a" if calls["n"] <= 3 else "b") * 64}
+
+    monkeypatch.setattr("evidence.runner.model_fingerprint", drifting)
+    m = run_pack(stubbed, tmp_path / "drift", repeats=1, limit=1, log=lambda s: None)
+    assert m["models"]["assistant"]["changed_during_run"]
+    assert m["models"]["assistant"]["fingerprint_end"] == "b" * 64
+
+
 def test_rescore_keeps_when_the_calls_happened(stubbed, tmp_path):
     # A re-score makes no calls; its manifest must still say when the calls were made.
     out = tmp_path / "run3"

@@ -24,6 +24,7 @@ class SUTPins(_Strict):
     prompt_version: str  # sha256 of the system prompt
     params: dict  # temperature, top_p, max_tokens, seed, enable_thinking …
     endpoint: str | None = None  # where it ran — cloud or on-prem
+    fingerprint: str | None = None  # which model, exactly: see evidence.fingerprint
 
 
 class Retrieved(_Strict):

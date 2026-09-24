@@ -38,3 +38,19 @@ def regulations_root(tmp_path, monkeypatch):
     monkeypatch.setattr("evidence.corpus.embed", fake_embed)
     build_corpus("EU", root, embedder=fake_embed, embed_model="fake")
     return root
+
+
+STUB_FINGERPRINT = "f" * 64
+
+
+@pytest.fixture(autouse=True)
+def stub_model_fingerprint(monkeypatch):
+    """Runs in tests never ask a real server what it is."""
+    def fake(role):
+        return {"role": role, "level": "weights", "served_as": f"stub-{role}",
+                "components": {"server": {"engine_version": "stub"}, "weights": {},
+                               "container": {}},
+                "fingerprint": STUB_FINGERPRINT}
+
+    monkeypatch.setattr("evidence.runner.model_fingerprint", fake)
+    return fake

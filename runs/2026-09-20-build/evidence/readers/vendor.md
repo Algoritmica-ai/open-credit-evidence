@@ -5,7 +5,8 @@ Assistant `nvidia/nemotron-3.5-lightning-30b-a3b` (cloud) · 60 briefings: 20 re
 ## The system under test
 
 - Model `nvidia/nemotron-3.5-lightning-30b-a3b` at `https://integrate.api.nvidia.com/v1`; prompt version `0f7c3b98eca20e37`; parameters temperature 0.0, top_p 1.0, max_tokens 900, seed 7, enable_thinking False; max tokens 900.
-- Every transcript records the exact system prompt, user prompt, parameters, output, tokens and latency of its call.
+- Assistant model fingerprint: not recorded
+- Every transcript records the exact system prompt, user prompt, parameters, output, tokens and latency of its call, and the fingerprint of the model that answered.
 
 ## Raised with you if they persist
 

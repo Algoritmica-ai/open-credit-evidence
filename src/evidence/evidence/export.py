@@ -241,6 +241,7 @@ def render_html(run: Path, name: str, exported_at: datetime | None = None) -> st
     source_sha = sums.get(doc["source"]) or _sha256(src)
     sut, pack = manifest["sut"], manifest["pack"]
     judge = manifest.get("judge") or {}
+    models = manifest.get("models") or {}
     e = html.escape
 
     meta = [
@@ -257,6 +258,12 @@ def render_html(run: Path, name: str, exported_at: datetime | None = None) -> st
         ("Checks scored", _ts(manifest.get("scored_at")) if manifest.get("scored_at")
          else _ts(manifest.get("finished_at"))),
         ("Exported", exported.strftime("%d %b %Y, %H:%M:%S UTC")),
+        ("Model fingerprints", "<br>".join(
+            f"{role} <code>{e(str((models.get(role) or {}).get('fingerprint') or 'not recorded'))}"
+            f"</code>" + (" <b class='chip nogo'>changed during run</b>"
+                          if (models.get(role) or {}).get("changed_during_run") else "")
+            for role in ("assistant", "judge", "embed")
+            if role in models or role == "assistant" or (role == "judge" and judge))),
         ("Engine", f"{e(manifest['engine']['package'])} {e(manifest['engine']['version'])} · "
                    f"commit <code>{e(manifest['engine'].get('git_commit') or '—')}</code>"),
     ]

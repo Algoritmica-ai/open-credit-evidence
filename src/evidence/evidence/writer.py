@@ -51,6 +51,7 @@ from evidence.evidence.assess import (
     report_sections,
 )
 from evidence.evidence.readers import build_readers
+from evidence.fingerprint import summary as fp_summary
 
 CHECKSUMS = "checksums.sha256"
 
@@ -346,6 +347,15 @@ def _report_lines(
         f"- Assistant parameters: max_tokens {sut['max_tokens']}; per-call temperature, seed "
         "and prompt hash are in each transcript."
     )
+    models = manifest.get("models") or {}
+    for role in ("assistant", "judge", "embed"):
+        if (role == "embed" and role not in models) or (role == "judge" and not judge):
+            continue
+        fp = models.get(role)
+        L.append(f"- {role.capitalize()} model fingerprint: {fp_summary(fp)}"
+                 + ("; **changed during the run**" if fp and fp.get("changed_during_run") else "")
+                 + ("" if fp else " — the run predates model fingerprints, or its calls were "
+                    "made in an earlier pass that did not record one"))
     L.append(
         "- Integrity: `checksums.sha256`. Re-check with `evidence verify <run>`; "
         "re-derive every check result from the transcripts with "
@@ -400,7 +410,7 @@ def build_evidence(run: Path) -> dict[str, str]:
     }
     diagnosis = diagnose(results)
     recs = recommend(diagnosis)
-    decision = decide(summary, diagnosis, thresholds, obligations)
+    decision = decide(summary, diagnosis, thresholds, obligations, manifest.get("models"))
     readers = build_readers(manifest, results, summary, diagnosis, recs, decision, obligations,
                             report_parts(manifest, summary, obligations, regulatory))
     return {

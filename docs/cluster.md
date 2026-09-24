@@ -41,11 +41,24 @@ ports from 8200, and writes the endpoints to `/data/team08/runs/servers.env`.
 sbatch ~/open-credit-evidence/scripts/cluster/servers.sbatch
 squeue --me                               # RUNNING while the servers are up
 cat /data/team08/runs/servers.env         # the six lines for the laptop's .env
+scp codefest:/data/team08/runs/models.json .   # the node's side of the model fingerprints
 scancel <jobid>                           # stops all three
 ```
 
 The node changes between submissions; always copy `servers.env`, never assume
-the address. A server that stops is restarted in place, up to five times each,
+the address.
+
+**Model fingerprints.** Once the servers are up the job writes
+`/data/team08/runs/models.json`: each container's image digest and serving
+arguments, and for the vLLM servers the Hugging Face commit and SHA-256 of every
+weights file. Copy it next to `.env` (or point `EVIDENCE_MODELS_FILE` at it). Every
+run then records, per role, a fingerprint of exactly which model answered — the
+components above plus what the server reports (for the NIM: build, active profile
+and every file's checksum) — in its manifest, in each transcript, and in every
+report. For a job started before this existed, run the script once on the node:
+`srun --jobid=<job> --overlap -n1 bash -lc "module load docker; python3
+~/open-credit-evidence/scripts/cluster/fingerprint_models.py --out
+/data/team08/runs/models.json"`. A server that stops is restarted in place, up to five times each,
 and the log says why it stopped (`/data/team08/runs/servers-<jobid>.log`); the
 job ends only on `scancel`, the seven-day limit, or a server that keeps failing. The sections below describe the hand-started containers and are
 kept for debugging one server at a time.
