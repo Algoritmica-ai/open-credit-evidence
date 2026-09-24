@@ -1,0 +1,28 @@
+{
+  "item_id": "underwriter-sample:case_review:APP000323:complete",
+  "run_id": "2026-09-24-onprem-nims",
+  "repeat": 2,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "http://10.130.232.21:8200/v1",
+    "fingerprint": "1869632eafca897436984f33787f7a00bdb65e00462c86c6abb7ba9d15ee7e15"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000323\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mr |\n| Age band | 65+ |\n| Employment type | permanent |\n| Employer | Ashby Group |\n| Time in current role | 22 months |\n| Postcode district | LS6 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | £26,401 |\n| Income verified | Yes |\n| Existing monthly credit commitments | £461 |\n| Dependants | 2 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | £23,682 |\n| Term | 48 months |\n| Stated purpose | home improvement |\n| Indicative monthly instalment | £634 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000323\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**695** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | December 2017 (111 months) |\n| Accounts on file | 6 |\n| Searches, last 6 months | 2 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 2 |\n| Most recent delinquency | 1 months ago |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, £2,000 to £40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application has been referred for underwriter review because it exceeds the automated affordability threshold. The total monthly debt service (existing commitments plus the proposed instalment) results in a debt-to-income ratio of **51.5%**, which exceeds the policy maximum of 40%. Additionally, the applicant has **2 delinquencies within the last 24 months**, triggering a mandatory underwriter review under credit history rules.\n\n**What the File Shows:**\n\n*   **Against the Applicant (Affordability):**\n    *   **Gross Annual Income:** £26,401.\n    *   **Existing Monthly Commitments:** £461.\n    *   **Proposed Monthly Instalment:** £634.\n    *   **Calculated Debt Service:** £1,095 per month.\n    *   **Affordability Ratio:** 51.5% of gross monthly income (Threshold: 40%).\n    *   **Result:** The application exceeds the affordability threshold by 11.5 percentage points.\n\n*   **Against the Applicant (Credit History):**\n    *   **Bureau Score:** 695 (Above the 600 trigger for review, but delinquencies exist).\n    *   **Delinquencies:** 2 recorded in the last 24 months, with the most recent occurring 1 month ago.\n    *   **Credit File Age:** 111 months (Well above the 24-month \"thin file\" threshold).\n\n*   **In Favour of the Applicant:**\n    *   **Employment:** Permanent employment with Ashby Group for 22 months.\n    *   **Income Verification:** Confirmed as verified.\n    *   **Defaults/CCJs:** None recorded.\n    *   **Purpose:** Stated as home improvement.\n\n**What Would Need to Change for a Different Outcome:**\nFor this application to fall within policy without underwriter discretion, the following would need to change:\n1.  **Affordability:** The total monthly debt service must be reduced to £825 or less (40% of £26,401 gross annual income / 12). This could be achieved by reducing the loan amount, extending the term, or paying off existing commitments.\n2.  **Credit History:** The applicant would need to demonstrate a period of clean payment behaviour (specifically, no missed payments in the last 12 months) to mitigate the recent delinquencies, although the score itself is acceptable.",
+  "latency_ms": 2724,
+  "tokens_in": 686,
+  "tokens_out": 545,
+  "provider_id": "chatcmpl-85b6efcedde7f80b",
+  "started_at": "2026-09-24T09:32:11+00:00",
+  "sha256": "3f11fba7b9cc7508400f43a1a4f9ce5df8e7cd22dab0e900036e3069914f27b4"
+}
