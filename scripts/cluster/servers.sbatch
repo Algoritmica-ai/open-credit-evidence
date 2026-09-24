@@ -88,4 +88,25 @@ EVIDENCE_EMBED_MODEL=nemotron-3-embed-1b
 ENV
 
 # Hold the allocation while the servers live; SLURM accounts every minute of it.
-while docker ps --format '{{.Names}}' | grep -q team08-judge; do sleep 60; done
+# A server that stops is started again with the same GPU, port and settings: on
+# 23 Sep the judge received a SIGTERM from outside the job and, with no restart,
+# the job ended and took the other two down with it. Each server is restarted at
+# most MAX_RESTARTS times; after that the job ends rather than loop on a fault.
+MAX_RESTARTS=5
+declare -A RESTARTS=([team08-lightning]=0 [team08-judge]=0 [team08-embed]=0)
+while true; do
+  sleep 60
+  running=$(docker ps --format '{{.Names}}') || { echo "$(date -Is) docker ps failed"; continue; }
+  for c in team08-lightning team08-judge team08-embed; do
+    grep -qx "$c" <<<"$running" && continue
+    if (( RESTARTS[$c] >= MAX_RESTARTS )); then
+      echo "$(date -Is) $c stopped again after $MAX_RESTARTS restarts; ending the job"
+      exit 1
+    fi
+    RESTARTS[$c]=$((RESTARTS[$c] + 1))
+    code=$(docker inspect -f '{{.State.ExitCode}} oom={{.State.OOMKilled}}' "$c" 2>/dev/null)
+    echo "$(date -Is) $c not running (exit $code); restart ${RESTARTS[$c]}/$MAX_RESTARTS"
+    docker logs --tail 20 "$c" 2>&1 | sed "s/^/  $c | /"
+    docker start "$c" >/dev/null || echo "$(date -Is) docker start $c failed"
+  done
+done
