@@ -63,9 +63,8 @@ def client(tmp_path, monkeypatch, regulations_root):
 
     monkeypatch.setattr("evidence.runner.chat", chat)
     monkeypatch.setattr("evidence.judge.chat", chat)
-    monkeypatch.setattr(
-        "evidence.corpus.embed", lambda texts, input_type: [[1.0, 0, 0, 0]] * len(texts)
-    )
+    # retrieval keeps the fake embedder the index was built with (regulations_root):
+    # a run refuses an embedder that does not reproduce its index
     return TestClient(web.app)
 
 
@@ -110,7 +109,7 @@ def test_run_evidence_verify_and_tamper(client):
         if j["status"] in ("done", "error"):
             break
         time.sleep(0.05)
-    assert j["status"] == "done", j
+    assert j["status"] == "done", j.get("error") or j
     assert j["done"] == 4 and j["total"] == 4
     runs = client.get("/api/runs").json()
     assert runs[0]["run_id"] == job["run_id"] and runs[0]["sealed"]

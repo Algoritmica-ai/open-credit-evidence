@@ -50,7 +50,7 @@ from evidence.evidence.assess import (
     recommend,
     report_sections,
 )
-from evidence.evidence.readers import build_readers
+from evidence.evidence.readers import build_readers, cite_phrase, corpus_provenance
 from evidence.fingerprint import summary as fp_summary
 
 CHECKSUMS = "checksums.sha256"
@@ -143,6 +143,7 @@ def _report_lines(
             if corpus
             else ", no regulation corpus."
         )
+        judge_line += corpus_provenance(corpus)
     L.append(
         f"Assistant under test: `{sut['model_id']}` at `{sut['endpoint']}` "
         f"({'on-prem' if sut['on_prem'] else 'cloud'}). "
@@ -182,9 +183,11 @@ def _report_lines(
             f"{c['results']} judge calls, all auditable"
         )
         if c.get("citations") is not None:
+            per = {f: ids for f, ids in (c.get("cited_by_field") or {}).items() if f != "any"}
+            listed = ("; ".join(f"{f}: {', '.join(ids)}" for f, ids in per.items()) if per
+                      else ", ".join(c["cited"]))
             line += (
-                f"; cited a passage it was given in {c['citations']}/{c['results']}"
-                f" ({', '.join(c['cited'])})"
+                f"; {cite_phrase(c)} in {c['citations']}/{c['results']} ({listed})"
                 if c["cited"]
                 else ""
             )

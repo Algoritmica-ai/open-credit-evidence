@@ -40,13 +40,20 @@ def summarise_checks(results: list[dict[str, Any]]) -> dict[str, dict[str, Any]]
             "gated": bool(gated),
         }
         if not gated and any("passages" in r for r in rows):
-            cites = [
-                r["evidence"][0].get("citation")
-                for r in rows
-                if r.get("evidence") and r["evidence"][0].get("citation_in_passages")
-            ]
-            entry["citations"] = len(cites)
-            entry["cited"] = sorted({c for c in cites if c})
+            ev = [r["evidence"][0] for r in rows if r.get("evidence")]
+            # a record counts when every citation in it is a passage it was given
+            entry["citations"] = sum(1 for e in ev if e.get("citation_in_passages"))
+            by_field: dict[str, set[str]] = defaultdict(set)
+            for e in ev:
+                per = e.get("citations") or (
+                    {"any": {"citation": e.get("citation"), "in_passages": True}}
+                    if e.get("citation_in_passages") else {})
+                for field, c in per.items():
+                    if c.get("in_passages") and c.get("citation"):
+                        by_field[field].update(x.strip() for x in c["citation"].split(","))
+            entry["cited"] = sorted(set().union(*by_field.values())) if by_field else []
+            if any(e.get("citations") for e in ev):  # records with a citation per question
+                entry["cited_by_field"] = {f: sorted(ids) for f, ids in sorted(by_field.items())}
         summary[name] = entry
     return summary
 

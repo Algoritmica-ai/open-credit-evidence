@@ -17,6 +17,7 @@ import argparse
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from evidence.checks import available_checks
 from evidence.evidence import verify_run, write_evidence
@@ -180,9 +181,59 @@ def _cmd_ui(a: argparse.Namespace) -> int:
     return 0
 
 
-def _cmd_corpus(a: argparse.Namespace) -> int:
-    from evidence.corpus import build_corpus, list_corpora
+def _html_text(html: str) -> str:
+    """The text of a saved web page, words inside inline markup kept together."""
+    from html.parser import HTMLParser
 
+    inline = {"a", "b", "i", "em", "strong", "span", "sup", "sub", "u", "abbr"}
+
+    class _Text(HTMLParser):
+        def __init__(self) -> None:
+            super().__init__(convert_charrefs=True)
+            self.out: list[str] = []
+            self.skip = 0
+
+        def handle_starttag(self, tag: str, attrs: Any) -> None:
+            self.skip += tag in ("script", "style")
+            if tag not in inline:
+                self.out.append(" ")
+
+        def handle_endtag(self, tag: str) -> None:
+            if tag in ("script", "style") and self.skip:
+                self.skip -= 1
+            if tag not in inline:
+                self.out.append(" ")
+
+        def handle_data(self, data: str) -> None:
+            if not self.skip:
+                self.out.append(data)
+
+    p = _Text()
+    p.feed(html)
+    return "".join(p.out)
+
+
+def _cmd_corpus(a: argparse.Namespace) -> int:
+    from evidence.corpus import build_corpus, list_corpora, verify_sources
+
+    if a.action == "verify-sources":
+        if not a.official:
+            print("verify-sources needs --official <saved official text>", file=sys.stderr)
+            return 2
+        path = Path(a.official)
+        raw = path.read_text(encoding="utf-8", errors="replace")
+        text = _html_text(raw) if path.suffix.lower() in (".html", ".htm") else raw
+        rec = verify_sources(a.jurisdiction, text, official={
+            "id": a.official_id, "url": a.official_url, "file": path.name,
+            "obtained": "saved copy, read by evidence corpus verify-sources"})
+        sha = rec["official"]["text_sha256"][:12]
+        print(f"{rec['jurisdiction']}: {rec['found']}/{rec['passages']} passages found verbatim "
+              f"in {a.official_id or path.name} (text sha256 {sha}…)")
+        for r in rec["results"]:
+            if not r["found"]:
+                print(f"  {r['passage_id']}: matches {r['matches_up_to']}/{r['of']} characters, "
+                      f"then differs: …{r['diverges_at']}…")
+        return 0 if rec["found"] == rec["passages"] else 1
     if a.action == "build":
         m = build_corpus(a.jurisdiction)
         print(
@@ -199,6 +250,11 @@ def _cmd_corpus(a: argparse.Namespace) -> int:
             else "not built"
         )
         print(f"{c['jurisdiction']:4} {c['sources']} source(s)  {state}  — {c['title']}")
+        sc = c.get("source_check")
+        if sc:
+            print(f"     checked against {sc['official']} on {sc['checked_at'][:10]}: "
+                  f"{sc['found']}/{sc['passages']} passages as they are now"
+                  + (f"; unchecked {', '.join(sc['unchecked'])}" if sc["unchecked"] else ""))
     return 0
 
 
@@ -261,9 +317,12 @@ def main(argv: list[str] | None = None) -> int:
     u.add_argument("pack")
     u.set_defaults(fn=_cmd_rules)
 
-    k = sub.add_parser("corpus", help="build or list regulation corpora for the judge")
-    k.add_argument("action", choices=["build", "list"])
+    k = sub.add_parser("corpus", help="build, list or verify regulation corpora for the judge")
+    k.add_argument("action", choices=["build", "list", "verify-sources"])
     k.add_argument("jurisdiction", nargs="?", default="EU")
+    k.add_argument("--official", help="verify-sources: saved official text (.html or .txt)")
+    k.add_argument("--official-id", help="verify-sources: its document id, e.g. a CELEX number")
+    k.add_argument("--official-url", help="verify-sources: where it was obtained")
     k.set_defaults(fn=_cmd_corpus)
 
     w = sub.add_parser("ui", help="serve the local web UI")

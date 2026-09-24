@@ -2,13 +2,19 @@
   "jurisdiction": "EU",
   "title": "EU Artificial Intelligence Act \u2014 provisions relevant to an assistant in a credit decision",
   "verified": "2026-09-20",
-  "chunking": "markdown-h2-paragraph-v1",
+  "chunking": "markdown-h2-paragraph-v2",
   "index_backend": "milvus-lite",
   "embed_model": "nvidia/nemotron-3-embed-1b",
+  "embedder": {
+    "model": "nvidia/nemotron-3-embed-1b",
+    "endpoint": "http://10.130.232.21:8202/v1",
+    "fingerprint": "ed2942bb7c71b8fbe8bb7fdf3946e96c714c475c1f7e8535afaca6d0645cc042",
+    "level": "weights"
+  },
   "dimension": 2048,
   "passages": 26,
-  "passages_sha256": "7f3c6ec680008d906f9a138fef5e7d040a608edaf2892c69da5c242313a2e93e",
-  "vectors_sha256": "559fb9fea06bfc19159bee0276ed080aec18fb576fbc2fdfdbffb48b38c15318",
+  "passages_sha256": "cccaebf367558ea2d92ec06d2834b586576ca652871b08ab08cf33fd7beec297",
+  "vectors_sha256": "3c73833356f3bad9bfa9487bf591afbe783121f10af65ad46a1817e3f89e81cc",
   "sources": [
     {
       "id": "ai-act-art-13",
@@ -34,7 +40,7 @@
       "citation": "AI Act Article 15",
       "title": "Accuracy, robustness and cybersecurity",
       "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng",
-      "sha256": "60c451e2d8aaca862e5126362aa4813e7fa2618a0437b1c69db44708fbf5a7ca",
+      "sha256": "2863e1463c2bd39812a5011e702923e6e66b834a660d7bf59546666032328cf0",
       "passages": 5
     },
     {
@@ -47,14 +53,14 @@
       "passages": 12
     },
     {
-      "id": "ai-act-annex-iii-5",
-      "file": "sources/ai-act-annex-iii-5.md",
-      "citation": "AI Act Annex III, point 5",
-      "title": "Access to essential private and public services (incl. creditworthiness, 5(b))",
+      "id": "ai-act-annex-iii",
+      "file": "sources/ai-act-annex-iii.md",
+      "citation": "AI Act Annex III",
+      "title": "High-risk areas (point 5, access to essential services, covers creditworthiness)",
       "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng",
-      "sha256": "83a609a3557fd1b288e864d729e0a4be9a32459626c14534fca2ce70837ab401",
+      "sha256": "ed8678a58392f28b3b1b426963f28aead8ab71ca29d9bcb6ea2ea20052e01da2",
       "passages": 1
     }
   ],
-  "corpus_sha256": "4cec98282f8332085eb68735dd75512f94be86fe648c21aac15ed9f34892d83b"
+  "corpus_sha256": "ed3aab827cd150f8f45c62a6a2d913241d25df940b01dd6d89cfe3c64c836007"
 }
