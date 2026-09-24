@@ -25,6 +25,15 @@ Assistant `nvidia/nemotron-3.5-lightning-30b-a3b` (cloud) · 60 briefings: 20 re
 - The transcripts: they are what the model returned. They can be shown unchanged, not reproduced — serving is not byte-deterministic.
 - The judge's opinions: the same, and they never decide pass or fail.
 
+## Model fingerprints
+
+Which model, exactly, served each role: a SHA-256 over what the server reports about itself (serving version; for a NIM its build, active profile and every file's checksum) and what the node recorded (container image digest, serving arguments, Hugging Face commit and the SHA-256 of every weights file). The components are in `manifest.json` under `models`; the fingerprint is the SHA-256 of their JSON with sorted keys.
+
+| role | fingerprint | level | pins |
+|---|---|---|---|
+| assistant | not recorded | — | — |
+| judge | not recorded | — | — |
+
 ## Identifiers
 
 - Engine commit `555f692`; pack `underwriter-sample` v0.4.0, items sha256 `8e5b71d6f49d90af4259db5c7c39a8ec0d1eb2bbbf3d885a6e6b8b6d62334566`.

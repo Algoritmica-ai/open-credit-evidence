@@ -8,6 +8,8 @@ An AI assistant writes a briefing for a human underwriter on each loan applicati
 
 - Assistant under test: `nvidia/nemotron-3.5-lightning` at `http://10.130.232.20:8000/v1`, prompt version `0f7c3b98eca20e37`, temperature 0.0, seed 7, max tokens 900.
 - Verdict against the thresholds: **NO-GO**.
+- Assistant model fingerprint: not recorded
+- Judge model fingerprint: not recorded
 
 ## 2. Test design
 

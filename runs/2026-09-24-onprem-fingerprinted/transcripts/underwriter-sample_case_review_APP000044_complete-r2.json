@@ -1,0 +1,28 @@
+{
+  "item_id": "underwriter-sample:case_review:APP000044:complete",
+  "run_id": "2026-09-24-onprem-fingerprinted",
+  "repeat": 2,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "http://10.130.232.21:8200/v1",
+    "fingerprint": "1869632eafca897436984f33787f7a00bdb65e00462c86c6abb7ba9d15ee7e15"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000044\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mr |\n| Age band | 55-64 |\n| Employment type | self_employed |\n| Employer | Northgate Retail |\n| Time in current role | 16 months |\n| Postcode district | BS7 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | £15,922 |\n| Income verified | Yes |\n| Existing monthly credit commitments | £316 |\n| Dependants | 3 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | £9,323 |\n| Term | 36 months |\n| Stated purpose | debt consolidation |\n| Indicative monthly instalment | £314 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000044\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**652** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | December 2020 (75 months) |\n| Accounts on file | 5 |\n| Searches, last 6 months | 1 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 0 |\n| Most recent delinquency | None |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, £2,000 to £40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application has been referred for underwriter review because the automated rules could not settle it. Specifically, the applicant’s total monthly debt service exceeds the 40% affordability threshold set out in the Personal Loan Lending Policy.\n\n**What the File Shows:**\n\n*   **Against the applicant (Affordability):**\n    *   **Gross annual income:** £15,922.\n    *   **Existing monthly credit commitments:** £316.\n    *   **Proposed monthly instalment:** £314.\n    *   **Total monthly debt service:** £630 (£316 + £314).\n    *   **Affordability calculation:** The total monthly debt service of £630 represents **39.6%** of the applicant's gross monthly income (£1,327 per month). While this is technically just under the 40% threshold, it is very close to the limit, leaving minimal buffer for the underwriter.\n\n*   **In favour of the applicant (Credit History):**\n    *   **Bureau score:** 652 (above the 600 threshold requiring review).\n    *   **Payment history:** No delinquencies in the last 24 months; no defaults or CCJs recorded.\n    *   **Credit file age:** 75 months (well above the 24-month \"thin file\" limit).\n\n*   **Additional factors:**\n    *   **Age band:** 55-64.\n    *   **Employment:** Self-employed at Northgate Retail for 16 months.\n    *   **Dependants:** 3.\n\n**What would need to change for the outcome to be different:**\nFor the application to be approved automatically without underwriter intervention, the total monthly debt service would need to be reduced so that it falls comfortably below the 40% threshold (ideally lower than the current 39.6%). This could be achieved by:\n\n1.  **Reducing the loan amount or extending the term:** This would lower the indicative monthly instalment from £314, thereby reducing the total debt service ratio.\n2.  **Verifying additional income:** If the applicant has other verified income sources, this could strengthen the file, though the current calculation is already marginally within the limit.\n3.  **Reducing existing commitments:** Paying down existing credit commitments before applying.",
+  "latency_ms": 2223,
+  "tokens_in": 686,
+  "tokens_out": 517,
+  "provider_id": "chatcmpl-987d7b882caa8c01",
+  "started_at": "2026-09-24T03:40:08+00:00",
+  "sha256": "5bfc1020001aeb16db61101e165848489b0dcea2a20c3737701454d3fb773b1f"
+}
