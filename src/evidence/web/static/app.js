@@ -347,15 +347,15 @@ function renderAct(diag, recs) {
   if (!diag.causes.length) { $("ev-causes").innerHTML = `<p class="nul">No failures.</p>`; $("ev-recs").innerHTML = `<p class="nul">Nothing to change.</p>`; return; }
   const example = {};
   diag.records.forEach((r) => { if (!(r.cause in example)) example[r.cause] = r; });
-  $("ev-causes").innerHTML = `<div class="scroll"><table class="grid-table"><thead><tr><th>cause · who can act</th><th class="num">failing results</th><th class="num">cases</th></tr></thead><tbody>` +
-    diag.causes.map((c) => `<tr class="clickable" data-cause="${esc(c.cause)}" title="${esc(c.why)}"><td class="wrap">${esc(c.label)}<br><span class="badge ${c.owner === "vendor" ? "bad" : "good"}">${esc(c.owner)}</span> <span class="badge">${esc(c.lever)}</span></td><td class="num">${c.results}</td><td class="num">${c.items}</td></tr>`).join("") +
+  $("ev-causes").innerHTML = `<div class="scroll"><table class="grid-table"><thead><tr><th>cause · who can act</th><th class="num">briefings</th><th class="num">failing results</th><th class="num">cases</th></tr></thead><tbody>` +
+    diag.causes.map((c) => `<tr class="clickable" data-cause="${esc(c.cause)}" title="${esc(c.why)}"><td class="wrap">${esc(c.label)}<br><span class="badge ${c.owner === "vendor" ? "bad" : "good"}">${esc(c.owner)}</span> <span class="badge">${esc(c.lever)}</span></td><td class="num">${c.briefings ?? "—"}</td><td class="num">${c.results}</td><td class="num">${c.items}</td></tr>`).join("") +
     `</tbody></table></div>`;
   $("ev-causes").querySelectorAll("tr[data-cause]").forEach((tr) => tr.addEventListener("click", () => {
     const ex = example[tr.dataset.cause];
     if (ex) { showEvCase(state.evCases.indexOf(ex.item_id), ex.repeat); $("ev-case").scrollIntoView({ behavior: "smooth", block: "center" }); }
   }));
   $("ev-recs").innerHTML = (recs || []).map((r) => `<div class="rec"><h3>${r.rank}. ${esc(r.title)}</h3>` +
-    `<p><span class="badge good">${esc(r.owner)} can act</span> <span class="badge">${esc(r.lever)}</span>${r.raise_with_vendor ? ` <span class="badge warn">vendor, if it persists</span>` : ""} · fixes ${r.addresses.results} failing results on ${r.addresses.items} cases</p>` +
+    `<p><span class="badge good">${esc(r.owner)} can act</span> <span class="badge">${esc(r.lever)}</span>${r.raise_with_vendor ? ` <span class="badge warn">vendor, if it persists</span>` : ""} · addresses ${r.addresses.briefings != null ? `${r.addresses.briefings} briefings (${r.addresses.results} failing results)` : `${r.addresses.results} failing results`} on ${r.addresses.items} cases</p>` +
     `<p>${esc(r.action)}</p></div>`).join("");
 }
 

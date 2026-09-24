@@ -36,7 +36,8 @@ Synthetic Data Designer ──▶ scorecard ──▶ pack (documents + sealed m
                        assistant under test (Nemotron, NIM or NVIDIA Build)
                                                │ briefing, N repeats
                                                ▼
-        material_omission · numeric_fidelity · decoy_citation · flip_accuracy
+        material_omission · numeric_fidelity · comparison_fidelity
+                   decoy_citation · flip_accuracy
                           + readability judge (reported)
                                                │
                                                ▼

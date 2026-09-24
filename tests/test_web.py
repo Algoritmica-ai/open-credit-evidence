@@ -120,10 +120,12 @@ def test_run_evidence_verify_and_tamper(client):
     t = client.get(f"/api/runs/{job['run_id']}/transcripts/{d['transcripts'][0]}").json()
     assert t["output"].startswith("Debt service")
     v = client.post(f"/api/runs/{job['run_id']}/verify", json={"recompute": True}).json()
-    assert v["ok"] and v["recomputed"] == 4 * 4
+    assert v["ok"] and v["recomputed"] == 4 * 5
     demo = client.post(f"/api/runs/{job['run_id']}/tamper-demo", json={}).json()
     assert demo["original"]["ok"] and not demo["tampered"]["ok"]
     assert demo["tampered"]["mismatched"] == [f"transcripts/{demo['edit']['transcript']}"]
+    # the tampered copy was temporary: it is not left among the runs
+    assert [r["run_id"] for r in client.get("/api/runs").json()] == [job["run_id"]]
     # the original run is untouched
     assert client.post(f"/api/runs/{job['run_id']}/verify", json={}).json()["ok"]
 

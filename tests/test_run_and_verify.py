@@ -88,6 +88,7 @@ def test_run_writes_transcripts_results_and_sealed_evidence(stubbed, tmp_path):
         "numeric_fidelity",
         "decoy_citation",
         "flip_accuracy",
+        "comparison_fidelity",
         "readability",
     }
     assert manifest["regulatory"]["status"] == "pass"
@@ -99,7 +100,7 @@ def test_run_writes_transcripts_results_and_sealed_evidence(stubbed, tmp_path):
     assert res["summary"]["checks"]["material_omission"]["failed"] >= 1
     v = verify_run(out, stubbed, recompute=True)
     assert v.ok, v.message
-    assert v.recomputed == 8 * 4
+    assert v.recomputed == 8 * 5
 
 
 def test_rerun_is_resumable_without_new_calls(stubbed, tmp_path):
@@ -107,6 +108,46 @@ def test_rerun_is_resumable_without_new_calls(stubbed, tmp_path):
     run_pack(stubbed, out, repeats=1, limit=3, log=lambda s: None)
     m2 = run_pack(stubbed, out, repeats=1, limit=3, log=lambda s: None)
     assert m2["model_calls_made"] == 0
+
+
+def test_rescore_keeps_when_the_calls_happened(stubbed, tmp_path):
+    # A re-score makes no calls; its manifest must still say when the calls were made.
+    out = tmp_path / "run3"
+    m1 = run_pack(stubbed, out, repeats=1, limit=2, log=lambda s: None)
+    for p in (out / "transcripts").glob("*.json"):
+        t = json.loads(p.read_text())
+        t["started_at"] = "2026-09-20T09:00:00+00:00"
+        p.write_text(json.dumps(t))
+    m2 = run_pack(stubbed, out, repeats=1, limit=2, log=lambda s: None)
+    assert m2["model_calls_made"] == 0
+    assert m2["started_at"] == "2026-09-20T09:00:00+00:00"
+    assert m2["finished_at"].startswith("2026-09-20T09:00:00")  # + 7 ms latency
+    assert m2["scored_at"] >= m1["scored_at"]
+
+
+def test_judge_corpus_comes_from_its_records(stubbed, tmp_path, monkeypatch):
+    # Records reused from a pass with no passages must not be credited to a corpus.
+    out = tmp_path / "run4"
+    run_pack(stubbed, out, repeats=1, limit=1, corpus=None, log=lambda s: None)
+
+    from evidence.corpus import Corpus
+
+    class FakeCorpus(Corpus):
+        jurisdiction, sha256, backend = "EU", "abc", "cosine"
+        manifest = {"passages": 1, "embed_model": "m"}
+
+        def __init__(self):  # no index on disk
+            pass
+
+        def retrieve(self, *a, **k):
+            return []
+
+        def close(self):
+            pass
+
+    m = run_pack(stubbed, out, repeats=1, limit=1, corpus=FakeCorpus(), log=lambda s: None)
+    assert m["judge"]["corpus"] is None
+    assert m["judge"]["corpus_note"] == "judge records carry no regulation passages"
 
 
 def test_tamper_is_detected_and_named(stubbed, tmp_path):

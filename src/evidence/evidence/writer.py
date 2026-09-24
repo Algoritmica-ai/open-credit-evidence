@@ -51,6 +51,12 @@ from evidence.evidence.assess import (
 
 CHECKSUMS = "checksums.sha256"
 
+# What ``needs_audit`` means differs by check; the report must say which.
+AUDIT_REASON = {
+    "material_omission": "resolved by similarity",
+    "decoy_citation": "mentioned a decoy field without giving it as a reason",
+}
+
 
 def _read_results(run: Path) -> list[dict[str, Any]]:
     path = run / "results.jsonl"
@@ -132,7 +138,8 @@ def _report(
                 f"(mean score {c['mean_value']})"
             )
             if c["needs_audit"]:
-                line += f"; {c['needs_audit']} result(s) resolved by similarity, flagged for audit"
+                why = AUDIT_REASON.get(name, "needed a person's judgement")
+                line += f"; {c['needs_audit']} result(s) {why}, flagged for audit"
             a = agreement.get(name)
             if a and manifest["repeats"] > 1:
                 line += f"; verdict stable across repeats for {_pct(a['stable'], a['items'])} items"
@@ -297,7 +304,8 @@ def _report(
             if manifest["engine"].get("git_commit")
             else ""
         )
-        + f". Started {manifest['started_at']}, finished {manifest['finished_at']}."
+        + f". Model calls from {manifest['started_at']} to {manifest['finished_at']}"
+        + (f"; checks scored {manifest['scored_at']}." if manifest.get("scored_at") else ".")
     )
     L.append(
         f"- Assistant parameters: max_tokens {sut['max_tokens']}; per-call temperature, seed "

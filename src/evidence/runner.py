@@ -15,7 +15,7 @@ import json
 import re
 import subprocess
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -42,6 +42,23 @@ def _safe(item_id: str) -> str:
 
 def transcript_path(out: Path, item_id: str, repeat: int) -> Path:
     return out / "transcripts" / f"{_safe(item_id)}-r{repeat}.json"
+
+
+def _call_window(transcripts: list[Transcript], started: str, calls_made: int) -> tuple[str, str]:
+    """When the model calls happened, from the transcripts.
+
+    A run re-scored from transcripts already on disk makes no calls; stamping it
+    with the time of the re-score would say the whole run took no time at all.
+    """
+    if not transcripts:
+        return started, _now()
+    first = min(t.started_at for t in transcripts)
+    last = max(
+        datetime.fromisoformat(t.started_at) + timedelta(milliseconds=t.latency_ms or 0)
+        for t in transcripts
+    )
+    end = _now() if calls_made else last.astimezone(UTC).isoformat(timespec="seconds")
+    return min(first, started), end
 
 
 def _git_commit() -> str | None:
@@ -207,6 +224,16 @@ def run_pack(
         }
     judge_block = None
     if judge and judge_seen:
+        # Which corpus the judge saw is what its records say, not what this call
+        # was given: records reused from an earlier pass may have had none.
+        used = {r.get("corpus_sha256") for r in results if r.get("check") == "readability"}
+        if corpus_obj is not None and used != {corpus_obj.sha256}:
+            corpus_note = (
+                "judge records carry no regulation passages" if used == {None}
+                else f"judge records carry corpus sha256 {sorted(map(str, used))}"
+            )
+            corpus_obj.close()
+            corpus_obj = None
         judge_block = {
             "model_id": judge_seen["model_id"],
             "endpoint": judge_seen["endpoint"],
@@ -227,6 +254,7 @@ def run_pack(
             "rubric": "readability",
         }
     regulatory = assess(pack.regulatory_context)
+    window = _call_window(transcripts, started, calls_made)
     manifest: dict[str, Any] = {
         "run_id": run_id,
         "engine": {
@@ -259,8 +287,9 @@ def run_pack(
             "context_sha256": regulatory.context_sha256,
             "status": regulatory.status,
         },
-        "started_at": started,
-        "finished_at": _now(),
+        "started_at": window[0],
+        "finished_at": window[1],
+        "scored_at": _now(),
     }
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     (out / "regulations.json").write_text(regulatory.model_dump_json(indent=2), encoding="utf-8")
