@@ -64,10 +64,44 @@ async function loadPacks() {
     .join("");
   document.querySelectorAll("#packs .pack[data-pack]").forEach((b) =>
     b.addEventListener("click", () => choosePack(b.dataset.pack, packs.find((p) => p.pack_id === b.dataset.pack))));
+  const first = packs.find((p) => !p.error);
+  if (first && !state.pack) await loadSdd(first.pack_id);
+}
+
+/* Where the cases come from: the SDD recipe behind a pack, its run, and the scorecard's cut. */
+async function loadSdd(packId) {
+  let d;
+  try { d = await api(`/api/packs/${packId}/sdd`); } catch (e) { $("sdd-card").hidden = true; return; }
+  const s = d.sdd || {}, pop = d.population || {};
+  $("sdd-installed").innerHTML = d.sdd_installed
+    ? `<span class="badge good">SDD installed here</span>`
+    : `<span class="badge">SDD not installed here · use the hosted one</span>`;
+  const st = (html) => `<span class="st">${html}</span>`, ar = `<span class="ar">→</span>`;
+  $("sdd-flow").innerHTML = [
+    st(`SDD recipe <code class="inline">${esc(s.spec || "—")}</code>`),
+    st(`<b>${s.generated ?? "—"}</b> applications · seed ${esc(s.seed ?? "—")}`),
+    st(`scorecard: <b>${pop.approve ?? "—"}</b> approve · <b>${pop.refer ?? "—"}</b> refer · <b>${pop.decline ?? "—"}</b> decline`),
+    st(`<b>${d.cases}</b> referred cases kept, closest to the line`),
+    st(`marking key per case`),
+  ].join(ar);
+  const r = d.recipe;
+  const names = (xs) => xs.map((x) => `<code class="inline">${esc(x)}</code>`).join(" ");
+  $("sdd-recipe").innerHTML = r ? `<thead><tr><th>in the recipe</th><th>fields</th><th>what it means for a briefing</th></tr></thead><tbody>
+    <tr><td>Hidden, never written out</td><td>${names(r.hidden)} <span class="tag">+ ${r.noise_terms} noise terms</span></td><td class="wrap">The truth about the applicant. The assistant has to infer it, as an underwriter would.</td></tr>
+    <tr><td>Read from the hidden tier, with noise</td><td class="wrap">${names(r.derived)}</td><td class="wrap">The evidence. The facts a decision turns on come from here.</td></tr>
+    <tr><td>Set per application, not from the tier</td><td class="wrap">${names(r.independent)}</td><td class="wrap">What was asked for and how it is documented. A good borrower can ask for too much.</td></tr>
+    <tr><td>No path to the outcome</td><td class="wrap">${names(r.no_path)}</td><td class="wrap">Citing one as a reason is citing noise — the decoy check.</td></tr></tbody>` : "";
+  $("sdd-notmarked").innerHTML = d.no_path_not_marked.length
+    ? `<div class="note" style="margin-top:10px">Not marked as decoys in this pack: ${names(d.no_path_not_marked)}. They have no path to the outcome here, but an underwriter could reasonably weigh them and the lending policy does not rule them out, so citing one is not counted as an error.</div>` : "";
+  $("sdd-open").href = d.links.space; $("sdd-source").href = d.links.source;
+  $("sdd-spec").hidden = !d.spec_download; if (d.spec_download) $("sdd-spec").href = d.spec_download;
+  $("sdd-prov").textContent = `${d.pack_id} · SDD spec hash ${s.spec_sha256 || "—"} · built ${(d.built_at || "").slice(0, 10)}`;
+  $("sdd-card").hidden = false;
 }
 
 async function choosePack(id, meta) {
   state.pack = id; state.packMeta = meta; state.caseIndex = -1; state.caseData = null;
+  loadSdd(id);
   $("pack-name").textContent = `${id} v${meta.version}`; $("pack-name").hidden = false;
   enable("pack", true); enable("case"); enable("run");
   try {
@@ -319,6 +353,7 @@ async function openRun(runId) {
     : `<tr><td class="nul">No failures.</td></tr>`;
   $("ev-failures").querySelectorAll("tr[data-item]").forEach((tr) => tr.addEventListener("click", () => { showEvCase(state.evCases.indexOf(tr.dataset.item), 0); window.scrollTo({ top: 0, behavior: "smooth" }); }));
   $("ev-report").innerHTML = md(d.report || "");
+  renderReaders(runId, d.readers);
   renderDecision(d.decision); renderAct(d.diagnosis, d.recommendations);
   if (state.evCases.length) showEvCase(0, 0);
   enable("evidence", true); enable("verify");
@@ -328,6 +363,39 @@ async function openRun(runId) {
 const VERDICT_CLASS = { "GO": "go", "GO WITH CONDITIONS": "cond", "NO-GO": "nogo", "INCONCLUSIVE": "inc", "ACCEPT": "go", "REJECT": "nogo", "NO EFFECT": "none" };
 const STATUS_BADGE = { go: "good", conditional: "warn", no_go: "bad", insufficient: "", not_run: "", improved: "good", regressed: "bad", possibly_worse: "warn", no_clear_change: "", not_comparable: "" };
 const pc = (x) => (x == null ? "—" : `${Math.round(x * 100)}%`);
+
+/* One evidence pack, a report per reader. */
+async function showReader(runId, r) {
+  document.querySelectorAll("#rd-tabs .tab").forEach((t) => t.setAttribute("aria-selected", t.dataset.r === r.name));
+  $("rd-question").innerHTML = `<b>${esc(r.for)}</b> — ${esc(r.question)}`;
+  const url = `/api/runs/${runId}/readers/${r.name}`;
+  const res = await fetch(url);
+  state.readerText = res.ok ? await res.text() : ""; state.readerTitle = `${runId} — ${r.title}`;
+  $("rd-body").innerHTML = res.ok ? md(state.readerText) : `<p class="nul">Not available for this run.</p>`;
+  $("rd-download").href = url;
+}
+
+function renderReaders(runId, readers) {
+  const av = (readers || []).filter((r) => r.available);
+  $("ev-readers-card").hidden = !av.length;
+  if (!av.length) return;
+  $("rd-tabs").innerHTML = av.map((r) => `<button class="tab" data-r="${esc(r.name)}" title="${esc(r.for)}">${esc(r.title)}</button>`).join("");
+  $("rd-tabs").querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => showReader(runId, av.find((r) => r.name === t.dataset.r))));
+  showReader(runId, av[0]);
+}
+
+const PRINT_CSS = `@page { size: A4; margin: 16mm; } body { font: 10.5pt/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: #111; }
+  h1 { font-size: 15pt; margin: 0 0 6pt; } h2 { font-size: 11.5pt; margin: 14pt 0 5pt; border-top: 1px solid #ccc; padding-top: 7pt; } h3 { font-size: 10.5pt; }
+  table { border-collapse: collapse; width: 100%; font-size: 9pt; margin: 4pt 0 8pt; } th, td { border-bottom: 1px solid #ddd; padding: 3pt 5pt; text-align: left; vertical-align: top; }
+  th { font-size: 8pt; text-transform: uppercase; letter-spacing: .04em; color: #555; } code { font: 8.5pt Menlo, Consolas, monospace; }
+  blockquote { margin: 6pt 0; padding: 4pt 10pt; border-left: 3px solid #76b900; background: #f5f7f2; } pre { font: 8.5pt Menlo, monospace; background: #f4f4f4; padding: 6pt; white-space: pre-wrap; }
+  tr, blockquote, pre { page-break-inside: avoid; }`;
+$("rd-print").addEventListener("click", () => {
+  const w = window.open("", "_blank");
+  if (!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(state.readerTitle || "report")}</title><style>${PRINT_CSS}</style></head><body>${md(state.readerText || "")}</body></html>`);
+  w.document.close(); w.focus(); w.print();
+});
 
 function renderDecision(dec) {
   $("ev-decision-card").hidden = !dec;
@@ -385,13 +453,16 @@ $("ev-next").addEventListener("click", () => showEvCase(state.evIndex + 1, state
 /* A small markdown renderer for report.md: headings, tables, lists, code, bold. */
 function md(src) {
   const inline = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<i>$2</i>");
-  const out = []; let list = null, table = null;
-  const flush = () => { if (list) { out.push(`<ul>${list.join("")}</ul>`); list = null; } if (table) { out.push(`<table>${table.join("")}</table>`); table = null; } };
+  const out = []; let list = null, table = null, quote = null, code = null, listTag = "ul";
+  const flush = () => { if (list) { out.push(`<${listTag}>${list.join("")}</${listTag}>`); list = null; } if (table) { out.push(`<table>${table.join("")}</table>`); table = null; } if (quote) { out.push(`<blockquote>${quote.join(" ")}</blockquote>`); quote = null; } };
   for (const raw of src.split("\n")) {
     const line = raw.replace(/\s+$/, "");
+    if (/^```/.test(line)) { if (code) { out.push(`<pre>${code.join("\n")}</pre>`); code = null; } else { flush(); code = []; } continue; }
+    if (code) { code.push(esc(raw)); continue; }
+    if (/^> ?/.test(line)) { if (list || table) flush(); quote = quote || []; quote.push(inline(line.replace(/^> ?/, ""))); continue; }
     if (/^\|/.test(line)) { if (/^\|[\s:-]*\|[\s:|-]*$/.test(line)) continue; const cells = line.replace(/^\|/, "").replace(/\|\s*$/, "").split("|").map((c) => inline(c.trim())); table = table || []; table.push(table.length ? `<tr>${cells.map((c) => `<td>${c}</td>`).join("")}</tr>` : `<tr>${cells.map((c) => `<th>${c}</th>`).join("")}</tr>`); continue; }
-    if (/^\s*[-*•] /.test(line)) { if (table) flush(); list = list || []; list.push(`<li>${inline(line.replace(/^\s*[-*•] /, ""))}</li>`); continue; }
-    if (/^\s*\d+[.)] /.test(line)) { if (table) flush(); list = list || []; list.push(`<li>${inline(line.replace(/^\s*\d+[.)] /, ""))}</li>`); continue; }
+    if (/^\s*[-*•] /.test(line)) { if (table || quote || (list && listTag !== "ul")) flush(); listTag = "ul"; list = list || []; list.push(`<li>${inline(line.replace(/^\s*[-*•] /, ""))}</li>`); continue; }
+    if (/^\s*\d+[.)] /.test(line)) { if (table || quote || (list && listTag !== "ol")) flush(); listTag = "ol"; list = list || []; list.push(`<li>${inline(line.replace(/^\s*\d+[.)] /, ""))}</li>`); continue; }
     flush();
     if (/^# /.test(line)) out.push(`<h1>${inline(line.slice(2))}</h1>`);
     else if (/^## /.test(line)) out.push(`<h2>${inline(line.slice(3))}</h2>`);

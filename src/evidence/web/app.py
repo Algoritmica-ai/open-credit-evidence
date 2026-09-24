@@ -18,6 +18,7 @@ result. Logic belongs in the engine where the CLI can reach it too.
 
 from __future__ import annotations
 
+import importlib.util
 import io
 import json
 import os
@@ -31,6 +32,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import yaml
 from fastapi import Body, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -40,6 +42,7 @@ from evidence.adapters.nvidia_build import endpoint_for
 from evidence.checks import available_checks, run_checks
 from evidence.contracts.item import BenchmarkItem
 from evidence.evidence import verify_run, write_evidence
+from evidence.evidence.readers import READERS
 from evidence.pack import Pack, load_pack
 from evidence.regulations import assess
 from evidence.runner import run_pack
@@ -179,6 +182,85 @@ def packs() -> list[dict[str, Any]]:
             }
         )
     return out
+
+
+SDD_LINKS = {
+    "space": "https://huggingface.co/spaces/Algoritmica/synthetic-data-designer",
+    "source": "https://github.com/Algoritmica-ai/deeploans/tree/main/synthetic-data-designer",
+}
+
+
+def _spec_path(pack: Pack) -> Path | None:
+    """The SDD recipe a pack was generated from: a repo path, or spec.yaml kept in the pack."""
+    name = (pack.manifest.get("sdd") or {}).get("spec")
+    if not name:
+        return None
+    for base in (ROOT, pack.path):
+        path = (base / name).resolve()
+        if path.is_file() and path.suffix in (".yaml", ".yml") and (
+            path.is_relative_to(ROOT.resolve()) or path.is_relative_to(pack.path.resolve())
+        ):
+            return path
+    return None
+
+
+def _recipe(spec: Path) -> dict[str, Any]:
+    """What the recipe hides, what it writes out, and what has no path to the outcome.
+
+    Read from the YAML itself, so it works without SDD installed. A column is
+    hidden when its role is ``helper`` (dropped before the data is written),
+    read from the hidden tier when ``derived``, and has no path to the outcome
+    when its description says DECOY.
+    """
+    doc = yaml.safe_load(spec.read_text(encoding="utf-8")) or {}
+    cols = doc.get("columns") or []
+    helpers = [c["name"] for c in cols if c.get("role") == "helper"]
+    return {
+        "title": (doc.get("meta") or {}).get("title"),
+        "hidden": [n for n in helpers if not n.startswith("_")],
+        "noise_terms": sum(1 for n in helpers if n.startswith("_")),
+        "derived": [c["name"] for c in cols if c.get("role") == "derived"],
+        "independent": [
+            c["name"] for c in cols
+            if c.get("role") == "static" and c["name"] != "application_id"
+            and not str(c.get("description", "")).upper().startswith("DECOY")
+        ],
+        "no_path": [
+            c["name"] for c in cols
+            if str(c.get("description", "")).upper().startswith("DECOY")
+        ],
+    }
+
+
+@app.get("/api/packs/{pack_id}/sdd")
+def pack_sdd(pack_id: str) -> dict[str, Any]:
+    """Where a pack's cases came from: the SDD recipe, the run of it, and the scorecard's cut."""
+    pack = _pack(pack_id)
+    spec = _spec_path(pack)
+    recipe = _recipe(spec) if spec else None
+    marked = sorted({r for i in pack.items for r in i.grading.decoy_refs})
+    return {
+        "pack_id": pack.pack_id,
+        "sdd": pack.manifest.get("sdd"),
+        "population": pack.manifest.get("population"),
+        "cases": len(pack.items),
+        "scorecard_version": pack.manifest.get("scorecard_version"),
+        "built_at": pack.manifest.get("built_at"),
+        "recipe": recipe,
+        "decoys_marked": marked,
+        "no_path_not_marked": sorted(set(recipe["no_path"]) - set(marked)) if recipe else [],
+        "spec_download": f"/api/packs/{pack.pack_id}/spec" if spec else None,
+        "sdd_installed": importlib.util.find_spec("sdd") is not None,
+        "links": SDD_LINKS,
+    }
+
+
+@app.get("/api/packs/{pack_id}/spec")
+def pack_spec(pack_id: str) -> FileResponse:
+    spec = _spec_path(_pack(pack_id))
+    if spec is None:
+        raise HTTPException(404, "this pack does not carry its SDD recipe")
+    return FileResponse(spec, media_type="application/yaml", filename=spec.name)
 
 
 @app.get("/api/packs/{pack_id}/items")
@@ -545,7 +627,23 @@ def run_detail(run_id: str) -> dict[str, Any]:
         },
         "transcripts": sorted(p.name for p in (path / "transcripts").glob("*.json")),
         "sealed": (path / "checksums.sha256").is_file(),
+        "readers": [
+            {"name": name} | meta | {"available": (ev / "readers" / f"{name}.md").is_file()}
+            for name, meta in READERS.items()
+        ],
     }
+
+
+@app.get("/api/runs/{run_id}/readers/{name}")
+def run_reader(run_id: str, name: str) -> FileResponse:
+    """One reader's report, as markdown: business, credit-risk, compliance, operations, …"""
+    if name not in READERS:
+        raise HTTPException(404, f"no reader {name!r}; readers: {', '.join(READERS)}")
+    path = _run_dir(run_id) / "evidence" / "readers" / f"{name}.md"
+    if not path.is_file():
+        raise HTTPException(404, "this run was written before reader reports; rewrite it")
+    return FileResponse(path, media_type="text/markdown; charset=utf-8",
+                        filename=f"{run_id}-{name}.md")
 
 
 @app.get("/api/compare")

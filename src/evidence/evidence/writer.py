@@ -15,6 +15,8 @@ Layout inside a run directory::
       diagnosis.json     a root cause for every failing result
       recommendations.json  what to change, and who can
       thresholds.yaml    the bank's go / no-go thresholds (defaults if none given)
+      readers/           the same evidence as a report per reader: business (one page),
+                         credit-risk, compliance, operations, vendor, auditor
       obligations.yaml   the pack's claims, copied verbatim
     checksums.sha256     every file above; ``evidence verify`` recomputes and compares
 
@@ -48,6 +50,7 @@ from evidence.evidence.assess import (
     recommend,
     report_sections,
 )
+from evidence.evidence.readers import build_readers
 
 CHECKSUMS = "checksums.sha256"
 
@@ -91,6 +94,31 @@ def _report(
     regulatory: dict[str, Any],
     lead: list[str] | None = None,
 ) -> str:
+    lines, _ = _report_lines(manifest, summary, pack_obligations, regulatory, lead)
+    return "\n".join(lines) + "\n"
+
+
+def report_parts(
+    manifest: dict[str, Any],
+    summary: dict[str, Any],
+    pack_obligations: dict[str, Any],
+    regulatory: dict[str, Any],
+) -> dict[str, list[str]]:
+    """The full report's sections by name, for the reader reports that reuse them."""
+    lines, marks = _report_lines(manifest, summary, pack_obligations, regulatory, None)
+    order = sorted(marks.items(), key=lambda kv: kv[1])
+    return {name: lines[start:(order[i + 1][1] if i + 1 < len(order) else len(lines))]
+            for i, (name, start) in enumerate(order)}
+
+
+def _report_lines(
+    manifest: dict[str, Any],
+    summary: dict[str, Any],
+    pack_obligations: dict[str, Any],
+    regulatory: dict[str, Any],
+    lead: list[str] | None,
+) -> tuple[list[str], dict[str, int]]:
+    marks: dict[str, int] = {"header": 0}
     checks = summary["checks"]
     agreement = summary["repeat_agreement"]
     sut = manifest["sut"]
@@ -126,6 +154,7 @@ def _report(
         "transcript in `transcripts/`; `checksums.sha256` covers all of them."
     )
     L.append("")
+    marks["lead"] = len(L)
     L.extend(lead or [])
 
     def check_lines(name: str) -> list[str]:
@@ -160,6 +189,7 @@ def _report(
             )
         return [line]
 
+    marks["obligations"] = len(L)
     for ob in by_obligation(pack_obligations, checks):
         level = (ob["level"] or "").upper().replace("_", " ")
         L.append(f"## {ob['title']} ({ob['id']}) — {level}")
@@ -216,6 +246,7 @@ def _report(
             L.append("No check that evidences this obligation ran in this pack.")
         L.append("")
 
+    marks["outside_grid"] = len(L)
     placed = {n for ob in by_obligation(pack_obligations, checks) for n in ob["checks"]}
     placed |= {
         ob["judge"]["name"] for ob in by_obligation(pack_obligations, checks) if ob.get("judge")
@@ -228,6 +259,7 @@ def _report(
             L.extend(check_lines(name))
         L.append("")
 
+    marks["reproducibility"] = len(L)
     if manifest["repeats"] > 1:
         L.append("## Reproducibility")
         L.append("")
@@ -247,6 +279,7 @@ def _report(
             L.append(f"- `{name}`: {_pct(a['stable'], a['items'])} ({a['agreement']}){flips}")
         L.append("")
 
+    marks["rule_pack"] = len(L)
     juris = regulatory.get("jurisdiction") or "—"
     L.append(f"## Lender's process evidence — jurisdiction rule pack ({juris})")
     L.append("")
@@ -272,6 +305,7 @@ def _report(
         )
     L.append("")
 
+    marks["failures"] = len(L)
     L.append("## Failures, by item")
     L.append("")
     failing = summary["failing"]
@@ -287,6 +321,7 @@ def _report(
             )
     L.append("")
 
+    marks["produced"] = len(L)
     L.append("## How this was produced")
     L.append("")
     sdd = manifest["pack"].get("sdd") or {}
@@ -317,6 +352,7 @@ def _report(
         "`evidence verify <run> --recompute`."
     )
     L.append("")
+    marks["non_claims"] = len(L)
     L.append("## What this pack does not claim")
     L.append("")
     L.append(
@@ -324,7 +360,7 @@ def _report(
         "and does not measure fairness across a population. The judge's scores are a model "
         "opinion about readability and are reported, not gated."
     )
-    return "\n".join(L) + "\n"
+    return L, marks
 
 
 def _dump(obj: Any) -> str:
@@ -365,6 +401,8 @@ def build_evidence(run: Path) -> dict[str, str]:
     diagnosis = diagnose(results)
     recs = recommend(diagnosis)
     decision = decide(summary, diagnosis, thresholds, obligations)
+    readers = build_readers(manifest, results, summary, diagnosis, recs, decision, obligations,
+                            report_parts(manifest, summary, obligations, regulatory))
     return {
         "evidence/summary.json": json.dumps(summary, indent=2),
         "evidence/diagnosis.json": _dump(diagnosis),
@@ -372,6 +410,7 @@ def build_evidence(run: Path) -> dict[str, str]:
         "evidence/decision.json": _dump(decision),
         "evidence/report.md": _report(manifest, summary, obligations, regulatory,
                                       lead=report_sections(decision, diagnosis, recs)),
+        **readers,
     }
 
 
@@ -399,6 +438,7 @@ def write_evidence(
             encoding="utf-8",
         )
     files = build_evidence(run)
+    (ev / "readers").mkdir(exist_ok=True)
     for rel, body in files.items():
         (run / rel).write_text(body, encoding="utf-8")
     n = seal(run)

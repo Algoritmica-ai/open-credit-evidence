@@ -3,7 +3,7 @@
 """``evidence`` — run a pack, write the evidence pack, verify it.
 
 evidence run packs/underwriter-sample --repeats 3 --out runs/2026-10-07
-evidence report runs/2026-10-07 [--rewrite --thresholds bank_thresholds.yaml]
+evidence report runs/2026-10-07 [--rewrite --thresholds bank_thresholds.yaml] [--for business]
 evidence verify runs/2026-10-07 [--recompute --pack packs/underwriter-sample]
 evidence compare runs/before runs/after
 evidence rules packs/underwriter-sample
@@ -19,6 +19,7 @@ from pathlib import Path
 
 from evidence.checks import available_checks
 from evidence.evidence import verify_run, write_evidence
+from evidence.evidence.readers import READERS
 from evidence.pack import load_pack
 from evidence.regulations import assess
 from evidence.runner import run_pack
@@ -89,7 +90,7 @@ def _cmd_report(a: argparse.Namespace) -> int:
         thresholds = yaml.safe_load(Path(a.thresholds).read_text()) if a.thresholds else None
         res = write_evidence(Path(a.run), thresholds=thresholds)
         print(f"rewrote  evidence/ and re-sealed {res['files_sealed']} files", file=sys.stderr)
-    path = Path(a.run) / "evidence" / "report.md"
+    path = Path(a.run) / "evidence" / (f"readers/{a.reader}.md" if a.reader else "report.md")
     if not path.is_file():
         print(f"{path} not found", file=sys.stderr)
         return 1
@@ -214,6 +215,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--rewrite", action="store_true",
                    help="rebuild evidence/ from the results first (no model calls) and re-seal")
     p.add_argument("--thresholds", help="with --rewrite: the bank's thresholds.yaml")
+    p.add_argument("--for", dest="reader", choices=list(READERS),
+                   help="print one reader's report instead of the full report.md")
     p.set_defaults(fn=_cmd_report)
 
     cp = sub.add_parser("compare", help="did a change help? two runs, case by case")

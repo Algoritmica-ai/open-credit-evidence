@@ -137,8 +137,14 @@ runs/<run_id>/
   results.jsonl                    one record per (item, repeat, check): item_id, repeat, check + the check-result shape above
   transcripts/<item>-r<n>.json     one Transcript per (item, repeat)
   regulations.json                 jurisdiction rule-pack assessment
-  evidence/report.md               the pack, by obligation
+  evidence/report.md               the pack, by obligation, with everything
+  evidence/readers/<reader>.md     the same evidence per reader: business (one page), credit-risk,
+                                   compliance, operations, vendor, auditor
   evidence/summary.json            the numbers behind the report
+  evidence/decision.json           GO / GO WITH CONDITIONS / NO-GO / INCONCLUSIVE, against thresholds.yaml
+  evidence/diagnosis.json          a root cause for every failing result
+  evidence/recommendations.json    what to change, and who can
+  evidence/thresholds.yaml         the bank's thresholds — an input
   evidence/obligations.yaml        the pack's claims, copied verbatim
   checksums.sha256                 every file above
 ```

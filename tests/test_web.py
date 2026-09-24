@@ -128,6 +128,27 @@ def test_run_evidence_verify_and_tamper(client):
     assert [r["run_id"] for r in client.get("/api/runs").json()] == [job["run_id"]]
     # the original run is untouched
     assert client.post(f"/api/runs/{job['run_id']}/verify", json={}).json()["ok"]
+    # one report per reader, each served as markdown
+    readers = {r["name"]: r for r in d["readers"]}
+    assert set(readers) == {"business", "credit-risk", "compliance", "operations", "vendor",
+                            "auditor"}
+    assert all(r["available"] for r in readers.values())
+    biz = client.get(f"/api/runs/{job['run_id']}/readers/business")
+    assert biz.status_code == 200 and biz.text.startswith("# underwriter-sample — the assistant")
+    assert client.get(f"/api/runs/{job['run_id']}/readers/nobody").status_code == 404
+
+
+def test_pack_shows_where_its_cases_come_from(client):
+    d = client.get("/api/packs/underwriter-sample/sdd").json()
+    assert d["sdd"]["seed"] == 7 and d["population"]["refer"] == 25 and d["cases"] == 20
+    assert d["recipe"]["hidden"] == ["capacity_tier"]
+    assert "bureau_score" in d["recipe"]["derived"]
+    assert "age_band" in d["recipe"]["no_path"] and "age_band" in d["decoys_marked"]
+    # no path to the outcome in the recipe, but not marked as a decoy in the pack
+    assert d["no_path_not_marked"] == ["tenure_months"]
+    assert d["links"]["space"].startswith("https://huggingface.co/spaces/Algoritmica/")
+    spec = client.get(d["spec_download"])
+    assert spec.status_code == 200 and "capacity_tier" in spec.text
 
 
 def test_schema_upload_and_results(client, tmp_path):
