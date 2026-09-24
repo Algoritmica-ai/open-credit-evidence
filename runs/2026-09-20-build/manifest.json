@@ -3,12 +3,12 @@
   "engine": {
     "package": "credit-evidence-engine",
     "version": "0.1.0.dev0",
-    "git_commit": "3f8c89d"
+    "git_commit": "555f692"
   },
   "pack": {
     "pack_id": "underwriter-sample",
-    "version": "0.3.0",
-    "items_sha256": "d249c1f217beb7e73bb4687f6e2304639c4940369f6262b856461c8545fed710",
+    "version": "0.4.0",
+    "items_sha256": "8e5b71d6f49d90af4259db5c7c39a8ec0d1eb2bbbf3d885a6e6b8b6d62334566",
     "items": 20,
     "domain": "credit_underwriting",
     "scorecard_version": "underwriter-scorecard-0.1.0",
@@ -67,5 +67,5 @@
   },
   "started_at": "2026-09-20T04:26:43+00:00",
   "finished_at": "2026-09-20T09:01:02+00:00",
-  "scored_at": "2026-09-24T01:36:52+00:00"
+  "scored_at": "2026-09-24T02:16:42+00:00"
 }

@@ -49,29 +49,6 @@
   },
   {
     "rank": 3,
-    "cause": "wrong_lever",
-    "title": "Require a 'what would change the outcome' section",
-    "lever": "template",
-    "owner": "bank",
-    "raise_with_vendor": false,
-    "why": "The assistant did not name a valid way to change the outcome.",
-    "action": "Require a final section, \"What would change the outcome\", naming the levers the policy allows \u2014 for example: bureau score increase; gross annual increase.",
-    "addresses": {
-      "briefings": 10,
-      "results": 10,
-      "items": 7,
-      "checks": [
-        "flip_accuracy"
-      ]
-    },
-    "example": {
-      "item_id": "underwriter-sample:case_review:APP000155:complete",
-      "repeat": 1
-    },
-    "prove_it": "Run the pack again with the change, then compare the two runs (Compare step, or `evidence compare <before> <after>`). Accept it only if it helps and nothing else gets worse."
-  },
-  {
-    "rank": 4,
     "cause": "misread_threshold",
     "title": "Hand the assistant the rules the case breached",
     "lever": "context",
@@ -89,6 +66,29 @@
     },
     "example": {
       "item_id": "underwriter-sample:case_review:APP000107:complete",
+      "repeat": 0
+    },
+    "prove_it": "Run the pack again with the change, then compare the two runs (Compare step, or `evidence compare <before> <after>`). Accept it only if it helps and nothing else gets worse."
+  },
+  {
+    "rank": 4,
+    "cause": "wrong_lever",
+    "title": "Require a 'what would change the outcome' section",
+    "lever": "template",
+    "owner": "bank",
+    "raise_with_vendor": false,
+    "why": "The assistant did not name a valid way to change the outcome.",
+    "action": "Require a final section, \"What would change the outcome\", naming the levers the policy allows \u2014 for example: bureau score increase.",
+    "addresses": {
+      "briefings": 3,
+      "results": 3,
+      "items": 2,
+      "checks": [
+        "flip_accuracy"
+      ]
+    },
+    "example": {
+      "item_id": "underwriter-sample:case_review:APP000588:complete",
       "repeat": 0
     },
     "prove_it": "Run the pack again with the change, then compare the two runs (Compare step, or `evidence compare <before> <after>`). Accept it only if it helps and nothing else gets worse."

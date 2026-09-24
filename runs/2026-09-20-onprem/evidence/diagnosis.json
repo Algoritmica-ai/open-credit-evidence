@@ -1,5 +1,5 @@
 {
-  "failures": 70,
+  "failures": 60,
   "causes": [
     {
       "cause": "miscalculated",
@@ -8,25 +8,11 @@
       "owner": "bank",
       "why": "The assistant worked a figure out itself and got it wrong.",
       "briefings": 33,
-      "results": 35,
+      "results": 34,
       "items": 19,
       "checks": [
-        "flip_accuracy",
         "material_omission",
         "numeric_fidelity"
-      ]
-    },
-    {
-      "cause": "wrong_lever",
-      "label": "Wrong or no way to change the outcome",
-      "lever": "template",
-      "owner": "bank",
-      "why": "The assistant did not name a valid way to change the outcome.",
-      "briefings": 15,
-      "results": 15,
-      "items": 12,
-      "checks": [
-        "flip_accuracy"
       ]
     },
     {
@@ -53,6 +39,19 @@
       "items": 4,
       "checks": [
         "comparison_fidelity"
+      ]
+    },
+    {
+      "cause": "wrong_lever",
+      "label": "Wrong or no way to change the outcome",
+      "lever": "template",
+      "owner": "bank",
+      "why": "The assistant did not name a valid way to change the outcome.",
+      "briefings": 6,
+      "results": 6,
+      "items": 4,
+      "checks": [
+        "flip_accuracy"
       ]
     }
   ],
@@ -434,19 +433,6 @@
       }
     },
     {
-      "item_id": "underwriter-sample:case_review:APP000155:complete",
-      "repeat": 1,
-      "check": "flip_accuracy",
-      "cause": "wrong_lever",
-      "lever": "template",
-      "owner": "bank",
-      "detail": {
-        "levers": [
-          "gross_annual increase"
-        ]
-      }
-    },
-    {
       "item_id": "underwriter-sample:case_review:APP000172:complete",
       "repeat": 0,
       "check": "numeric_fidelity",
@@ -492,19 +478,6 @@
         ],
         "sentences": [
           "*   **No Dependants:** The applicant has no dependants, which typically supports repayment capacity."
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000172:complete",
-      "repeat": 1,
-      "check": "flip_accuracy",
-      "cause": "wrong_lever",
-      "lever": "template",
-      "owner": "bank",
-      "detail": {
-        "levers": [
-          "gross_annual increase"
         ]
       }
     },
@@ -581,19 +554,6 @@
     },
     {
       "item_id": "underwriter-sample:case_review:APP000323:complete",
-      "repeat": 0,
-      "check": "flip_accuracy",
-      "cause": "wrong_lever",
-      "lever": "template",
-      "owner": "bank",
-      "detail": {
-        "levers": [
-          "gross_annual increase"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000323:complete",
       "repeat": 2,
       "check": "numeric_fidelity",
       "cause": "miscalculated",
@@ -602,19 +562,6 @@
       "detail": {
         "figures_not_in_file": [
           "41.5%"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000323:complete",
-      "repeat": 2,
-      "check": "flip_accuracy",
-      "cause": "wrong_lever",
-      "lever": "template",
-      "owner": "bank",
-      "detail": {
-        "levers": [
-          "gross_annual increase"
         ]
       }
     },
@@ -661,19 +608,6 @@
       }
     },
     {
-      "item_id": "underwriter-sample:case_review:APP000407:complete",
-      "repeat": 2,
-      "check": "flip_accuracy",
-      "cause": "wrong_lever",
-      "lever": "template",
-      "owner": "bank",
-      "detail": {
-        "levers": [
-          "gross_annual increase"
-        ]
-      }
-    },
-    {
       "item_id": "underwriter-sample:case_review:APP000448:complete",
       "repeat": 0,
       "check": "numeric_fidelity",
@@ -683,19 +617,6 @@
       "detail": {
         "figures_not_in_file": [
           "48.4%"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000448:complete",
-      "repeat": 0,
-      "check": "flip_accuracy",
-      "cause": "wrong_lever",
-      "lever": "template",
-      "owner": "bank",
-      "detail": {
-        "levers": [
-          "gross_annual increase"
         ]
       }
     },
@@ -770,19 +691,6 @@
     },
     {
       "item_id": "underwriter-sample:case_review:APP000522:complete",
-      "repeat": 1,
-      "check": "flip_accuracy",
-      "cause": "wrong_lever",
-      "lever": "template",
-      "owner": "bank",
-      "detail": {
-        "levers": [
-          "gross_annual increase"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000522:complete",
       "repeat": 2,
       "check": "numeric_fidelity",
       "cause": "miscalculated",
@@ -827,19 +735,6 @@
     },
     {
       "item_id": "underwriter-sample:case_review:APP000543:complete",
-      "repeat": 0,
-      "check": "flip_accuracy",
-      "cause": "wrong_lever",
-      "lever": "template",
-      "owner": "bank",
-      "detail": {
-        "levers": [
-          "gross_annual increase"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000543:complete",
       "repeat": 1,
       "check": "decoy_citation",
       "cause": "decoy_blamed",
@@ -877,19 +772,6 @@
       "detail": {
         "missing": [
           "dti_ratio"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000543:complete",
-      "repeat": 2,
-      "check": "flip_accuracy",
-      "cause": "miscalculated",
-      "lever": "context",
-      "owner": "bank",
-      "detail": {
-        "levers": [
-          "gross_annual increase"
         ]
       }
     },
@@ -955,19 +837,6 @@
       "detail": {
         "false_comparisons": [
           "653 < 600"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000678:complete",
-      "repeat": 0,
-      "check": "flip_accuracy",
-      "cause": "wrong_lever",
-      "lever": "template",
-      "owner": "bank",
-      "detail": {
-        "levers": [
-          "gross_annual increase"
         ]
       }
     },

@@ -1,5 +1,5 @@
 {
-  "failures": 67,
+  "failures": 60,
   "causes": [
     {
       "cause": "miscalculated",
@@ -30,19 +30,6 @@
       ]
     },
     {
-      "cause": "wrong_lever",
-      "label": "Wrong or no way to change the outcome",
-      "lever": "template",
-      "owner": "bank",
-      "why": "The assistant did not name a valid way to change the outcome.",
-      "briefings": 10,
-      "results": 10,
-      "items": 7,
-      "checks": [
-        "flip_accuracy"
-      ]
-    },
-    {
       "cause": "misread_threshold",
       "label": "Threshold comparison stated wrongly",
       "lever": "context",
@@ -53,6 +40,19 @@
       "items": 3,
       "checks": [
         "comparison_fidelity"
+      ]
+    },
+    {
+      "cause": "wrong_lever",
+      "label": "Wrong or no way to change the outcome",
+      "lever": "template",
+      "owner": "bank",
+      "why": "The assistant did not name a valid way to change the outcome.",
+      "briefings": 3,
+      "results": 3,
+      "items": 2,
+      "checks": [
+        "flip_accuracy"
       ]
     }
   ],
@@ -520,19 +520,6 @@
     },
     {
       "item_id": "underwriter-sample:case_review:APP000155:complete",
-      "repeat": 1,
-      "check": "flip_accuracy",
-      "cause": "wrong_lever",
-      "lever": "template",
-      "owner": "bank",
-      "detail": {
-        "levers": [
-          "gross_annual increase"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000155:complete",
       "repeat": 2,
       "check": "numeric_fidelity",
       "cause": "miscalculated",
@@ -581,32 +568,6 @@
         "figures_not_in_file": [
           "\u00a3703",
           "\u00a3143"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000323:complete",
-      "repeat": 1,
-      "check": "flip_accuracy",
-      "cause": "wrong_lever",
-      "lever": "template",
-      "owner": "bank",
-      "detail": {
-        "levers": [
-          "gross_annual increase"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000407:complete",
-      "repeat": 0,
-      "check": "flip_accuracy",
-      "cause": "wrong_lever",
-      "lever": "template",
-      "owner": "bank",
-      "detail": {
-        "levers": [
-          "gross_annual increase"
         ]
       }
     },
@@ -731,19 +692,6 @@
       }
     },
     {
-      "item_id": "underwriter-sample:case_review:APP000522:complete",
-      "repeat": 2,
-      "check": "flip_accuracy",
-      "cause": "wrong_lever",
-      "lever": "template",
-      "owner": "bank",
-      "detail": {
-        "levers": [
-          "gross_annual increase"
-        ]
-      }
-    },
-    {
       "item_id": "underwriter-sample:case_review:APP000543:complete",
       "repeat": 0,
       "check": "decoy_citation",
@@ -787,19 +735,6 @@
         ],
         "sentences": [
           "Additionally, the applicant has a delinquency on their file and falls into the \"thin file\" category due to the age of their credit file."
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000543:complete",
-      "repeat": 1,
-      "check": "flip_accuracy",
-      "cause": "wrong_lever",
-      "lever": "template",
-      "owner": "bank",
-      "detail": {
-        "levers": [
-          "gross_annual increase"
         ]
       }
     },
@@ -849,19 +784,6 @@
     },
     {
       "item_id": "underwriter-sample:case_review:APP000588:complete",
-      "repeat": 1,
-      "check": "flip_accuracy",
-      "cause": "wrong_lever",
-      "lever": "template",
-      "owner": "bank",
-      "detail": {
-        "levers": [
-          "bureau_score increase"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000588:complete",
       "repeat": 2,
       "check": "numeric_fidelity",
       "cause": "miscalculated",
@@ -886,19 +808,6 @@
         ],
         "sentences": [
           "*   **File Age:** 40 months (Considered a \"thin file\" as it is under 24 months of established credit behaviour, though this applicant exceeds the 24-month mark, the file is still relatively young)."
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000588:complete",
-      "repeat": 2,
-      "check": "flip_accuracy",
-      "cause": "wrong_lever",
-      "lever": "template",
-      "owner": "bank",
-      "detail": {
-        "levers": [
-          "bureau_score increase"
         ]
       }
     },

@@ -10,10 +10,9 @@
     "action": "Pass in the figures the rules engine already computed \u2014 the debt-to-income ratio and the limit it breaches \u2014 instead of relying on the model's arithmetic. If wrong figures persist once the correct ones are in front of it, that is the vendor's to fix.",
     "addresses": {
       "briefings": 25,
-      "results": 27,
+      "results": 26,
       "items": 15,
       "checks": [
-        "flip_accuracy",
         "material_omission",
         "numeric_fidelity"
       ]
@@ -55,11 +54,11 @@
     "owner": "bank",
     "raise_with_vendor": false,
     "why": "The assistant did not name a valid way to change the outcome.",
-    "action": "Require a final section, \"What would change the outcome\", naming the levers the policy allows \u2014 for example: bureau score increase; gross annual increase.",
+    "action": "Require a final section, \"What would change the outcome\", naming the levers the policy allows \u2014 for example: amount decrease; bureau score increase; existing credit monthly decrease; gross annual increase; term months increase.",
     "addresses": {
-      "briefings": 11,
-      "results": 11,
-      "items": 9,
+      "briefings": 9,
+      "results": 9,
+      "items": 7,
       "checks": [
         "flip_accuracy"
       ]

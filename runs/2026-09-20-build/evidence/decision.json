@@ -37,12 +37,12 @@
     {
       "check": "flip_accuracy",
       "status": "conditional",
-      "pass_rate": 0.8,
-      "passed": 48,
-      "failed": 12,
+      "pass_rate": 0.85,
+      "passed": 51,
+      "failed": 9,
       "go": 0.9,
       "conditional": 0.75,
-      "repeat_agreement": 0.5,
+      "repeat_agreement": 0.65,
       "meaning": "The briefing did not say correctly what would change the outcome."
     },
     {
@@ -62,8 +62,8 @@
     "material_omission: the same case got different verdicts across repeats for 25% of cases (limit 10%).",
     "numeric_fidelity: the same case got different verdicts across repeats for 65% of cases (limit 10%).",
     "decoy_citation: the same case got different verdicts across repeats for 45% of cases (limit 10%).",
-    "flip_accuracy: pass rate 80% is below the GO threshold of 90%.",
-    "flip_accuracy: the same case got different verdicts across repeats for 50% of cases (limit 10%)."
+    "flip_accuracy: pass rate 85% is below the GO threshold of 90%.",
+    "flip_accuracy: the same case got different verdicts across repeats for 35% of cases (limit 10%)."
   ],
   "risks": [
     {
@@ -73,10 +73,9 @@
       "owner": "bank",
       "why": "The assistant worked a figure out itself and got it wrong.",
       "briefings": 25,
-      "results": 27,
+      "results": 26,
       "items": 15,
       "checks": [
-        "flip_accuracy",
         "material_omission",
         "numeric_fidelity"
       ]
@@ -100,9 +99,9 @@
       "lever": "template",
       "owner": "bank",
       "why": "The assistant did not name a valid way to change the outcome.",
-      "briefings": 11,
-      "results": 11,
-      "items": 9,
+      "briefings": 9,
+      "results": 9,
+      "items": 7,
       "checks": [
         "flip_accuracy"
       ]

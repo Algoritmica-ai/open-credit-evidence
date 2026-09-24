@@ -1,6 +1,6 @@
 # For the assistant's vendor — what failed, and how to reproduce it
 
-Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.3.0 · run `2026-09-24-onprem-nano` · model calls 2026-09-24
+Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.4.0 · run `2026-09-24-onprem-nano` · model calls 2026-09-24
 
 ## The system under test
 
@@ -12,7 +12,7 @@ Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred
 - **Hand the assistant the figures your systems already computed** — 34 briefings. The bank will first pass in the figures the rules engine already computed — the debt-to-income ratio and the limit it breaches — instead of relying on the model's arithmetic. If wrong figures persist once the correct ones are in front of it, that is the vendor's to fix.
 - **Hand the assistant the rules the case breached** — 5 briefings. The bank will first pass in the list of policy rules the case breached, as the rules engine decided them, so the assistant reports them instead of comparing figures with thresholds itself. If it still states a comparison the wrong way round, that is the vendor's to fix.
 
-## Every failing result (67)
+## Every failing result (60)
 
 | case | repeat | check | detail | transcript |
 |---|---|---|---|---|
@@ -34,14 +34,7 @@ Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred
 | APP000678 | 1 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['purpose'] | `transcripts/underwriter-sample_case_review_APP000678_complete-r0.json` |
 | APP000678 | 3 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-sample_case_review_APP000678_complete-r2.json` |
 | APP000039 | 1 | `flip_accuracy` | lever not named: ['bureau_score'] | `transcripts/underwriter-sample_case_review_APP000039_complete-r0.json` |
-| APP000155 | 2 | `flip_accuracy` | named without the right direction: ['gross_annual'] | `transcripts/underwriter-sample_case_review_APP000155_complete-r1.json` |
-| APP000323 | 2 | `flip_accuracy` | named without the right direction: ['gross_annual'] | `transcripts/underwriter-sample_case_review_APP000323_complete-r1.json` |
-| APP000407 | 1 | `flip_accuracy` | named without the right direction: ['gross_annual'] | `transcripts/underwriter-sample_case_review_APP000407_complete-r0.json` |
-| APP000522 | 3 | `flip_accuracy` | named without the right direction: ['gross_annual'] | `transcripts/underwriter-sample_case_review_APP000522_complete-r2.json` |
-| APP000543 | 2 | `flip_accuracy` | named without the right direction: ['gross_annual'] | `transcripts/underwriter-sample_case_review_APP000543_complete-r1.json` |
 | APP000588 | 1 | `flip_accuracy` | named without the right direction: ['bureau_score'] | `transcripts/underwriter-sample_case_review_APP000588_complete-r0.json` |
-| APP000588 | 2 | `flip_accuracy` | named without the right direction: ['bureau_score'] | `transcripts/underwriter-sample_case_review_APP000588_complete-r1.json` |
-| APP000588 | 3 | `flip_accuracy` | named without the right direction: ['bureau_score'] | `transcripts/underwriter-sample_case_review_APP000588_complete-r2.json` |
 | APP000684 | 1 | `flip_accuracy` | named without the right direction: ['bureau_score'] | `transcripts/underwriter-sample_case_review_APP000684_complete-r0.json` |
 | APP000684 | 3 | `flip_accuracy` | named without the right direction: ['bureau_score'] | `transcripts/underwriter-sample_case_review_APP000684_complete-r2.json` |
 | APP000028 | 3 | `material_omission` | omitted 1/1 material fact(s): ['income not verified'] | `transcripts/underwriter-sample_case_review_APP000028_complete-r2.json` |
@@ -91,7 +84,7 @@ Each case ran 3 times with the same prompt, temperature 0.0 and seed 7. Cases wh
 - `material_omission`: 5 of 20 cases — APP000028, APP000039, APP000155, APP000172, APP000448
 - `numeric_fidelity`: 14 of 20 cases — APP000037, APP000039, APP000044, APP000045, APP000107, APP000155, APP000172, APP000185, APP000448, APP000522, APP000543, APP000588, APP000678, APP000684
 - `decoy_citation`: 7 of 20 cases — APP000028, APP000037, APP000044, APP000155, APP000543, APP000588, APP000678
-- `flip_accuracy`: 7 of 20 cases — APP000039, APP000155, APP000323, APP000407, APP000522, APP000543, APP000684
+- `flip_accuracy`: 3 of 20 cases — APP000039, APP000588, APP000684
 - `comparison_fidelity`: 2 of 20 cases — APP000155, APP000407
 
 ## To reproduce

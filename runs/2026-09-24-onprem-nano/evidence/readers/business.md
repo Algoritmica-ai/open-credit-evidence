@@ -1,6 +1,6 @@
 # underwriter-sample — the assistant, on one page
 
-Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.3.0 · run `2026-09-24-onprem-nano` · model calls 2026-09-24
+Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.4.0 · run `2026-09-24-onprem-nano` · model calls 2026-09-24
 
 ## Verdict: **NO-GO**
 
@@ -12,15 +12,15 @@ The assistant is not ready to brief underwriters on cases like these without cha
 |---|---|---|---|
 | stated a figure that is not in, or worked out from, the case file | 34 of 60 | 57% | at most 2% |
 | gave a field with no bearing on the outcome as a reason | 12 of 60 | 20% | at most 5% |
-| did not say correctly what would change the outcome | 11 of 60 | 18% | at most 10% |
 | compared a figure with a threshold the wrong way round | 5 of 60 | 8% | at most 2% |
 | left out a fact the decision turned on | 5 of 60 | 8% | at most 5% |
+| did not say correctly what would change the outcome | 4 of 60 | 7% | at most 10% |
 
 ## What to change first
 
 1. **Hand the assistant the figures your systems already computed** — the bank, then the vendor if it persists. Addresses 34 of 60 briefings.
 2. **Tell the assistant which fields must not be used as reasons** — the bank. Addresses 12 of 60 briefings.
-3. **Require a 'what would change the outcome' section** — the bank. Addresses 10 of 60 briefings.
+3. **Hand the assistant the rules the case breached** — the bank, then the vendor if it persists. Addresses 5 of 60 briefings.
 
 Make one change, run the pack again, and compare the two runs: a change is accepted only if it helps and nothing else gets worse.
 
