@@ -7,7 +7,7 @@ What we have, verified 16 Sep 2026, and how the framework uses it.
 | | |
 |---|---|
 | Login node | `10.130.232.14` over the `codefest.ovpn` VPN. No GPUs, no docker. SLURM commands need a login shell (`bash -l`). |
-| Team node | `rtx-3se-05-36`: 8× RTX PRO 6000 Blackwell, 97.9 GB each. One node per team (`AssocGrpNodeLimit`). |
+| Team node | Whichever node the servers job is given (8× RTX PRO 6000 Blackwell, 97.9 GB each). One node per team (`AssocGrpNodeLimit`). |
 | Getting a GPU | `srun --gres=gpu:1 -n1 -p defq --time=HH:MM:SS --pty bash`. `$CUDA_VISIBLE_DEVICES` tells you which one you got. |
 | Docker | On GPU nodes only: `module load docker`. Containers are node-level and **outside SLURM** — they survive your session and hold their GPU until stopped. `--gpus 1` takes GPU 0 regardless of your allocation; always use `--gpus "device=$CUDA_VISIBLE_DEVICES"`. |
 | Proxy | Shell sets `HTTP(S)_PROXY=http://10.130.232.8:3128`. `NO_PROXY` already covers `localhost`, `127.0.0.1`, `10.0.0.0/8`. Containers need the proxy passed in to reach NGC; `curl --noproxy '*'` for anything on the node. |
@@ -20,13 +20,35 @@ What we have, verified 16 Sep 2026, and how the framework uses it.
 
 | Role | Where | Why |
 |---|---|---|
-| Assistant (Lightning) | NIM on the team node | Fixed seed on a local vLLM is reproducible; the free endpoint was not, and took 8–150 s per call. Runner at volume needs both. |
+| Assistant (Lightning) | NIM in the servers job (`scripts/cluster/servers.sbatch`), port from 8200 | Fixed seed on a local vLLM is reproducible; the free endpoint was not, and took 8–150 s per call. Runner at volume needs both. |
 | Teacher (Ultra) | NVIDIA Build, or Curiosity B300 (`scripts/cluster/serve_ultra.sh`) | 550B; too large for a single RTX GPU. Used once, to label the judge's training set. B300 option needs 4 GPUs (NVFP4 TP4). |
-| Judge (Nano) | vLLM on the team node, GPU 7, port 8002 (`scripts/cluster/serve_nano.sh`) | Nemotron Nano 9B v2, un-tuned today — the baseline; the fine-tuned adapter is served by the same script with `ADAPTER=`. Loan files never leave the box. |
-| Embed | vLLM on the team node, GPU 6, port 8003 (`scripts/cluster/serve_embed.sh`) | Nemotron 3 Embed 1B. With this, no case content and no query leaves the node, and a local run needs no NVIDIA key. |
+| Judge (Nano) | vLLM in the servers job, next free port (`serve_nano.sh` to debug it alone) | Nemotron Nano 9B v2, un-tuned today — the baseline; the fine-tuned adapter is served by the same script with `ADAPTER=`. Loan files never leave the box. |
+| Embed | vLLM in the servers job, next free port (`serve_embed.sh` to debug it alone) | Nemotron 3 Embed 1B. With this, no case content and no query leaves the node, and a local run needs no NVIDIA key. |
 
 Switching a role is two lines in `.env`; see `.env.example`. Every `ChatResponse`
 records its `endpoint`, so a transcript can always say cloud or on-prem.
+
+## The servers as one SLURM job (the way to run them)
+
+Containers started by hand sit outside SLURM: `sacct` shows nothing for them,
+the cluster sees the team as idle, and SLURM may allocate the GPUs they hold to
+another team. `scripts/cluster/servers.sbatch` runs the assistant NIM, the Nano
+judge and the embedder as one job that holds a whole node (the team's
+allocation) for up to seven days, picks the three emptiest GPUs, takes free
+ports from 8200, and writes the endpoints to `/data/team08/runs/servers.env`.
+
+```
+sbatch ~/open-credit-evidence/scripts/cluster/servers.sbatch
+squeue --me                               # RUNNING while the servers are up
+cat /data/team08/runs/servers.env         # the six lines for the laptop's .env
+scancel <jobid>                           # stops all three
+```
+
+The node changes between submissions; always copy `servers.env`, never assume
+the address. A server that stops is restarted in place, up to five times each,
+and the log says why it stopped (`/data/team08/runs/servers-<jobid>.log`); the
+job ends only on `scancel`, the seven-day limit, or a server that keeps failing. The sections below describe the hand-started containers and are
+kept for debugging one server at a time.
 
 ## Serving the Nano judge
 

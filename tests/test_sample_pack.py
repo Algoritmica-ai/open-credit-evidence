@@ -78,6 +78,17 @@ def test_decoys_and_drivers_are_disjoint() -> None:
         assert not set(g.driver_refs) & set(g.decoy_refs), it.item_id
 
 
+def test_decoys_are_the_declared_irrelevant_fields() -> None:
+    # Tenure has zero weight but is an ordinary underwriting consideration; a weighted
+    # field that contributes nothing for one applicant is not a decoy either.
+    from evidence.packs.credit_underwriting import DECOYS
+
+    for it in _items():
+        assert set(it.grading.decoy_refs) == set(DECOYS), it.item_id
+        assert "tenure_months" not in it.grading.decoy_refs
+        assert "comparison_fidelity" in it.deterministic_checks
+
+
 def test_negative_control_fails_on_every_real_item() -> None:
     """A briefing that mentions only strengths omits the driver on every referred case."""
     strengths_only = (

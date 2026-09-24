@@ -16,6 +16,7 @@ no model — from what the assistant wrote and which other checks failed on the 
 briefing:
 
 - ``miscalculated``   it stated a figure not in, or derivable from, the case file
+- ``misread_threshold`` it stated a comparison that is false ("652 is below 600")
 - ``skipped``         the fact was in the documents it was handed, and it left it out
 - ``decoy_blamed``    it blamed a field with no bearing on the outcome
 - ``wrong_lever``     it did not say correctly what would change the outcome
@@ -23,6 +24,10 @@ briefing:
 
 A failure caused by another on the same briefing takes that cause: a briefing that
 got the ratio wrong and so never said it breached the limit is one miscalculation.
+
+Counts are given per briefing as well as per failing result: one cause on one
+briefing can fail up to three checks, and a recommendation should not look three
+times as useful as it is.
 
 **What to change, and who can.** The bank does not own the assistant and cannot
 retrain it. Each cause maps to a lever — the instructions the assistant is given,
@@ -44,6 +49,8 @@ MEANING = {
     "decoy_citation": "The briefing blamed a field with no bearing on the outcome, pointing "
                       "the underwriter at noise.",
     "flip_accuracy": "The briefing did not say correctly what would change the outcome.",
+    "comparison_fidelity": "The briefing stated a comparison that is false — a figure above "
+                           "a threshold described as below it, or the reverse.",
 }
 
 CAUSES: dict[str, dict[str, str]] = {
@@ -56,6 +63,17 @@ CAUSES: dict[str, dict[str, str]] = {
                   "ratio and the limit it breaches — instead of relying on the model's "
                   "arithmetic. If wrong figures persist once the correct ones are in front of "
                   "it, that is the vendor's to fix.",
+    },
+    "misread_threshold": {
+        "label": "Threshold comparison stated wrongly",
+        "lever": "context", "owner": "bank",
+        "why": "The assistant compared a figure with a policy threshold and got the direction "
+               "wrong.",
+        "title": "Hand the assistant the rules the case breached",
+        "action": "Pass in the list of policy rules the case breached, as the rules engine "
+                  "decided them, so the assistant reports them instead of comparing figures "
+                  "with thresholds itself. If it still states a comparison the wrong way round, "
+                  "that is the vendor's to fix.",
     },
     "skipped": {
         "label": "Fact in front of it, left out",
@@ -105,6 +123,7 @@ DEFAULT_THRESHOLDS: dict[str, Any] = {
         "numeric_fidelity": {"go": 0.98, "conditional": 0.90},
         "decoy_citation": {"go": 0.95, "conditional": 0.85},
         "flip_accuracy": {"go": 0.90, "conditional": 0.75},
+        "comparison_fidelity": {"go": 0.98, "conditional": 0.90},
     },
     "min_results": 5,
     "repeat_agreement_min": 0.90,
@@ -154,6 +173,11 @@ def diagnose(results: list[dict[str, Any]]) -> dict[str, Any]:
             omission_cause = "miscalculated" if figures_wrong else "skipped"
             add("material_omission", omission_cause, missing=missing)
 
+        if "comparison_fidelity" in failed:
+            false = [e.get("reads_as") for e in by["comparison_fidelity"].get("evidence", [])
+                     if e.get("holds") is False]
+            add("comparison_fidelity", "misread_threshold", false_comparisons=false)
+
         if "decoy_citation" in failed:
             ev = [e for e in by["decoy_citation"].get("evidence", []) if e.get("cited")]
             add("decoy_citation", "decoy_blamed",
@@ -174,16 +198,20 @@ def diagnose(results: list[dict[str, Any]]) -> dict[str, Any]:
 
     summary: dict[str, dict[str, Any]] = {}
     for d in records:
-        s = summary.setdefault(d["cause"], {"results": 0, "items": set(), "checks": set()})
+        s = summary.setdefault(d["cause"], {"results": 0, "briefings": set(), "items": set(),
+                                            "checks": set()})
         s["results"] += 1
+        s["briefings"].add((d["item_id"], d["repeat"]))
         s["items"].add(d["item_id"])
         s["checks"].add(d["check"])
     causes = sorted(
         ({"cause": c, "label": CAUSES[c]["label"], "lever": CAUSES[c]["lever"],
-          "owner": CAUSES[c]["owner"], "why": CAUSES[c]["why"], "results": s["results"],
+          "owner": CAUSES[c]["owner"], "why": CAUSES[c]["why"],
+          "briefings": len(s["briefings"]), "results": s["results"],
           "items": len(s["items"]), "checks": sorted(s["checks"])}
          for c, s in summary.items()),
-        key=lambda x: (-x["results"], x["cause"]),  # ties by name: never set order
+        # by briefings, then results; ties by name: never set order
+        key=lambda x: (-x["briefings"], -x["results"], x["cause"]),
     )
     return {"failures": len(records), "causes": causes, "records": records}
 
@@ -213,10 +241,11 @@ def recommend(diagnosis: dict[str, Any]) -> list[dict[str, Any]]:
             "title": spec["title"],
             "lever": spec["lever"],
             "owner": spec["owner"],
-            "raise_with_vendor": cause == "miscalculated",
+            "raise_with_vendor": cause in ("miscalculated", "misread_threshold"),
             "why": spec["why"],
             "action": action,
-            "addresses": {"results": c["results"], "items": c["items"], "checks": c["checks"]},
+            "addresses": {"briefings": c["briefings"], "results": c["results"],
+                          "items": c["items"], "checks": c["checks"]},
             "example": {"item_id": first["item_id"], "repeat": first["repeat"]},
             "prove_it": "Run the pack again with the change, then compare the two runs "
                         "(Compare step, or `evidence compare <before> <after>`). Accept it only "
@@ -275,6 +304,12 @@ def decide(
             conditions.append(f"{name}: the same case got different verdicts across repeats "
                               f"for {1 - ra:.0%} of cases (limit {1 - ra_min:.0%}).")
 
+    unthresholded = sorted(n for n, c in checks.items()
+                           if c.get("gated") and n not in thresholds.get("checks", {}))
+    for name in unthresholded:
+        conditions.append(f"{name} ran but has no threshold in thresholds.yaml, so it does not "
+                          f"enter this decision.")
+
     verdict = ("NO-GO" if any(r["status"] == "no_go" for r in rows)
                else "INCONCLUSIVE" if any(r["status"] in ("insufficient", "not_run") for r in rows)
                else "GO WITH CONDITIONS" if conditions else "GO")
@@ -324,19 +359,23 @@ def report_sections(decision: dict[str, Any], diagnosis: dict[str, Any],
         L.append("A root cause for every failing result, by fixed rules from what the assistant "
                  "wrote and which checks failed on the same briefing — no model involved.")
         L.append("")
-        L.append("| cause | failing results | cases | who can act | lever |")
-        L.append("|---|---|---|---|---|")
+        L.append("One cause on one briefing can fail more than one check, so briefings are "
+                 "counted separately from failing results.")
+        L.append("")
+        L.append("| cause | briefings | failing results | cases | who can act | lever |")
+        L.append("|---|---|---|---|---|---|")
         for c in diagnosis["causes"]:
-            L.append(f"| {c['label']} | {c['results']} | {c['items']} | {c['owner']} | "
-                     f"{c['lever']} |")
+            L.append(f"| {c['label']} | {c['briefings']} | {c['results']} | {c['items']} | "
+                     f"{c['owner']} | {c['lever']} |")
         L.append("")
 
     L += ["## What to change", ""]
     if not recs:
         L += ["Nothing.", ""]
     for r in recs:
-        L.append(f"{r['rank']}. **{r['title']}** — addresses {r['addresses']['results']} failing "
-                 f"results on {r['addresses']['items']} cases; {r['owner']} can act"
+        a = r["addresses"]
+        L.append(f"{r['rank']}. **{r['title']}** — addresses {a['briefings']} briefings "
+                 f"({a['results']} failing results) on {a['items']} cases; {r['owner']} can act"
                  + ("; raise with the vendor if it persists" if r["raise_with_vendor"] else "")
                  + f". {r['action']}")
     if recs:

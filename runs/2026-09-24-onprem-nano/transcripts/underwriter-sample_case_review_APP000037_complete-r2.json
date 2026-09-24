@@ -1,0 +1,27 @@
+{
+  "item_id": "underwriter-sample:case_review:APP000037:complete",
+  "run_id": "underwriter-sample-2026-09-24T011616Z",
+  "repeat": 2,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "http://10.130.232.21:8200/v1"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000037\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mrs |\n| Age band | 45-54 |\n| Employment type | permanent |\n| Employer | Meridian Health |\n| Time in current role | 79 months |\n| Postcode district | B15 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | £22,295 |\n| Income verified | Yes |\n| Existing monthly credit commitments | £367 |\n| Dependants | 2 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | £22,266 |\n| Term | 36 months |\n| Stated purpose | vehicle |\n| Indicative monthly instalment | £749 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000037\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**700** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | December 2015 (135 months) |\n| Accounts on file | 7 |\n| Searches, last 6 months | 1 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 0 |\n| Most recent delinquency | None |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, £2,000 to £40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application has been referred for underwriter review because the automated rules identified that the applicant exceeds the **40% affordability threshold**. The total monthly debt service (existing commitments plus the proposed instalment) represents **45.5%** of the applicant's gross monthly income, which sits above the policy limit of 40%.\n\n**What the File Shows – Against the Applicant:**\n*   **Affordability:** The proposed monthly instalment of £749, combined with existing monthly credit commitments of £367, results in total monthly debt service of **£1,116**. Against a gross annual income of £22,295 (gross monthly income of £1,857.92), this equates to **45.5%** of income.\n*   **Credit History:** While the credit file is clean (no defaults, CCJs, or missed payments in the last 24 months), the bureau score of **700** is above the 600 threshold that triggers automatic review, but the affordability breach is the primary driver for referral.\n\n**What Would Need to Change for a Favorable Outcome:**\nFor the application to fall within policy without underwriter intervention, the total monthly debt service must be reduced to **no more than £745.97** (40% of £1,857.92). \n\nTo achieve this, the following changes would be required:\n1.  **Reduce the loan amount or extend the term:** The current indicative instalment of £749 is only £4.03 over the threshold. Extending the term from 36 months to a longer duration (e.g., 48 or 60 months) would lower the monthly instalment to within the 40% limit.\n2.  **Reduce existing commitments:** A decrease in the current monthly credit commitments of £367 would also lower the overall ratio.\n3.  **Increase verified income:** Providing additional verified income would increase the 40% allowance, allowing for a higher monthly instalment.",
+  "latency_ms": 1858,
+  "tokens_in": 685,
+  "tokens_out": 451,
+  "provider_id": "chatcmpl-9371efd8e095e672",
+  "started_at": "2026-09-24T01:20:12+00:00",
+  "sha256": "5495967cf006ef988e6d7d01e366431f8c1eca9f1b2a158aad97a328a2c300e9"
+}

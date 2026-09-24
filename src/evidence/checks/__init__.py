@@ -48,7 +48,7 @@ def run_checks(names: list[str], *, output: str, item: BenchmarkItem) -> list[Ch
 
 def _load_all() -> None:
     # Importing registers. Kept explicit so a missing module is a loud failure.
-    from evidence.checks import decoy, flip, numeric, omission  # noqa: F401
+    from evidence.checks import comparison, decoy, flip, numeric, omission  # noqa: F401
 
 
 _load_all()

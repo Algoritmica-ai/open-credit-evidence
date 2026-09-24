@@ -63,6 +63,31 @@ def test_decoy_and_lever_causes_and_their_wording():
     assert "gross annual increase" in recs["wrong_lever"]["action"]
 
 
+def test_false_comparison_is_a_misread_threshold_raised_with_the_vendor():
+    d = diagnose([res("A", "comparison_fidelity", False, reads_as="652 < 600", holds=False)])
+    assert [x["cause"] for x in d["records"]] == ["misread_threshold"]
+    assert d["records"][0]["detail"]["false_comparisons"] == ["652 < 600"]
+    (rec,) = recommend(d)
+    assert rec["raise_with_vendor"] and rec["lever"] == "context"
+
+
+def test_one_cause_on_one_briefing_counts_once_as_a_briefing():
+    # a wrong figure that also explains the omission and the lever: 3 results, 1 briefing
+    d = diagnose([res("A", "numeric_fidelity", False, value="38.2%", grounded=False),
+                  res("A", "material_omission", False, ref="dti_ratio", matched=False),
+                  res("A", "flip_accuracy", False, ref="gross_annual", expected="increase")])
+    (c,) = d["causes"]
+    assert (c["results"], c["briefings"], c["items"]) == (3, 1, 1)
+    assert recommend(d)[0]["addresses"]["briefings"] == 1
+
+
+def test_a_check_with_no_threshold_is_named_not_silently_dropped():
+    s = _summary(20, 0)
+    s["checks"]["new_check"] = {"passed": 20, "failed": 0, "gated": True}
+    d = decide(s, {"causes": []}, DEFAULT_THRESHOLDS, {})
+    assert any(c.startswith("new_check ran but has no threshold") for c in d["conditions"])
+
+
 def test_passing_briefings_have_no_diagnosis():
     assert diagnose([res("A", "material_omission", True)])["failures"] == 0
 

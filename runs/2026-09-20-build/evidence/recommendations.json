@@ -9,6 +9,7 @@
     "why": "The assistant worked a figure out itself and got it wrong.",
     "action": "Pass in the figures the rules engine already computed \u2014 the debt-to-income ratio and the limit it breaches \u2014 instead of relying on the model's arithmetic. If wrong figures persist once the correct ones are in front of it, that is the vendor's to fix.",
     "addresses": {
+      "briefings": 25,
       "results": 27,
       "items": 15,
       "checks": [
@@ -33,6 +34,7 @@
     "why": "The assistant blamed a field that has no bearing on the outcome.",
     "action": "Add to the assistant's instructions: \"Do not cite age band, dependants as reasons; under the policy they have no bearing on the outcome.\"",
     "addresses": {
+      "briefings": 11,
       "results": 11,
       "items": 9,
       "checks": [
@@ -55,6 +57,7 @@
     "why": "The assistant did not name a valid way to change the outcome.",
     "action": "Require a final section, \"What would change the outcome\", naming the levers the policy allows \u2014 for example: bureau score increase; gross annual increase.",
     "addresses": {
+      "briefings": 11,
       "results": 11,
       "items": 9,
       "checks": [
@@ -69,6 +72,29 @@
   },
   {
     "rank": 4,
+    "cause": "misread_threshold",
+    "title": "Hand the assistant the rules the case breached",
+    "lever": "context",
+    "owner": "bank",
+    "raise_with_vendor": true,
+    "why": "The assistant compared a figure with a policy threshold and got the direction wrong.",
+    "action": "Pass in the list of policy rules the case breached, as the rules engine decided them, so the assistant reports them instead of comparing figures with thresholds itself. If it still states a comparison the wrong way round, that is the vendor's to fix.",
+    "addresses": {
+      "briefings": 7,
+      "results": 7,
+      "items": 3,
+      "checks": [
+        "comparison_fidelity"
+      ]
+    },
+    "example": {
+      "item_id": "underwriter-sample:case_review:APP000107:complete",
+      "repeat": 0
+    },
+    "prove_it": "Run the pack again with the change, then compare the two runs (Compare step, or `evidence compare <before> <after>`). Accept it only if it helps and nothing else gets worse."
+  },
+  {
+    "rank": 5,
     "cause": "skipped",
     "title": "Tell the assistant to lead with the reason for review",
     "lever": "instructions",
@@ -77,6 +103,7 @@
     "why": "The fact was in the documents the assistant was handed, and it left it out.",
     "action": "Add to the assistant's instructions: \"State the reason for review first, with the figure and the limit it breaches.\"",
     "addresses": {
+      "briefings": 6,
       "results": 6,
       "items": 5,
       "checks": [

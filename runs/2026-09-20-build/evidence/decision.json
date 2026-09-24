@@ -44,6 +44,17 @@
       "conditional": 0.75,
       "repeat_agreement": 0.5,
       "meaning": "The briefing did not say correctly what would change the outcome."
+    },
+    {
+      "check": "comparison_fidelity",
+      "status": "no_go",
+      "pass_rate": 0.8833,
+      "passed": 53,
+      "failed": 7,
+      "go": 0.98,
+      "conditional": 0.9,
+      "repeat_agreement": 0.95,
+      "meaning": "The briefing stated a comparison that is false \u2014 a figure above a threshold described as below it, or the reverse."
     }
   ],
   "conditions": [
@@ -61,6 +72,7 @@
       "lever": "context",
       "owner": "bank",
       "why": "The assistant worked a figure out itself and got it wrong.",
+      "briefings": 25,
       "results": 27,
       "items": 15,
       "checks": [
@@ -75,6 +87,7 @@
       "lever": "instructions",
       "owner": "bank",
       "why": "The assistant blamed a field that has no bearing on the outcome.",
+      "briefings": 11,
       "results": 11,
       "items": 9,
       "checks": [
@@ -87,6 +100,7 @@
       "lever": "template",
       "owner": "bank",
       "why": "The assistant did not name a valid way to change the outcome.",
+      "briefings": 11,
       "results": 11,
       "items": 9,
       "checks": [

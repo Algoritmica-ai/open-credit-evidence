@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2026 Algoritmica GmbH
-"""numeric_fidelity, decoy_citation and flip_accuracy on a hand-built item."""
+"""numeric_fidelity, comparison_fidelity, decoy_citation and flip_accuracy on a hand-built item."""
 
 from evidence.checks import run_checks
 from evidence.contracts.item import BenchmarkItem, FlipRef, GradingSpec, ItemContext
@@ -159,3 +159,37 @@ def test_tolerance_does_not_excuse_a_wrong_ratio():
     out = "The ratio is 47.2%."  # true 47.5%; 0.6% off, well outside chained rounding
     (r,) = run_checks(["numeric_fidelity"], output=out, item=item())
     assert not r.passed
+
+
+# ---------------------------------------------------------------- comparison
+
+
+def test_false_comparison_fails():
+    out = "The bureau score of 652 is below the 600 threshold requiring review."
+    (r,) = run_checks(["comparison_fidelity"], output=out, item=item())
+    assert not r.passed and r.score == 0.0
+    assert r.evidence[0]["reads_as"] == "652 < 600"
+
+
+def test_true_comparisons_pass():
+    out = (
+        "Debt service is 47.5%, which exceeds the policy maximum of 40%. The score of 652 is "
+        "above the 600 threshold. The file is 75 months old, exceeding the 24-month minimum."
+    )
+    (r,) = run_checks(["comparison_fidelity"], output=out, item=item())
+    assert r.passed and len(r.evidence) == 3, r.evidence
+
+
+def test_negation_turns_the_relation_round():
+    out = "At 36.7%, the ratio does not exceed the 40% limit."
+    (r,) = run_checks(["comparison_fidelity"], output=out, item=item())
+    assert r.passed and r.evidence[0]["reads_as"] == "36.7 ≤ 40"
+
+
+def test_targets_and_mixed_kinds_are_not_comparisons():
+    out = (
+        "The ratio of 47.5% would need to fall below 40%. A loan of £9,323 over 36 months. "
+        "Income of £1,327 is above 40% of the limit."
+    )
+    (r,) = run_checks(["comparison_fidelity"], output=out, item=item())
+    assert r.passed and r.detail == "no comparison stated", r.evidence

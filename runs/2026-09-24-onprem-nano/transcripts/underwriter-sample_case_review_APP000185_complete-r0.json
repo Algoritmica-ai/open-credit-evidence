@@ -1,0 +1,27 @@
+{
+  "item_id": "underwriter-sample:case_review:APP000185:complete",
+  "run_id": "underwriter-sample-2026-09-24T011616Z",
+  "repeat": 0,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "http://10.130.232.21:8200/v1"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000185\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mr |\n| Age band | 35-44 |\n| Employment type | permanent |\n| Employer | Solent Marine |\n| Time in current role | 74 months |\n| Postcode district | CF24 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | £22,105 |\n| Income verified | Yes |\n| Existing monthly credit commitments | £560 |\n| Dependants | 0 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | £9,655 |\n| Term | 60 months |\n| Stated purpose | debt consolidation |\n| Indicative monthly instalment | £219 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000185\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**597** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | December 2021 (63 months) |\n| Accounts on file | 5 |\n| Searches, last 6 months | 2 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 2 |\n| Most recent delinquency | 14 months ago |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, £2,000 to £40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application was referred for underwriter review because the applicant’s bureau score of **597** falls below the policy threshold of 600, and the proposed loan pushes the applicant’s total monthly debt service above the **40% affordability threshold**.\n\n**What the File Shows – Against the Applicant:**\n*   **Credit Score:** 597 (Below 600 threshold).\n*   **Affordability:** The proposed £219 monthly instalment, combined with existing commitments of £560, results in total monthly debt service of **£779**. Against a gross monthly income of £1,842 (derived from £22,105 annual income), this represents **42.3%** of income, exceeding the 40% limit.\n*   **Payment History:** The applicant has **2 delinquencies** in the last 24 months, with the most recent occurring 14 months ago.\n\n**What the File Shows – In favour of the Applicant:**\n*   **Income:** Gross annual income of £22,105 is verified.\n*   **Employment:** The applicant has held a permanent role at Solent Marine for 74 months, demonstrating stability.\n*   **Defaults:** There are no defaults or CCJs recorded on the file.\n*   **File Age:** The credit file is well-established at 63 months (open since December 2021).\n\n**Conditions for a Different Outcome:**\nFor this application to be approved within policy without further underwriter discretion, one of the following would need to change:\n1.  **Affordability:** The proposed instalment or existing commitments would need to be reduced so that total monthly debt service falls to **40% or below** of gross monthly income (i.e., £737 or less).\n2.  **Income:** Additional verified income would need to be provided to lower the debt-service ratio.\n3.  **Term:** A longer loan term would be required to reduce the monthly instalment to within the 40% threshold.",
+  "latency_ms": 1891,
+  "tokens_in": 688,
+  "tokens_out": 446,
+  "provider_id": "chatcmpl-be8819379396ee79",
+  "started_at": "2026-09-24T01:20:22+00:00",
+  "sha256": "7b964dec54c227fa2cfded100acda5e83c00b32bfdb379f9051fab7ce2a873e5"
+}

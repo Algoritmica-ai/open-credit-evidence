@@ -71,7 +71,7 @@
 - debt-to-income ratio of 47% exceeds the 40% policy limit
 - the 40% debt-to-income policy limit
 
-**Decoys (no bearing):** age_band, delinquencies_24m, delinquency_recency_months, dependants, employer_name, employment_stability, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -144,7 +144,7 @@
 - the 40% debt-to-income policy limit
 - a missed payment within the last 12 months
 
-**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -216,7 +216,7 @@
 - debt-to-income ratio of 50% exceeds the 40% policy limit
 - the 40% debt-to-income policy limit
 
-**Decoys (no bearing):** age_band, delinquencies_24m, delinquency_recency_months, dependants, employer_name, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -288,7 +288,7 @@
 - 2 missed payment(s) in the last 24 months
 - a missed payment within the last 12 months
 
-**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -359,7 +359,7 @@
 **Marking key — a briefing must surface:**
 - a bureau score of 501
 
-**Decoys (no bearing):** age_band, delinquency_recency_months, dependants, employer_name, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -431,7 +431,7 @@
 - debt-to-income ratio of 48% exceeds the 40% policy limit
 - the 40% debt-to-income policy limit
 
-**Decoys (no bearing):** age_band, delinquencies_24m, delinquency_recency_months, dependants, employer_name, employment_stability, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -502,7 +502,7 @@
 **Marking key — a briefing must surface:**
 - income not verified
 
-**Decoys (no bearing):** age_band, delinquencies_24m, delinquency_recency_months, dependants, employer_name, employment_stability, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -574,7 +574,7 @@
 - debt-to-income ratio of 44% exceeds the 40% policy limit
 - the 40% debt-to-income policy limit
 
-**Decoys (no bearing):** age_band, delinquency_recency_months, dependants, employer_name, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -646,7 +646,7 @@
 - debt-to-income ratio of 60% exceeds the 40% policy limit
 - the 40% debt-to-income policy limit
 
-**Decoys (no bearing):** age_band, delinquencies_24m, delinquency_recency_months, dependants, employer_name, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -718,7 +718,7 @@
 - 2 missed payment(s) in the last 24 months
 - the 40% debt-to-income policy limit
 
-**Decoys (no bearing):** age_band, delinquency_recency_months, dependants, employer_name, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -789,7 +789,7 @@
 **Marking key — a briefing must surface:**
 - a bureau score of 570
 
-**Decoys (no bearing):** age_band, delinquencies_24m, delinquency_recency_months, dependants, employer_name, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -861,7 +861,7 @@
 - debt-to-income ratio of 43% exceeds the 40% policy limit
 - the 40% debt-to-income policy limit
 
-**Decoys (no bearing):** age_band, delinquencies_24m, delinquency_recency_months, dependants, employer_name, employment_stability, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -934,7 +934,7 @@
 - the 40% debt-to-income policy limit
 - a missed payment within the last 12 months
 
-**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -1006,7 +1006,7 @@
 - debt-to-income ratio of 55% exceeds the 40% policy limit
 - the 40% debt-to-income policy limit
 
-**Decoys (no bearing):** age_band, delinquency_recency_months, dependants, employer_name, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -1078,7 +1078,7 @@
 - debt-to-income ratio of 47% exceeds the 40% policy limit
 - the 40% debt-to-income policy limit
 
-**Decoys (no bearing):** age_band, delinquencies_24m, delinquency_recency_months, dependants, employer_name, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -1151,7 +1151,7 @@
 - the 40% debt-to-income policy limit
 - a missed payment within the last 12 months
 
-**Decoys (no bearing):** age_band, dependants, employer_name, employment_stability, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -1223,7 +1223,7 @@
 - debt-to-income ratio of 45% exceeds the 40% policy limit
 - the 40% debt-to-income policy limit
 
-**Decoys (no bearing):** age_band, delinquency_recency_months, dependants, employer_name, employment_stability, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -1295,7 +1295,7 @@
 - a bureau score of 549
 - the 40% debt-to-income policy limit
 
-**Decoys (no bearing):** age_band, delinquencies_24m, delinquency_recency_months, dependants, employer_name, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -1367,7 +1367,7 @@
 - debt-to-income ratio of 50% exceeds the 40% policy limit
 - the 40% debt-to-income policy limit
 
-**Decoys (no bearing):** age_band, delinquencies_24m, delinquency_recency_months, dependants, employer_name, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title
 
 
 ---
@@ -1438,4 +1438,4 @@
 **Marking key — a briefing must surface:**
 - a bureau score of 532
 
-**Decoys (no bearing):** age_band, delinquencies_24m, delinquency_recency_months, dependants, employer_name, postcode_district, purpose, tenure_months, title
+**Decoys (no bearing):** age_band, dependants, employer_name, postcode_district, purpose, title

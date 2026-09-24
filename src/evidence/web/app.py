@@ -23,6 +23,7 @@ import json
 import os
 import re
 import shutil
+import tempfile
 import threading
 import uuid
 import zipfile
@@ -494,6 +495,8 @@ def run_status(job_id: str) -> dict[str, Any]:
 def runs() -> list[dict[str, Any]]:
     out = []
     for path in sorted(RUNS.glob("*/manifest.json"), reverse=True):
+        if path.parent.name.endswith("-tampered"):
+            continue  # left behind by the tamper demo of an older version
         m = _read_json(path)
         summary_path = path.parent / "evidence" / "summary.json"
         checks = _read_json(summary_path)["checks"] if summary_path.is_file() else {}
@@ -583,13 +586,19 @@ def verify(run_id: str, payload: dict[str, Any] = _OPTIONAL_BODY) -> dict[str, A
 
 @app.post("/api/runs/{run_id}/tamper-demo")
 def tamper_demo(run_id: str, payload: dict[str, Any] = _OPTIONAL_BODY) -> dict[str, Any]:
-    """Copy the run, change one digit in one transcript, verify both. The original is untouched."""
+    """Copy the run, change one digit in one transcript, verify both. The original is untouched.
+
+    The copy lives in a temporary directory and is deleted once verified, so it
+    never appears among the runs as if it were one.
+    """
     src = _run_dir(run_id)
     if not (src / "checksums.sha256").is_file():
         raise HTTPException(400, "run is not sealed")
-    dst = RUNS / f"{run_id}-tampered"
-    if dst.exists():
-        shutil.rmtree(dst)
+    with tempfile.TemporaryDirectory(prefix="evidence-tamper-") as tmp:
+        return _tamper_copy(src, Path(tmp) / f"{run_id}-tampered", payload)
+
+
+def _tamper_copy(src: Path, dst: Path, payload: dict[str, Any]) -> dict[str, Any]:
     shutil.copytree(src, dst)
     names = sorted(p.name for p in (dst / "transcripts").glob("*.json"))
     if not names:
@@ -612,7 +621,7 @@ def tamper_demo(run_id: str, payload: dict[str, Any] = _OPTIONAL_BODY) -> dict[s
             "from": text[pos - 12 : pos + 4],
             "to": edited[pos - 12 : pos + 4],
         },
-        "copy": dst.name,
+        "copy": f"{dst.name} (temporary, deleted after verifying)",
     }
 
 

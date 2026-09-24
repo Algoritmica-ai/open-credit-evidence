@@ -38,6 +38,7 @@ It also explains the boundary of the product without argument:
 |---|---|---|---|
 | State every fact the decision turned on | Three documents, ~20 fields, a few matter | `material_omission` against the marking key | instant |
 | Use only numbers that are in the file | On 16 Sep, 8 of 10 briefings stated a wrong ratio | `numeric_fidelity` — every number must be in, or derivable from, the case file | instant |
+| Compare figures with thresholds the right way round | "652 is below 600" reads well and passes the other checks | `comparison_fidelity` — every stated comparison is tested on its own numbers | instant |
 | Ignore fields with no bearing on the outcome | Age band, dependants, postcode look relevant | `decoy_citation` — decoys are known by construction | instant |
 | Say what would have to change | Needs the policy, not a restatement of it | `flip_refs` — field and direction | instant |
 | Give the same verdict every time | Serving is not deterministic | N runs, agreement rate | minutes |

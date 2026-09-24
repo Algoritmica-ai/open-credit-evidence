@@ -62,8 +62,9 @@ def _print_decision(run: Path) -> None:
         print(f"         - {c}")
     if recs:
         r = recs[0]
-        print(f"change   {r['title']} ({r['addresses']['results']} failing results, "
-              f"{r['owner']} can act)")
+        a = r["addresses"]
+        print(f"change   {r['title']} ({a['briefings']} briefings, {a['results']} failing "
+              f"results, {r['owner']} can act)")
 
 
 def _print_summary(summary: dict, repeats: int) -> None:

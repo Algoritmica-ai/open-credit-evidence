@@ -44,12 +44,25 @@
       "conditional": 0.75,
       "repeat_agreement": 0.4,
       "meaning": "The briefing did not say correctly what would change the outcome."
+    },
+    {
+      "check": "comparison_fidelity",
+      "status": "conditional",
+      "pass_rate": 0.9,
+      "passed": 54,
+      "failed": 6,
+      "go": 0.98,
+      "conditional": 0.9,
+      "repeat_agreement": 0.8,
+      "meaning": "The briefing stated a comparison that is false \u2014 a figure above a threshold described as below it, or the reverse."
     }
   ],
   "conditions": [
     "numeric_fidelity: the same case got different verdicts across repeats for 85% of cases (limit 10%).",
     "decoy_citation: the same case got different verdicts across repeats for 45% of cases (limit 10%).",
-    "flip_accuracy: the same case got different verdicts across repeats for 60% of cases (limit 10%)."
+    "flip_accuracy: the same case got different verdicts across repeats for 60% of cases (limit 10%).",
+    "comparison_fidelity: pass rate 90% is below the GO threshold of 98%.",
+    "comparison_fidelity: the same case got different verdicts across repeats for 20% of cases (limit 10%)."
   ],
   "risks": [
     {
@@ -58,6 +71,7 @@
       "lever": "context",
       "owner": "bank",
       "why": "The assistant worked a figure out itself and got it wrong.",
+      "briefings": 33,
       "results": 35,
       "items": 19,
       "checks": [
@@ -72,6 +86,7 @@
       "lever": "template",
       "owner": "bank",
       "why": "The assistant did not name a valid way to change the outcome.",
+      "briefings": 15,
       "results": 15,
       "items": 12,
       "checks": [
@@ -84,6 +99,7 @@
       "lever": "instructions",
       "owner": "bank",
       "why": "The assistant blamed a field that has no bearing on the outcome.",
+      "briefings": 14,
       "results": 14,
       "items": 10,
       "checks": [

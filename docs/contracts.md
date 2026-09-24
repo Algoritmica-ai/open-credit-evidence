@@ -36,7 +36,7 @@ One line of `packs/<pack>/items.jsonl`. Typed as `BenchmarkItem` in `contracts/i
     "driver_aliases": { "dti_ratio": ["debt to income", "DTI", "debt service", "..."] },
     "driver_directions": { "dti_ratio": "decreases" },
     "decoy_refs":    ["age_band", "dependants", "employer_name", "postcode_district", "..."],
-    "decoy_aliases": { "tenure_months": ["time in role", "..."] },
+    "decoy_aliases": { "postcode_district": ["postcode", "..."] },
     "omission_refs":   ["dti_ratio", "policy_limit_dti"],
     "omission_labels": { "dti_ratio": "...", "policy_limit_dti": "the 40% debt-to-income policy limit" },
     "omission_aliases": { "dti_ratio": ["47%", "exceeds the 40%", "..."], "policy_limit_dti": ["40%", "..."] },
