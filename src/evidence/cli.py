@@ -14,6 +14,7 @@ evidence checks
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -266,6 +267,35 @@ def _cmd_corpus(a: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_panel(a: argparse.Namespace) -> int:
+    from evidence import panel_run
+    from evidence.corpus import Corpus
+    from evidence.evidence import write_evidence
+
+    run = Path(a.run)
+    manifest = json.loads((run / "manifest.json").read_text(encoding="utf-8"))
+    pack = load_pack(a.pack or Path("packs") / manifest["pack"]["pack_id"])
+    corpus = None
+    if a.corpus != "none":
+        corpus = Corpus(a.corpus or ((manifest.get("judge") or {}).get("corpus") or {}).get(
+            "jurisdiction") or "EU")
+        ec = corpus.check_embedder()
+        if not ec["ok"]:
+            print(f"the embedder does not reproduce the {corpus.jurisdiction} index (cosine "
+                  f"{ec['cosine']}); rebuild it first", file=sys.stderr)
+            return 1
+    bundles, facts = panel_run.bundles(run, pack, corpus, limit=a.limit)
+    started = datetime.now(UTC).isoformat(timespec="seconds")
+    runner = panel_run.run_nemoclaw if a.runtime == "nemoclaw" else panel_run.run_direct
+    records, runtime = runner(bundles, workers=a.workers, log=print)
+    m = panel_run.record(run, records, facts, runtime, started)
+    out = write_evidence(run)
+    print(f"panel: {m['briefings']} briefings recorded ({m['errors']} errors) in "
+          f"{run / 'panel'}; evidence rebuilt and {out['files_sealed']} files sealed")
+    print(f"report {run / 'evidence' / 'panel.md'}")
+    return 0
+
+
 def _cmd_checks(_: argparse.Namespace) -> int:
     for name in available_checks():
         print(name)
@@ -338,6 +368,18 @@ def main(argv: list[str] | None = None) -> int:
     k.add_argument("--obtained", help="verify-sources: how the saved texts were obtained and "
                    "any processing (e.g. PDF text with page numbers removed)")
     k.set_defaults(fn=_cmd_corpus)
+
+    pn = sub.add_parser("panel", help="three-agent judge panel over a finished run "
+                        "(reported, never gated)")
+    pn.add_argument("run")
+    pn.add_argument("--runtime", choices=["direct", "nemoclaw"], default="direct",
+                    help="direct: here, on the judge endpoint; nemoclaw: inside the NemoClaw "
+                    "sandbox on the node (EVIDENCE_PANEL_SSH='<login host> <node>')")
+    pn.add_argument("--pack", help="pack directory (default packs/<pack id of the run>)")
+    pn.add_argument("--corpus", help="regulation corpus (default: the run judge's; 'none')")
+    pn.add_argument("--limit", type=int, help="only the first N items")
+    pn.add_argument("--workers", type=int, default=4, help="briefings reviewed at once")
+    pn.set_defaults(fn=_cmd_panel)
 
     w = sub.add_parser("ui", help="serve the local web UI")
     w.add_argument("--host", default="127.0.0.1")
