@@ -237,3 +237,50 @@ def test_targets_and_mixed_kinds_are_not_comparisons():
     )
     (r,) = run_checks(["comparison_fidelity"], output=out, item=item())
     assert r.passed and r.detail == "no comparison stated", r.evidence
+
+
+# ------------------------------------------------ periods and claims
+
+
+def test_a_monthly_figure_over_an_annual_one_is_not_grounded():
+    # (316 + 314) / 15,922 × 100 = 3.96%: arithmetic on the file, not a debt ratio
+    out = "Debt service of £630 is 3.96% of gross income."
+    (r,) = run_checks(["numeric_fidelity"], output=out, item=item())
+    assert not r.passed and "3.96%" in r.detail
+    # the ratio an underwriter computes, monthly over monthly, still is
+    (r,) = run_checks(["numeric_fidelity"], output="Debt service is 47.5% of income.", item=item())
+    assert r.passed, r.detail
+
+
+def _claims_item():
+    it = item()
+    it.grading.claim_aliases = {"dti_ratio": ["debt service", "dti", "affordability"]}
+    return it
+
+
+def test_a_breach_its_own_figure_denies_fails():
+    out = ("Referred because total monthly debt service exceeds the 40% affordability threshold. "
+           "Against monthly income of £2,303, this represents a debt service ratio of 33.2%.")
+    (r,) = run_checks(["claim_consistency"], output=out, item=_claims_item())
+    assert not r.passed
+    assert r.evidence[0]["claims"] == "above 40%" and r.evidence[0]["contradicted_by"] == 33.2
+
+
+def test_a_breach_its_figure_supports_passes():
+    out = ("Debt service exceeds the 40% threshold. The debt service ratio is 47.5%, "
+           "and would need to fall below 40% for approval.")
+    (r,) = run_checks(["claim_consistency"], output=out, item=_claims_item())
+    assert r.passed, r.detail
+
+
+def test_remedies_and_targets_are_not_claims():
+    out = ("The DTI is 47.5%. Reduce the loan amount so that debt service does not exceed 40% "
+           "of income, e.g. below 35%.")
+    (r,) = run_checks(["claim_consistency"], output=out, item=_claims_item())
+    assert r.passed and r.detail == "no limit claim stated", r.evidence
+
+
+def test_a_negated_claim_turns_round():
+    out = "Debt service does not exceed the 40% limit: the DTI is 47.5%."
+    (r,) = run_checks(["claim_consistency"], output=out, item=_claims_item())
+    assert not r.passed and r.evidence[0]["claims"] == "at or below 40%"

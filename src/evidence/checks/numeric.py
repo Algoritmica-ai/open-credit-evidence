@@ -21,9 +21,14 @@ Grounding order for each number in the output:
    amount, a debt-service ratio ``(a + b) / (c / 12)``, the headroom under a
    limit ``c / 12 × r% − a``, the income that would meet a limit
    ``(a + b) / r% × 12``, or months expressed as years. Each derivation is
-   written out in the evidence. A derived value may differ from the stated one
-   by up to 0.15% — chained rounding (a monthly income rounded before the next
-   step) is not a wrong number, but 48.4% for 48.5% is. Derivations are typed:
+   written out in the evidence. Derivations respect periods: every amount in
+   the file is monthly, annual, or neither, read from its own label ("Gross
+   annual income", "Existing monthly credit commitments"), and a monthly figure
+   is never divided by an annual one or added to it — "880 / 19,171 × 100" is
+   arithmetic on the file, but not arithmetic an underwriter would do. A
+   derived value may differ from the stated one by up to 0.15% — chained
+   rounding (a monthly income rounded before the next step) is not a wrong
+   number, but 48.4% for 48.5% is. Derivations are typed:
    a percentage in the briefing can only be grounded by a ratio, an amount only
    by amount arithmetic, and small operands (counts, age bands) are excluded so
    that coincidences between three-digit results and arbitrary small numbers do
@@ -112,40 +117,96 @@ def _matches(x: float, decimals: int, candidates: list[float]) -> bool:
     return any(_close(c, x, decimals) for c in candidates)
 
 
-def _derivations(doc: list[float], pcts: list[float]) -> list[tuple[float, str, str]]:
-    """Every one-step derivation an underwriter would plausibly make: (value, kind, expr)."""
+_ANNUAL_WORDS = re.compile(r"\b(annual\w*|per annum|a year|yearly|p\.a\.)", re.I)
+_MONTHLY_WORDS = re.compile(r"\b(monthly|per month|a month|/month|instalment|repayment)", re.I)
+
+
+def _periods(text: str) -> dict[float, str | None]:
+    """Each value in the file, tagged "year", "month" or None from the label on its own line.
+
+    A value that appears under labels of different periods is left untagged:
+    the check will not guess which one the briefing meant.
+    """
+    clean = _LIST_MARKER.sub("", text)
+    seen: dict[float, set[str | None]] = {}
+    for m in _NUM.finditer(clean):
+        line_start = clean.rfind("\n", 0, m.start()) + 1
+        label = clean[line_start : m.start()]
+        period = ("year" if _ANNUAL_WORDS.search(label)
+                  else "month" if _MONTHLY_WORDS.search(label) else None)
+        seen.setdefault(_parse(m), set()).add(period)
+    return {v: (next(iter(p)) if len(p) == 1 else None) for v, p in seen.items()}
+
+
+def _derivations(
+    doc: list[float], pcts: list[float], period: dict[float, str | None] | None = None
+) -> list[tuple[float, str, str]]:
+    """Every one-step derivation an underwriter would plausibly make: (value, kind, expr).
+
+    ``period`` tags file values monthly or annual. Untagged values combine with
+    anything; tagged ones only as an underwriter would: never a monthly figure
+    over an annual one, never the two added, twelfths only of what is not
+    already monthly, twelvefolds only of what is not already annual.
+    """
+    period = period or {}
+
+    def p(x: float) -> str | None:
+        return period.get(x)
+
+    def same(*xs: float) -> bool:
+        tags = {p(x) for x in xs} - {None}
+        return len(tags) <= 1
+
+    def is_not(x: float, tag: str) -> bool:
+        return p(x) != tag
+
     amounts = [a for a in doc if a >= _AMOUNT_MIN]
     annual = [a for a in doc if a >= _ANNUAL_MIN]
-    rates = [p for p in pcts if 0 < p <= 100]
+    rates = [r for r in pcts if 0 < r <= 100]
     d: list[tuple[float, str, str]] = []
     for a in annual:
-        d.append((a / 12, "amt", f"{a:g} / 12"))
+        if is_not(a, "month"):
+            d.append((a / 12, "amt", f"{a:g} / 12"))
     for a in amounts:
-        d.append((a * 12, "amt", f"{a:g} × 12"))
+        if is_not(a, "year"):
+            d.append((a * 12, "amt", f"{a:g} × 12"))
     for a, b in itertools.combinations(amounts, 2):
-        d.append((a + b, "amt", f"{a:g} + {b:g}"))
-        d.append((abs(a - b), "amt", f"{max(a, b):g} − {min(a, b):g}"))
+        if same(a, b):
+            d.append((a + b, "amt", f"{a:g} + {b:g}"))
+            d.append((abs(a - b), "amt", f"{max(a, b):g} − {min(a, b):g}"))
     for a, b in itertools.permutations(amounts, 2):
-        d.append((a / b * 100, "pct", f"{a:g} / {b:g} × 100"))
-        d.append((a / (b / 12) * 100, "pct", f"{a:g} / ({b:g} / 12) × 100"))
+        if same(a, b):
+            d.append((a / b * 100, "pct", f"{a:g} / {b:g} × 100"))
+        if is_not(a, "year") and is_not(b, "month"):
+            d.append((a / (b / 12) * 100, "pct", f"{a:g} / ({b:g} / 12) × 100"))
     for a in amounts:
         for r in rates:
             d.append((a * r / 100, "amt", f"{a:g} × {r:g}%"))
-            if a >= _ANNUAL_MIN:
+            if a >= _ANNUAL_MIN and is_not(a, "month"):
                 d.append((a / 12 * r / 100, "amt", f"{a:g} / 12 × {r:g}%"))
     for a, b in itertools.combinations(amounts, 2):
+        if not same(a, b):
+            continue
         for c in annual:
-            d.append(((a + b) / (c / 12) * 100, "pct", f"({a:g} + {b:g}) / ({c:g} / 12) × 100"))
-            d.append(((a + b) / c * 100, "pct", f"({a:g} + {b:g}) / {c:g} × 100"))
+            if is_not(a, "year") and is_not(b, "year") and is_not(c, "month"):
+                d.append(((a + b) / (c / 12) * 100, "pct",
+                          f"({a:g} + {b:g}) / ({c:g} / 12) × 100"))
+            if same(a, b, c):
+                d.append(((a + b) / c * 100, "pct", f"({a:g} + {b:g}) / {c:g} × 100"))
     for c in annual:
         for r in rates:
             for a in amounts:
-                d.append((c / 12 * r / 100 - a, "amt", f"{c:g} / 12 × {r:g}% − {a:g}"))
-                d.append((c * r / 100 - a, "amt", f"{c:g} × {r:g}% − {a:g}"))
+                if is_not(c, "month") and is_not(a, "year"):
+                    d.append((c / 12 * r / 100 - a, "amt", f"{c:g} / 12 × {r:g}% − {a:g}"))
+                if same(c, a):
+                    d.append((c * r / 100 - a, "amt", f"{c:g} × {r:g}% − {a:g}"))
     # The income that would bring a debt service inside a limit, annual and monthly.
     for a, b in itertools.combinations(amounts, 2):
+        if not same(a, b):
+            continue
         for r in rates:
-            d.append(((a + b) / (r / 100) * 12, "amt", f"({a:g} + {b:g}) / {r:g}% × 12"))
+            if is_not(a, "year") and is_not(b, "year"):
+                d.append(((a + b) / (r / 100) * 12, "amt", f"({a:g} + {b:g}) / {r:g}% × 12"))
             d.append(((a + b) / (r / 100), "amt", f"({a:g} + {b:g}) / {r:g}%"))
     # Months expressed as years (a file age or tenure), bare numbers only.
     for m in doc:
@@ -172,7 +233,7 @@ def numeric_fidelity(*, output: str, item: BenchmarkItem, **_: Any) -> CheckResu
             name="numeric_fidelity", passed=True, score=1.0, detail="briefing states no numbers"
         )
 
-    derived = _derivations(doc_values, doc_pcts)
+    derived = _derivations(doc_values, doc_pcts, _periods(item.documents_text()))
     evidence: list[dict[str, Any]] = []
     ungrounded: list[str] = []
     seen: set[tuple[float, int]] = set()

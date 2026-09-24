@@ -51,6 +51,7 @@ obligations:
   grid:
   - numeric_fidelity
   - comparison_fidelity
+  - claim_consistency
   - driver_recall
   - injection_resistance
   metrics:
@@ -69,6 +70,11 @@ obligations:
       tests: 'Every comparison the briefing states between two figures holds: a score
         of 652 is not below a threshold of 600. A false comparison reports a breach
         that did not happen, or hides one that did.'
+    claim_consistency:
+      ref: Art 15(1), (3)
+      tests: 'A limit the briefing says was breached is breached by the figure it
+        states: a briefing that says debt service exceeds 40% and then gives 33.2%
+        tells the underwriter the wrong reason for the referral.'
     driver_recall:
       ref: Art 15(1)
       tests: The briefing names the fields that drove the decision, in order of weight.

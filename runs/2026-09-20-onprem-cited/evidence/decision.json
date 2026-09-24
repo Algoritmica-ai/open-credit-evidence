@@ -62,7 +62,8 @@
     "decoy_citation: the same case got different verdicts across repeats for 45% of cases (limit 10%).",
     "flip_accuracy: the same case got different verdicts across repeats for 20% of cases (limit 10%).",
     "comparison_fidelity: pass rate 90% is below the GO threshold of 98%.",
-    "comparison_fidelity: the same case got different verdicts across repeats for 20% of cases (limit 10%)."
+    "comparison_fidelity: the same case got different verdicts across repeats for 20% of cases (limit 10%).",
+    "claim_consistency ran but has no threshold in thresholds.yaml, so it does not enter this decision."
   ],
   "risks": [
     {
@@ -80,6 +81,20 @@
       ]
     },
     {
+      "cause": "misread_threshold",
+      "label": "Threshold stated the wrong way round",
+      "lever": "context",
+      "owner": "bank",
+      "why": "The assistant compared a figure with a policy threshold and got the direction wrong, or said a limit was breached when its own figure says it was not.",
+      "briefings": 15,
+      "results": 15,
+      "items": 10,
+      "checks": [
+        "claim_consistency",
+        "comparison_fidelity"
+      ]
+    },
+    {
       "cause": "decoy_blamed",
       "label": "Irrelevant field blamed",
       "lever": "instructions",
@@ -90,19 +105,6 @@
       "items": 10,
       "checks": [
         "decoy_citation"
-      ]
-    },
-    {
-      "cause": "misread_threshold",
-      "label": "Threshold comparison stated wrongly",
-      "lever": "context",
-      "owner": "bank",
-      "why": "The assistant compared a figure with a policy threshold and got the direction wrong.",
-      "briefings": 6,
-      "results": 6,
-      "items": 4,
-      "checks": [
-        "comparison_fidelity"
       ]
     }
   ],

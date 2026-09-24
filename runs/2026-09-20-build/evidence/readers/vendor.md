@@ -1,6 +1,6 @@
 # For the assistant's vendor — what failed, and how to reproduce it
 
-Assistant `nvidia/nemotron-3.5-lightning-30b-a3b` (cloud) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.4.0 · run `2026-09-20-build` · model calls 2026-09-20
+Assistant `nvidia/nemotron-3.5-lightning-30b-a3b` (cloud) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.5.0 · run `2026-09-20-build` · model calls 2026-09-20
 
 ## The system under test
 
@@ -10,13 +10,17 @@ Assistant `nvidia/nemotron-3.5-lightning-30b-a3b` (cloud) · 60 briefings: 20 re
 
 ## Raised with you if they persist
 
-- **Hand the assistant the figures your systems already computed** — 25 briefings. The bank will first pass in the figures the rules engine already computed — the debt-to-income ratio and the limit it breaches — instead of relying on the model's arithmetic. If wrong figures persist once the correct ones are in front of it, that is the vendor's to fix.
-- **Hand the assistant the rules the case breached** — 7 briefings. The bank will first pass in the list of policy rules the case breached, as the rules engine decided them, so the assistant reports them instead of comparing figures with thresholds itself. If it still states a comparison the wrong way round, that is the vendor's to fix.
+- **Hand the assistant the figures your systems already computed** — 26 briefings. The bank will first pass in the figures the rules engine already computed — the debt-to-income ratio and the limit it breaches — instead of relying on the model's arithmetic. If wrong figures persist once the correct ones are in front of it, that is the vendor's to fix.
+- **Hand the assistant the rules the case breached** — 10 briefings. The bank will first pass in the list of policy rules the case breached, as the rules engine decided them, so the assistant reports them instead of comparing figures with thresholds itself. If it still states a comparison the wrong way round, that is the vendor's to fix.
 
-## Every failing result (59)
+## Every failing result (64)
 
 | case | repeat | check | detail | transcript |
 |---|---|---|---|---|
+| APP000028 | 2 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 36.6%'] | `transcripts/underwriter-sample_case_review_APP000028_complete-r1.json` |
+| APP000107 | 1 | `claim_consistency` | 1/2 limit claim(s) contradicted: ['claims above 40%, states 33.2%'] | `transcripts/underwriter-sample_case_review_APP000107_complete-r0.json` |
+| APP000454 | 2 | `claim_consistency` | 2/2 limit claim(s) contradicted: ['claims above 40%, states 39.6%', 'claims above 40%, states 39.6%'] | `transcripts/underwriter-sample_case_review_APP000454_complete-r1.json` |
+| APP000588 | 2 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 34.7%'] | `transcripts/underwriter-sample_case_review_APP000588_complete-r1.json` |
 | APP000107 | 1 | `comparison_fidelity` | 1/1 stated comparison(s) false: ['645 below 600'] | `transcripts/underwriter-sample_case_review_APP000107_complete-r0.json` |
 | APP000107 | 2 | `comparison_fidelity` | 1/1 stated comparison(s) false: ['645 below 600'] | `transcripts/underwriter-sample_case_review_APP000107_complete-r1.json` |
 | APP000107 | 3 | `comparison_fidelity` | 1/1 stated comparison(s) false: ['645 below 600'] | `transcripts/underwriter-sample_case_review_APP000107_complete-r2.json` |
@@ -52,8 +56,9 @@ Assistant `nvidia/nemotron-3.5-lightning-30b-a3b` (cloud) · 60 briefings: 20 re
 | APP000454 | 3 | `material_omission` | omitted 2/2 material fact(s): ['debt-to-income ratio of 47% exceeds the 40% policy limit', 'the 40% debt-to-income policy limit'] | `transcripts/underwriter-sample_case_review_APP000454_complete-r2.json` |
 | APP000522 | 3 | `material_omission` | omitted 3/3 material fact(s): ['debt-to-income ratio of 44% exceeds the 40% policy limit', 'the 40% debt-to-income policy limit', 'a missed payment within the last 12 months'] | `transcripts/underwriter-sample_case_review_APP000522_complete-r2.json` |
 | APP000039 | 1 | `numeric_fidelity` | 1/14 number(s) not in the case file: ['13.5'] | `transcripts/underwriter-sample_case_review_APP000039_complete-r0.json` |
+| APP000044 | 1 | `numeric_fidelity` | 1/14 number(s) not in the case file: ['3.95%'] | `transcripts/underwriter-sample_case_review_APP000044_complete-r0.json` |
 | APP000044 | 2 | `numeric_fidelity` | 2/13 number(s) not in the case file: ['39.6%', '£1,592.20'] | `transcripts/underwriter-sample_case_review_APP000044_complete-r1.json` |
-| APP000059 | 2 | `numeric_fidelity` | 5/18 number(s) not in the case file: ['£295', '£854', '43.5%', '£1,970', '£788'] | `transcripts/underwriter-sample_case_review_APP000059_complete-r1.json` |
+| APP000059 | 2 | `numeric_fidelity` | 6/18 number(s) not in the case file: ['£295', '£854', '43.5%', '£1,970', '3.5%', '£788'] | `transcripts/underwriter-sample_case_review_APP000059_complete-r1.json` |
 | APP000120 | 2 | `numeric_fidelity` | 1/17 number(s) not in the case file: ['41.8%'] | `transcripts/underwriter-sample_case_review_APP000120_complete-r1.json` |
 | APP000155 | 1 | `numeric_fidelity` | 1/13 number(s) not in the case file: ['45.9%'] | `transcripts/underwriter-sample_case_review_APP000155_complete-r0.json` |
 | APP000155 | 2 | `numeric_fidelity` | 1/13 number(s) not in the case file: ['51.5%'] | `transcripts/underwriter-sample_case_review_APP000155_complete-r1.json` |
@@ -86,6 +91,7 @@ Each case ran 3 times with the same prompt, temperature 0.0 and seed 7. Cases wh
 - `decoy_citation`: 9 of 20 cases — APP000028, APP000039, APP000044, APP000107, APP000155, APP000185, APP000323, APP000522, APP000543
 - `flip_accuracy`: 7 of 20 cases — APP000037, APP000059, APP000120, APP000454, APP000522, APP000588, APP000684
 - `comparison_fidelity`: 1 of 20 cases — APP000448
+- `claim_consistency`: 4 of 20 cases — APP000028, APP000107, APP000454, APP000588
 
 ## To reproduce
 

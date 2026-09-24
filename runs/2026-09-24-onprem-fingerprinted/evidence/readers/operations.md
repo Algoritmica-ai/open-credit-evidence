@@ -1,10 +1,10 @@
 # For underwriters — what to watch for in the assistant's briefings
 
-Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.4.0 · run `2026-09-24-onprem-fingerprinted` · model calls 2026-09-24
+Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.5.0 · run `2026-09-24-onprem-fingerprinted` · model calls 2026-09-24
 
 The briefing is a summary of the file, written by a model. On these cases it went wrong in the ways below, most frequent first. Each comes with a sentence the assistant actually wrote and what to do when you see one like it.
 
-## Figure worked out wrongly — 28 of 60 briefings
+## Figure worked out wrongly — 30 of 60 briefings
 
 The assistant worked a figure out itself and got it wrong.
 
@@ -13,6 +13,16 @@ The assistant worked a figure out itself and got it wrong.
 — case APP000028, repeat 1
 
 **What to do:** Check any ratio or amount the briefing works out against the application form before relying on it. The briefing's own arithmetic is where it is most often wrong.
+
+## Threshold stated the wrong way round — 16 of 60 briefings
+
+The assistant compared a figure with a policy threshold and got the direction wrong, or said a limit was breached when its own figure says it was not.
+
+> This application was referred for underwriter review because the automated rules flagged two policy breaches: the applicant’s credit score of 679 falls below the 600 threshold requiring review, and the calculated affordability ratio exceeds the 40% maximum limit.
+
+— case APP000543, repeat 2
+
+**What to do:** When a briefing says a figure is above or below a limit, compare the two numbers yourself.
 
 ## Irrelevant field blamed — 11 of 60 briefings
 
@@ -33,16 +43,6 @@ The assistant did not name a valid way to change the outcome.
 — case APP000684, repeat 2
 
 **What to do:** If the briefing does not say what would change the outcome, work it out from the policy: which limit is breached, and by how much.
-
-## Threshold comparison stated wrongly — 1 of 60 briefings
-
-The assistant compared a figure with a policy threshold and got the direction wrong.
-
-> This application was referred for underwriter review because the automated rules flagged two policy breaches: the applicant’s credit score of 679 falls below the 600 threshold requiring review, and the calculated affordability ratio exceeds the 40% maximum limit.
-
-— case APP000543, repeat 2
-
-**What to do:** When a briefing says a figure is above or below a limit, compare the two numbers yourself.
 
 ## Before you rely on a briefing
 

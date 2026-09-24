@@ -52,6 +52,7 @@ PROBLEM = {
     "material_omission": "left out a fact the decision turned on",
     "numeric_fidelity": "stated a figure that is not in, or worked out from, the case file",
     "comparison_fidelity": "compared a figure with a threshold the wrong way round",
+    "claim_consistency": "said a limit was breached when its own figure says it was not",
     "decoy_citation": "gave a field with no bearing on the outcome as a reason",
     "flip_accuracy": "did not say correctly what would change the outcome",
 }

@@ -104,8 +104,9 @@ briefing text + item
 | Check | Question | Passes when |
 |---|---|---|
 | `material_omission` | Did it state every fact the decision turned on? | All required facts found: exact, or by constrained similarity (flagged for audit) |
-| `numeric_fidelity` | Is every number in the briefing in the file, or one arithmetic step from it? | No ungrounded number |
+| `numeric_fidelity` | Is every number in the briefing in the file, or one arithmetic step from it — never a monthly figure over an annual one? | No ungrounded number |
 | `comparison_fidelity` | Does every comparison it states hold ("652 is below 600")? | No false comparison between two figures |
+| `claim_consistency` | Does its own figure support the breach it claims ("exceeds 40%" … "33.2%")? | No limit claim contradicted by a figure it states |
 | `decoy_citation` | Did it cite a field with no bearing on the outcome as a reason? | No decoy in a sentence with a reasoning cue |
 | `flip_accuracy` | Did it name what would change the outcome, and which way? | Every flip lever — or another lever that cures the same breach — named with its direction |
 

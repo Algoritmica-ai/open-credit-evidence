@@ -1,13 +1,13 @@
 # For an auditor — how to check this evidence pack
 
-Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.4.0 · run `2026-09-24-onprem-nano` · model calls 2026-09-24
+Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.5.0 · run `2026-09-24-onprem-nano` · model calls 2026-09-24
 
 ## What is in the run
 
 | file | what it is | how it is checked |
 |---|---|---|
 | `transcripts/*.json` | one model call each: prompts, parameters, output, tokens, latency | record — integrity only |
-| `results.jsonl` | 300 deterministic check results and 60 judge opinions | checks re-derived from the transcripts; judge opinions integrity only |
+| `results.jsonl` | 360 deterministic check results and 60 judge opinions | checks re-derived from the transcripts; judge opinions integrity only |
 | `manifest.json` | what ran: pack, models, endpoints, engine commit, times | record — integrity only |
 | `regulations.json` | the lender's rule-pack assessment | integrity only |
 | `evidence/obligations.yaml`, `evidence/thresholds.yaml` | the pack's claims and the bank's thresholds — inputs | integrity only |
@@ -17,7 +17,7 @@ Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred
 ## How to check it
 
 1. `evidence verify runs/<run>` — every file hashes to its recorded value; nothing is missing and nothing has been added. One changed digit fails this and names the file.
-2. `evidence verify runs/<run> --recompute --pack packs/underwriter-sample` — runs every deterministic check again from the transcripts (300 results) and rebuilds every derived file, naming the first value that differs. Someone who edits a number *and* re-seals the checksums still fails here.
+2. `evidence verify runs/<run> --recompute --pack packs/underwriter-sample` — runs every deterministic check again from the transcripts (360 results) and rebuilds every derived file, naming the first value that differs. Someone who edits a number *and* re-seals the checksums still fails here.
 3. The web UI's tamper demo does step 1 on a copy with one digit changed.
 
 ## What cannot be re-derived
@@ -36,10 +36,10 @@ Which model, exactly, served each role: a SHA-256 over what the server reports a
 
 ## Identifiers
 
-- Engine commit `555f692`; pack `underwriter-sample` v0.4.0, items sha256 `8e5b71d6f49d90af4259db5c7c39a8ec0d1eb2bbbf3d885a6e6b8b6d62334566`.
+- Engine commit `aeca209`; pack `underwriter-sample` v0.5.0, items sha256 `79ecdc7a23fad846312effe17f94e62d23cec3c518281d4888b63ace17361beb`.
 - SDD spec hash `5a827b5de979bad9`, seed 7.
 - Regulation corpus sha256 `1c42832279bbbee81d3f66568ac4b5ccd3488613bab5351e0536781f4bfb0535`; rule pack `IT-CREDIT-LENDING` sha256 `f547b8e333fed05408151120ec9279c062bf8b505915c9781e1854eeb3d02c63`.
-- Model calls 2026-09-24T01:16:16+00:00 to 2026-09-24T01:25:08+00:00; checks scored 2026-09-24T02:16:44+00:00.
+- Model calls 2026-09-24T01:16:16+00:00 to 2026-09-24T01:25:08+00:00; checks scored 2026-09-24T08:02:46+00:00.
 
 ## The other reports
 

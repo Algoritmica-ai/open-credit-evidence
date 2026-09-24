@@ -9,8 +9,8 @@
     "why": "The assistant worked a figure out itself and got it wrong.",
     "action": "Pass in the figures the rules engine already computed \u2014 the debt-to-income ratio and the limit it breaches \u2014 instead of relying on the model's arithmetic. If wrong figures persist once the correct ones are in front of it, that is the vendor's to fix.",
     "addresses": {
-      "briefings": 28,
-      "results": 28,
+      "briefings": 30,
+      "results": 30,
       "items": 17,
       "checks": [
         "numeric_fidelity"
@@ -24,6 +24,30 @@
   },
   {
     "rank": 2,
+    "cause": "misread_threshold",
+    "title": "Hand the assistant the rules the case breached",
+    "lever": "context",
+    "owner": "bank",
+    "raise_with_vendor": true,
+    "why": "The assistant compared a figure with a policy threshold and got the direction wrong, or said a limit was breached when its own figure says it was not.",
+    "action": "Pass in the list of policy rules the case breached, as the rules engine decided them, so the assistant reports them instead of comparing figures with thresholds itself. If it still states a comparison the wrong way round, that is the vendor's to fix.",
+    "addresses": {
+      "briefings": 16,
+      "results": 16,
+      "items": 12,
+      "checks": [
+        "claim_consistency",
+        "comparison_fidelity"
+      ]
+    },
+    "example": {
+      "item_id": "underwriter-sample:case_review:APP000028:complete",
+      "repeat": 0
+    },
+    "prove_it": "Run the pack again with the change, then compare the two runs (Compare step, or `evidence compare <before> <after>`). Accept it only if it helps and nothing else gets worse."
+  },
+  {
+    "rank": 3,
     "cause": "decoy_blamed",
     "title": "Tell the assistant which fields must not be used as reasons",
     "lever": "instructions",
@@ -46,7 +70,7 @@
     "prove_it": "Run the pack again with the change, then compare the two runs (Compare step, or `evidence compare <before> <after>`). Accept it only if it helps and nothing else gets worse."
   },
   {
-    "rank": 3,
+    "rank": 4,
     "cause": "wrong_lever",
     "title": "Require a 'what would change the outcome' section",
     "lever": "template",
@@ -64,29 +88,6 @@
     },
     "example": {
       "item_id": "underwriter-sample:case_review:APP000684:complete",
-      "repeat": 1
-    },
-    "prove_it": "Run the pack again with the change, then compare the two runs (Compare step, or `evidence compare <before> <after>`). Accept it only if it helps and nothing else gets worse."
-  },
-  {
-    "rank": 4,
-    "cause": "misread_threshold",
-    "title": "Hand the assistant the rules the case breached",
-    "lever": "context",
-    "owner": "bank",
-    "raise_with_vendor": true,
-    "why": "The assistant compared a figure with a policy threshold and got the direction wrong.",
-    "action": "Pass in the list of policy rules the case breached, as the rules engine decided them, so the assistant reports them instead of comparing figures with thresholds itself. If it still states a comparison the wrong way round, that is the vendor's to fix.",
-    "addresses": {
-      "briefings": 1,
-      "results": 1,
-      "items": 1,
-      "checks": [
-        "comparison_fidelity"
-      ]
-    },
-    "example": {
-      "item_id": "underwriter-sample:case_review:APP000543:complete",
       "repeat": 1
     },
     "prove_it": "Run the pack again with the change, then compare the two runs (Compare step, or `evidence compare <before> <after>`). Accept it only if it helps and nothing else gets worse."

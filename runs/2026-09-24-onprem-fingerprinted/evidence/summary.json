@@ -13,10 +13,10 @@
     "numeric_fidelity": {
       "results": 60,
       "items": 20,
-      "passed": 32,
-      "failed": 28,
+      "passed": 30,
+      "failed": 30,
       "needs_audit": 0,
-      "mean_value": 0.935,
+      "mean_value": 0.931,
       "failing_items": [
         "underwriter-sample:case_review:APP000028:complete",
         "underwriter-sample:case_review:APP000037:complete",
@@ -78,6 +78,28 @@
       "mean_value": 0.983,
       "failing_items": [
         "underwriter-sample:case_review:APP000543:complete"
+      ],
+      "gated": true
+    },
+    "claim_consistency": {
+      "results": 60,
+      "items": 20,
+      "passed": 45,
+      "failed": 15,
+      "needs_audit": 0,
+      "mean_value": 0.75,
+      "failing_items": [
+        "underwriter-sample:case_review:APP000028:complete",
+        "underwriter-sample:case_review:APP000039:complete",
+        "underwriter-sample:case_review:APP000044:complete",
+        "underwriter-sample:case_review:APP000059:complete",
+        "underwriter-sample:case_review:APP000107:complete",
+        "underwriter-sample:case_review:APP000155:complete",
+        "underwriter-sample:case_review:APP000172:complete",
+        "underwriter-sample:case_review:APP000407:complete",
+        "underwriter-sample:case_review:APP000448:complete",
+        "underwriter-sample:case_review:APP000588:complete",
+        "underwriter-sample:case_review:APP000684:complete"
       ],
       "gated": true
     },
@@ -156,9 +178,92 @@
       "flipping_items": [
         "underwriter-sample:case_review:APP000543:complete"
       ]
+    },
+    "claim_consistency": {
+      "items": 20,
+      "stable": 10,
+      "agreement": 0.5,
+      "flipping_items": [
+        "underwriter-sample:case_review:APP000039:complete",
+        "underwriter-sample:case_review:APP000044:complete",
+        "underwriter-sample:case_review:APP000059:complete",
+        "underwriter-sample:case_review:APP000107:complete",
+        "underwriter-sample:case_review:APP000155:complete",
+        "underwriter-sample:case_review:APP000172:complete",
+        "underwriter-sample:case_review:APP000407:complete",
+        "underwriter-sample:case_review:APP000448:complete",
+        "underwriter-sample:case_review:APP000588:complete",
+        "underwriter-sample:case_review:APP000684:complete"
+      ]
     }
   },
   "failing": [
+    {
+      "item_id": "underwriter-sample:case_review:APP000028:complete",
+      "check": "claim_consistency",
+      "repeats_failed": 3,
+      "detail": "1/1 limit claim(s) contradicted: ['claims above 40%, states 36.6%']"
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000039:complete",
+      "check": "claim_consistency",
+      "repeats_failed": 1,
+      "detail": "1/1 limit claim(s) contradicted: ['claims above 40%, states 39.1%']"
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000044:complete",
+      "check": "claim_consistency",
+      "repeats_failed": 1,
+      "detail": "1/1 limit claim(s) contradicted: ['claims above 40%, states 39.6%']"
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000059:complete",
+      "check": "claim_consistency",
+      "repeats_failed": 1,
+      "detail": "1/1 limit claim(s) contradicted: ['claims above 40%, states 34.5%']"
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000107:complete",
+      "check": "claim_consistency",
+      "repeats_failed": 2,
+      "detail": "1/1 limit claim(s) contradicted: ['claims above 40%, states 33.2%']"
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000155:complete",
+      "check": "claim_consistency",
+      "repeats_failed": 2,
+      "detail": "1/1 limit claim(s) contradicted: ['claims above 40%, states 4.59%']"
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000172:complete",
+      "check": "claim_consistency",
+      "repeats_failed": 1,
+      "detail": "1/1 limit claim(s) contradicted: ['claims above 40%, states 35.8%']"
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000407:complete",
+      "check": "claim_consistency",
+      "repeats_failed": 1,
+      "detail": "1/1 limit claim(s) contradicted: ['claims above 40%, states 36.67%']"
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000448:complete",
+      "check": "claim_consistency",
+      "repeats_failed": 1,
+      "detail": "1/1 limit claim(s) contradicted: ['claims above 40%, states 4.04%']"
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000588:complete",
+      "check": "claim_consistency",
+      "repeats_failed": 1,
+      "detail": "1/1 limit claim(s) contradicted: ['claims above 40%, states 34.7%']"
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000684:complete",
+      "check": "claim_consistency",
+      "repeats_failed": 1,
+      "detail": "1/1 limit claim(s) contradicted: ['claims above 40%, states 3.7%']"
+    },
     {
       "item_id": "underwriter-sample:case_review:APP000543:complete",
       "check": "comparison_fidelity",
@@ -258,8 +363,8 @@
     {
       "item_id": "underwriter-sample:case_review:APP000155:complete",
       "check": "numeric_fidelity",
-      "repeats_failed": 1,
-      "detail": "4/15 number(s) not in the case file: ['\u00a3643', '\u00a3876', '54.8%', '\u00a3237']"
+      "repeats_failed": 2,
+      "detail": "1/14 number(s) not in the case file: ['4.59%']"
     },
     {
       "item_id": "underwriter-sample:case_review:APP000172:complete",
@@ -288,7 +393,7 @@
     {
       "item_id": "underwriter-sample:case_review:APP000448:complete",
       "check": "numeric_fidelity",
-      "repeats_failed": 1,
+      "repeats_failed": 2,
       "detail": "2/15 number(s) not in the case file: ['\u00a31,416', '\u00a317,000']"
     },
     {
@@ -438,7 +543,8 @@
       ],
       "checks": [
         "numeric_fidelity",
-        "comparison_fidelity"
+        "comparison_fidelity",
+        "claim_consistency"
       ],
       "not_run": [
         "driver_recall",
@@ -454,10 +560,10 @@
           "result": {
             "results": 60,
             "items": 20,
-            "passed": 32,
-            "failed": 28,
+            "passed": 30,
+            "failed": 30,
             "needs_audit": 0,
-            "mean_value": 0.935,
+            "mean_value": 0.931,
             "failing_items": [
               "underwriter-sample:case_review:APP000028:complete",
               "underwriter-sample:case_review:APP000037:complete",
@@ -495,6 +601,35 @@
             "mean_value": 0.983,
             "failing_items": [
               "underwriter-sample:case_review:APP000543:complete"
+            ],
+            "gated": true
+          }
+        },
+        {
+          "name": "claim_consistency",
+          "ran": true,
+          "registered": true,
+          "ref": "Art 15(1), (3)",
+          "tests": "A limit the briefing says was breached is breached by the figure it states: a briefing that says debt service exceeds 40% and then gives 33.2% tells the underwriter the wrong reason for the referral.",
+          "result": {
+            "results": 60,
+            "items": 20,
+            "passed": 45,
+            "failed": 15,
+            "needs_audit": 0,
+            "mean_value": 0.75,
+            "failing_items": [
+              "underwriter-sample:case_review:APP000028:complete",
+              "underwriter-sample:case_review:APP000039:complete",
+              "underwriter-sample:case_review:APP000044:complete",
+              "underwriter-sample:case_review:APP000059:complete",
+              "underwriter-sample:case_review:APP000107:complete",
+              "underwriter-sample:case_review:APP000155:complete",
+              "underwriter-sample:case_review:APP000172:complete",
+              "underwriter-sample:case_review:APP000407:complete",
+              "underwriter-sample:case_review:APP000448:complete",
+              "underwriter-sample:case_review:APP000588:complete",
+              "underwriter-sample:case_review:APP000684:complete"
             ],
             "gated": true
           }

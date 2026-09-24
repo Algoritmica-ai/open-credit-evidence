@@ -1,6 +1,6 @@
 # underwriter-sample — the assistant, on one page
 
-Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.4.0 · run `2026-09-24-onprem-fingerprinted` · model calls 2026-09-24
+Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.5.0 · run `2026-09-24-onprem-fingerprinted` · model calls 2026-09-24
 
 ## Verdict: **NO-GO**
 
@@ -10,7 +10,8 @@ The assistant is not ready to brief underwriters on cases like these without cha
 
 | In how many briefings the assistant … | briefings | share | allowed for GO |
 |---|---|---|---|
-| stated a figure that is not in, or worked out from, the case file | 28 of 60 | 47% | at most 2% |
+| stated a figure that is not in, or worked out from, the case file | 30 of 60 | 50% | at most 2% |
+| said a limit was breached when its own figure says it was not | 15 of 60 | 25% | — |
 | gave a field with no bearing on the outcome as a reason | 11 of 60 | 18% | at most 5% |
 | did not say correctly what would change the outcome | 2 of 60 | 3% | at most 10% |
 | compared a figure with a threshold the wrong way round | 1 of 60 | 2% | at most 2% |
@@ -19,9 +20,9 @@ No briefing left out a fact the decision turned on.
 
 ## What to change first
 
-1. **Hand the assistant the figures your systems already computed** — the bank, then the vendor if it persists. Addresses 28 of 60 briefings.
-2. **Tell the assistant which fields must not be used as reasons** — the bank. Addresses 11 of 60 briefings.
-3. **Require a 'what would change the outcome' section** — the bank. Addresses 2 of 60 briefings.
+1. **Hand the assistant the figures your systems already computed** — the bank, then the vendor if it persists. Addresses 30 of 60 briefings.
+2. **Hand the assistant the rules the case breached** — the bank, then the vendor if it persists. Addresses 16 of 60 briefings.
+3. **Tell the assistant which fields must not be used as reasons** — the bank. Addresses 11 of 60 briefings.
 
 Make one change, run the pack again, and compare the two runs: a change is accepted only if it helps and nothing else gets worse.
 
