@@ -138,6 +138,50 @@ def test_lever_named_with_wrong_direction_is_half():
     assert r.evidence[0]["direction"] == "opposite"
 
 
+def _with_alternatives():
+    it = item()
+    it.grading.flip_alternatives = {"gross_annual": [
+        FlipRef(ref="amount", direction="decrease"),
+        FlipRef(ref="term_months", direction="increase"),
+        FlipRef(ref="existing_credit_monthly", direction="decrease"),
+    ]}
+    it.grading.flip_aliases |= {
+        "amount": ["loan amount", "facility"],
+        "term_months": ["term"],
+        "existing_credit_monthly": ["existing commitments", "debt service"],
+    }
+    return it
+
+
+def test_an_alternative_lever_counts():
+    # the briefing that exposed it: the lever is debt service, not income
+    out = ("For the application to fall within policy, the total monthly debt service must be "
+           "reduced to 40% of gross monthly income.")
+    (r,) = run_checks(["flip_accuracy"], output=out, item=_with_alternatives())
+    assert r.passed, r.detail
+    e = r.evidence[0]
+    assert (e["lever"], e["ref"], e["direction"]) == ("gross_annual", "existing_credit_monthly",
+                                                      "decrease")
+    assert "amount decrease" in e["accepted"]
+
+
+def test_alternatives_still_need_their_direction():
+    out = "The loan amount and the term are unusual for this income."
+    (r,) = run_checks(["flip_accuracy"], output=out, item=_with_alternatives())
+    assert not r.passed and r.score == 0.5
+
+
+def test_ing_forms_carry_a_direction():
+    for out in ("This could be fixed by increasing verified income.",
+                "Reducing the loan amount would bring it within policy.",
+                "The score would need to rise above 600."):
+        it = _with_alternatives()
+        it.grading.flip_refs.append(FlipRef(ref="bureau_score", direction="increase"))
+        it.grading.flip_aliases["bureau_score"] = ["score"]
+        (r,) = run_checks(["flip_accuracy"], output=out, item=it)
+        assert any(e.get("direction") == e["expected"] for e in r.evidence), out
+
+
 def test_lever_absent_is_zero():
     out = "The bureau score would need to improve."
     (r,) = run_checks(["flip_accuracy"], output=out, item=item())

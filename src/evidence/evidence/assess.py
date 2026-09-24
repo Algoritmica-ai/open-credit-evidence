@@ -188,9 +188,11 @@ def diagnose(results: list[dict[str, Any]]) -> dict[str, Any]:
             # Without the deciding fact it cannot name the lever that moves it.
             cause = omission_cause if omission_cause == "miscalculated" else "wrong_lever"
             ev = by["flip_accuracy"].get("evidence", [])
+            # every lever the marking key accepts, not only the one it happened to read
             add("flip_accuracy", cause,
-                levers=sorted({f"{e['ref']} {e.get('expected', '')}".strip() for e in ev
-                               if e.get("ref")}))
+                levers=sorted({lv for e in ev if e.get("ref") for lv in
+                               (e.get("accepted")
+                                or [f"{e['ref']} {e.get('expected', '')}".strip()])}))
 
         for check in sorted(failed - {r["check"] for r in records
                                       if (r["item_id"], r["repeat"]) == (item_id, repeat)}):

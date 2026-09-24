@@ -1,6 +1,6 @@
 # For an auditor — how to check this evidence pack
 
-Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.3.0 · run `2026-09-20-onprem-cited` · model calls 2026-09-20
+Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.4.0 · run `2026-09-20-onprem-cited` · model calls 2026-09-20
 
 ## What is in the run
 
@@ -27,10 +27,10 @@ Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred
 
 ## Identifiers
 
-- Engine commit `3f8c89d`; pack `underwriter-sample` v0.3.0, items sha256 `d249c1f217beb7e73bb4687f6e2304639c4940369f6262b856461c8545fed710`.
+- Engine commit `555f692`; pack `underwriter-sample` v0.4.0, items sha256 `8e5b71d6f49d90af4259db5c7c39a8ec0d1eb2bbbf3d885a6e6b8b6d62334566`.
 - SDD spec hash `5a827b5de979bad9`, seed 7.
 - Regulation corpus sha256 `1c42832279bbbee81d3f66568ac4b5ccd3488613bab5351e0536781f4bfb0535`; rule pack `IT-CREDIT-LENDING` sha256 `f547b8e333fed05408151120ec9279c062bf8b505915c9781e1854eeb3d02c63`.
-- Model calls 2026-09-20T09:01:32+00:00 to 2026-09-20T09:32:03+00:00; checks scored 2026-09-24T01:36:53+00:00.
+- Model calls 2026-09-20T09:01:32+00:00 to 2026-09-20T09:32:03+00:00; checks scored 2026-09-24T02:16:43+00:00.
 
 ## The other reports
 

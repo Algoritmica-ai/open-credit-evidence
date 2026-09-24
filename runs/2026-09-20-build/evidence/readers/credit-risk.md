@@ -1,6 +1,6 @@
-# Model risk report — underwriter-sample v0.3.0 — run 2026-09-20-build
+# Model risk report — underwriter-sample v0.4.0 — run 2026-09-20-build
 
-Assistant `nvidia/nemotron-3.5-lightning-30b-a3b` (cloud) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.3.0 · run `2026-09-20-build` · model calls 2026-09-20
+Assistant `nvidia/nemotron-3.5-lightning-30b-a3b` (cloud) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.4.0 · run `2026-09-20-build` · model calls 2026-09-20
 
 ## 1. Use and scope
 
@@ -42,7 +42,7 @@ Pass rate over briefings, with a 95% interval computed over cases: repeats of on
 | `material_omission` | 53/60 | 88% | 79% – 98% | 95% | CONDITIONAL |
 | `numeric_fidelity` | 35/60 | 58% | 44% – 72% | 98% | NO-GO |
 | `decoy_citation` | 49/60 | 82% | 72% – 92% | 95% | NO-GO |
-| `flip_accuracy` | 48/60 | 80% | 70% – 90% | 90% | CONDITIONAL |
+| `flip_accuracy` | 51/60 | 85% | 75% – 95% | 90% | CONDITIONAL |
 | `comparison_fidelity` | 53/60 | 88% | 75% – 100% | 98% | NO-GO |
 
 Judge `readability` (`nvidia/nemotron-3-ultra-550b-a55b`): mean 0.912 on 0–1 over 60 briefings. A model's opinion; reported, never used to pass or fail.
@@ -53,8 +53,8 @@ Conditions:
 - material_omission: the same case got different verdicts across repeats for 25% of cases (limit 10%).
 - numeric_fidelity: the same case got different verdicts across repeats for 65% of cases (limit 10%).
 - decoy_citation: the same case got different verdicts across repeats for 45% of cases (limit 10%).
-- flip_accuracy: pass rate 80% is below the GO threshold of 90%.
-- flip_accuracy: the same case got different verdicts across repeats for 50% of cases (limit 10%).
+- flip_accuracy: pass rate 85% is below the GO threshold of 90%.
+- flip_accuracy: the same case got different verdicts across repeats for 35% of cases (limit 10%).
 
 ## 4. Stability
 
@@ -65,7 +65,7 @@ The share of cases whose verdict was the same in all 3 repeats. A check a case p
 | `material_omission` | 15/20 | APP000028, APP000120, APP000407, APP000454, APP000522 |
 | `numeric_fidelity` | 7/20 | APP000039, APP000044, APP000059, APP000120, APP000155, APP000172, APP000323, APP000407, APP000448, APP000454, APP000543, APP000588, APP000678 |
 | `decoy_citation` | 11/20 | APP000028, APP000039, APP000044, APP000107, APP000155, APP000185, APP000323, APP000522, APP000543 |
-| `flip_accuracy` | 10/20 | APP000037, APP000059, APP000120, APP000155, APP000407, APP000454, APP000522, APP000543, APP000588, APP000684 |
+| `flip_accuracy` | 13/20 | APP000037, APP000059, APP000120, APP000454, APP000522, APP000588, APP000684 |
 | `comparison_fidelity` | 19/20 | APP000448 |
 
 ## 5. Root causes and remediation
@@ -74,15 +74,15 @@ A cause for every failing result, by fixed rules — no model. One cause on one 
 
 | cause | briefings | failing results | cases | lever | who acts |
 |---|---|---|---|---|---|
-| Figure worked out wrongly | 25 | 27 | 15 | context | bank |
+| Figure worked out wrongly | 25 | 26 | 15 | context | bank |
 | Irrelevant field blamed | 11 | 11 | 9 | instructions | bank |
-| Wrong or no way to change the outcome | 11 | 11 | 9 | template | bank |
+| Wrong or no way to change the outcome | 9 | 9 | 7 | template | bank |
 | Threshold comparison stated wrongly | 7 | 7 | 3 | context | bank |
 | Fact in front of it, left out | 6 | 6 | 5 | instructions | bank |
 
 1. **Hand the assistant the figures your systems already computed** (context). Pass in the figures the rules engine already computed — the debt-to-income ratio and the limit it breaches — instead of relying on the model's arithmetic. If wrong figures persist once the correct ones are in front of it, that is the vendor's to fix.
 2. **Tell the assistant which fields must not be used as reasons** (instructions). Add to the assistant's instructions: "Do not cite age band, dependants as reasons; under the policy they have no bearing on the outcome."
-3. **Require a 'what would change the outcome' section** (template). Require a final section, "What would change the outcome", naming the levers the policy allows — for example: bureau score increase; gross annual increase.
+3. **Require a 'what would change the outcome' section** (template). Require a final section, "What would change the outcome", naming the levers the policy allows — for example: amount decrease; bureau score increase; existing credit monthly decrease; gross annual increase; term months increase.
 4. **Hand the assistant the rules the case breached** (context). Pass in the list of policy rules the case breached, as the rules engine decided them, so the assistant reports them instead of comparing figures with thresholds itself. If it still states a comparison the wrong way round, that is the vendor's to fix.
 5. **Tell the assistant to lead with the reason for review** (instructions). Add to the assistant's instructions: "State the reason for review first, with the figure and the limit it breaches."
 
@@ -101,8 +101,8 @@ Acceptance: re-run the pack with the change and compare the two runs (`evidence 
 
 ## 7. Reproduce
 
-- Engine `credit-evidence-engine` 0.1.0.dev0, commit `3f8c89d`; pack items sha256 `d249c1f217be…`.
-- Model calls 2026-09-20T04:26:43+00:00 to 2026-09-20T09:01:02+00:00; checks scored 2026-09-24T01:36:52+00:00.
+- Engine `credit-evidence-engine` 0.1.0.dev0, commit `555f692`; pack items sha256 `8e5b71d6f49d…`.
+- Model calls 2026-09-20T04:26:43+00:00 to 2026-09-20T09:01:02+00:00; checks scored 2026-09-24T02:16:42+00:00.
 - `evidence verify <run> --recompute --pack <pack>` re-derives every check result and every figure in this report from the transcripts.
 
 ## The other reports

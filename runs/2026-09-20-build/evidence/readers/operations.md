@@ -1,6 +1,6 @@
 # For underwriters — what to watch for in the assistant's briefings
 
-Assistant `nvidia/nemotron-3.5-lightning-30b-a3b` (cloud) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.3.0 · run `2026-09-20-build` · model calls 2026-09-20
+Assistant `nvidia/nemotron-3.5-lightning-30b-a3b` (cloud) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.4.0 · run `2026-09-20-build` · model calls 2026-09-20
 
 The briefing is a summary of the file, written by a model. On these cases it went wrong in the ways below, most frequent first. Each comes with a sentence the assistant actually wrote and what to do when you see one like it.
 
@@ -24,7 +24,7 @@ The assistant blamed a field that has no bearing on the outcome.
 
 **What to do:** Disregard reasoning that rests on age band, dependants. The lending policy does not use them.
 
-## Wrong or no way to change the outcome — 11 of 60 briefings
+## Wrong or no way to change the outcome — 9 of 60 briefings
 
 The assistant did not name a valid way to change the outcome.
 

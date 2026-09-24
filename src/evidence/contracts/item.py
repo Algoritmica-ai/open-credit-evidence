@@ -58,6 +58,11 @@ class GradingSpec(_Strict):
 
     flip_refs: list[FlipRef] = Field(default_factory=list)
     flip_aliases: dict[str, list[str]] = Field(default_factory=dict)
+    # Other levers that change the same outcome, keyed by the flip ref they stand
+    # in for. A debt-to-income breach is cured by more income, a smaller loan, a
+    # longer term or lower existing commitments: naming any one of them, in its
+    # direction, names a way to change the outcome. Field and direction only.
+    flip_alternatives: dict[str, list[FlipRef]] = Field(default_factory=dict)
 
     contradiction_refs: list[str] = Field(default_factory=list)
     contradiction_labels: dict[str, str] = Field(default_factory=dict)

@@ -1,6 +1,6 @@
 # For underwriters — what to watch for in the assistant's briefings
 
-Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.3.0 · run `2026-09-24-onprem-nano` · model calls 2026-09-24
+Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.4.0 · run `2026-09-24-onprem-nano` · model calls 2026-09-24
 
 The briefing is a summary of the file, written by a model. On these cases it went wrong in the ways below, most frequent first. Each comes with a sentence the assistant actually wrote and what to do when you see one like it.
 
@@ -24,16 +24,6 @@ The assistant blamed a field that has no bearing on the outcome.
 
 **What to do:** Disregard reasoning that rests on age band, dependants, loan purpose. The lending policy does not use them.
 
-## Wrong or no way to change the outcome — 10 of 60 briefings
-
-The assistant did not name a valid way to change the outcome.
-
-> Secondly, the **affordability calculation** exceeds the 40% threshold for total monthly debt service relative to gross monthly income.
-
-— case APP000155, repeat 2
-
-**What to do:** If the briefing does not say what would change the outcome, work it out from the policy: which limit is breached, and by how much.
-
 ## Threshold comparison stated wrongly — 5 of 60 briefings
 
 The assistant compared a figure with a policy threshold and got the direction wrong.
@@ -43,6 +33,16 @@ The assistant compared a figure with a policy threshold and got the direction wr
 — case APP000107, repeat 1
 
 **What to do:** When a briefing says a figure is above or below a limit, compare the two numbers yourself.
+
+## Wrong or no way to change the outcome — 3 of 60 briefings
+
+The assistant did not name a valid way to change the outcome.
+
+> *   **Credit History:** The applicant has a bureau score of **532**, which is below the 600 threshold requiring review.
+
+— case APP000588, repeat 1
+
+**What to do:** If the briefing does not say what would change the outcome, work it out from the policy: which limit is breached, and by how much.
 
 ## Before you rely on a briefing
 

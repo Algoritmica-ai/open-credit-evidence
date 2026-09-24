@@ -189,6 +189,18 @@ FLIP_ALIASES: dict[str, list[str]] = {
     ],
     "bureau_score": ["bureau score", "credit score", "score"],
     "file_age_months": ["credit history", "file age", "credit file", "history"],
+    "amount": ["loan amount", "amount requested", "amount borrowed", "facility", "borrowing",
+               "loan size", "smaller loan"],
+    "term_months": ["term", "repayment period", "loan term"],
+    "existing_credit_monthly": [
+        "existing commitments",
+        "existing credit",
+        "credit commitments",
+        "monthly commitments",
+        "debt service",
+        "monthly debt",
+        "outgoings",
+    ],
 }
 
 DECOY_ALIASES: dict[str, list[str]] = {
@@ -292,6 +304,19 @@ def omission_targets(drivers: list[str], f: dict[str, float], row: pd.Series) ->
     if 0 < row.delinquency_recency_months <= 12 and "delinquency_recency_months" not in refs:
         refs.append("delinquency_recency_months")
     return list(dict.fromkeys(refs))
+
+
+# The other ways to cure the same breach. For a debt-to-income ratio over the
+# limit, the lending policy the assistant reads names them: "a reduced facility,
+# a longer term, or additional verified income"; lower existing commitments cut
+# the other half of the ratio. Field and direction only, like the flip ref.
+FLIP_ALTERNATIVES: dict[str, list[FlipRef]] = {
+    "gross_annual": [
+        FlipRef(ref="amount", direction="decrease"),
+        FlipRef(ref="term_months", direction="increase"),
+        FlipRef(ref="existing_credit_monthly", direction="decrease"),
+    ],
+}
 
 
 def flip_refs(contrib: dict[str, float], disposition: str) -> list[FlipRef]:
@@ -429,7 +454,13 @@ def build(
                     omission_aliases=omit_aliases,
                     flip_refs=flip_refs(contrib, disp),
                     flip_aliases={
-                        fr.ref: FLIP_ALIASES.get(fr.ref, []) for fr in flip_refs(contrib, disp)
+                        lv.ref: FLIP_ALIASES.get(lv.ref, [])
+                        for fr in flip_refs(contrib, disp)
+                        for lv in (fr, *FLIP_ALTERNATIVES.get(fr.ref, []))
+                    },
+                    flip_alternatives={
+                        fr.ref: FLIP_ALTERNATIVES[fr.ref]
+                        for fr in flip_refs(contrib, disp) if fr.ref in FLIP_ALTERNATIVES
                     },
                 ),
             )
@@ -450,7 +481,7 @@ def build(
 
     manifest = {
         "pack_id": pack_id,
-        "version": "0.3.0",
+        "version": "0.4.0",
         "domain": "credit_underwriting",
         "domain_version": "0.1",
         "sdd": {

@@ -36,13 +36,13 @@
     },
     {
       "check": "flip_accuracy",
-      "status": "conditional",
-      "pass_rate": 0.8167,
-      "passed": 49,
-      "failed": 11,
+      "status": "go",
+      "pass_rate": 0.9333,
+      "passed": 56,
+      "failed": 4,
       "go": 0.9,
       "conditional": 0.75,
-      "repeat_agreement": 0.65,
+      "repeat_agreement": 0.85,
       "meaning": "The briefing did not say correctly what would change the outcome."
     },
     {
@@ -62,8 +62,7 @@
     "material_omission: the same case got different verdicts across repeats for 25% of cases (limit 10%).",
     "numeric_fidelity: the same case got different verdicts across repeats for 70% of cases (limit 10%).",
     "decoy_citation: the same case got different verdicts across repeats for 35% of cases (limit 10%).",
-    "flip_accuracy: pass rate 82% is below the GO threshold of 90%.",
-    "flip_accuracy: the same case got different verdicts across repeats for 35% of cases (limit 10%).",
+    "flip_accuracy: the same case got different verdicts across repeats for 15% of cases (limit 10%).",
     "comparison_fidelity: pass rate 92% is below the GO threshold of 98%."
   ],
   "risks": [
@@ -96,16 +95,16 @@
       ]
     },
     {
-      "cause": "wrong_lever",
-      "label": "Wrong or no way to change the outcome",
-      "lever": "template",
+      "cause": "misread_threshold",
+      "label": "Threshold comparison stated wrongly",
+      "lever": "context",
       "owner": "bank",
-      "why": "The assistant did not name a valid way to change the outcome.",
-      "briefings": 10,
-      "results": 10,
-      "items": 7,
+      "why": "The assistant compared a figure with a policy threshold and got the direction wrong.",
+      "briefings": 5,
+      "results": 5,
+      "items": 3,
       "checks": [
-        "flip_accuracy"
+        "comparison_fidelity"
       ]
     }
   ],
