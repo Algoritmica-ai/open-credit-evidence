@@ -22,7 +22,7 @@ What we have, verified 16 Sep 2026, and how the framework uses it.
 |---|---|---|
 | Assistant (Lightning) | NIM in the servers job (`scripts/cluster/servers.sbatch`), port from 8200 | Fixed seed on a local vLLM is reproducible; the free endpoint was not, and took 8–150 s per call. Runner at volume needs both. |
 | Teacher (Ultra) | NVIDIA Build, or Curiosity B300 (`scripts/cluster/serve_ultra.sh`) | 550B; too large for a single RTX GPU. Used once, to label the judge's training set. B300 option needs 4 GPUs (NVFP4 TP4). |
-| Judge (Nano) | NIM `nvidia-nemotron-nano-9b-v2:1.12.2` in the servers job, next free port, tool calling on (`nemotron_json`) | Nemotron Nano 9B v2, un-tuned today — the baseline. The fine-tuned adapter is served with vLLM by `serve_nano.sh ADAPTER=` until it can be served as a NIM profile. Loan files never leave the box. |
+| Judge (Nano) | NIM `nvidia-nemotron-nano-9b-v2:1.12.2` in the servers job, next free port, 64k context, tool calling on — the NIM's packaged `nemotron_json` parser, non-streamed requests only | Nemotron Nano 9B v2, un-tuned today — the baseline. The fine-tuned adapter is served with vLLM by `serve_nano.sh ADAPTER=` until it can be served as a NIM profile. Loan files never leave the box. |
 | Embed | NIM `nemotron-3-embed-1b:2.2.2` in the servers job, next free port (`serve_embed.sh` to debug it alone) | Nemotron 3 Embed 1B. With this, no case content and no query leaves the node, and a local run needs no NVIDIA key. |
 
 Switching a role is two lines in `.env`; see `.env.example`. Every `ChatResponse`

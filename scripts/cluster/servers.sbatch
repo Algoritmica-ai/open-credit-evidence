@@ -31,8 +31,6 @@ LIGHTNING_PORT=$(free_port 8200); JUDGE_PORT=$(free_port $((LIGHTNING_PORT+1)));
 NIM_IMAGE=nvcr.io/nim/nvidia/nemotron-3.5-lightning-30b-a3b:2.0.9-variant
 JUDGE_IMAGE=nvcr.io/nim/nvidia/nvidia-nemotron-nano-9b-v2:1.12.2
 EMBED_IMAGE=nvcr.io/nim/nvidia/nemotron-3-embed-1b:2.2.2
-# Nano's own tool-call parser, from its model card, so agents get structured tool calls
-NANO_PARSER=/data/team08/models/nemotron-nano-9b-v2/nemotron_toolcall_parser_no_streaming.py
 PROXY=http://10.130.232.8:3128
 source ~/.ngc_key 2>/dev/null || true
 
@@ -63,16 +61,16 @@ docker run -d --name team08-lightning --gpus "\"device=${FREE[0]}\"" --shm-size=
   -e NO_PROXY="localhost,127.0.0.1" -e no_proxy="localhost,127.0.0.1" \
   -v /data/team08/nim-cache:/opt/nim/.cache "$NIM_IMAGE" >/dev/null
 
+# The judge NIM takes its tool-call parser from the tool_use_config_v2.json that
+# ships with its model (nemotron_json, non-streaming): tool calls work in
+# non-streamed requests only. 64k context: agent runtimes send long system prompts.
 # The judge and embedder NIMs listen on 8000 (and 8001) inside their containers;
 # they are published on the job's ports rather than run on the host network, where
 # 8001 is taken by the Lightning NIM's own backend.
 docker run -d --name team08-judge --gpus "\"device=${FREE[1]}\"" --shm-size=16GB \
   -u "$(id -u)" -p "$JUDGE_PORT:8000" -e NGC_API_KEY "${PROXY_ENV[@]}" \
-  -e NIM_SERVED_MODEL_NAME=nano-judge -e NIM_MAX_MODEL_LEN=16384 \
-  -e NIM_ENABLE_AUTO_TOOL_CHOICE=1 -e NIM_TOOL_CALL_PARSER=nemotron_json \
-  -e NIM_TOOL_PARSER_PLUGIN=/opt/parsers/nemotron_toolcall_parser_no_streaming.py \
-  -v /data/team08/nim-cache:/opt/nim/.cache \
-  -v "$NANO_PARSER:/opt/parsers/nemotron_toolcall_parser_no_streaming.py:ro" "$JUDGE_IMAGE" >/dev/null
+  -e NIM_SERVED_MODEL_NAME=nano-judge -e NIM_MAX_MODEL_LEN=65536 -e NIM_ENABLE_AUTO_TOOL_CHOICE=1 \
+  -v /data/team08/nim-cache:/opt/nim/.cache "$JUDGE_IMAGE" >/dev/null
 
 docker run -d --name team08-embed --gpus "\"device=${FREE[2]}\"" --shm-size=4GB \
   -u "$(id -u)" -p "$EMBED_PORT:8000" -e NGC_API_KEY "${PROXY_ENV[@]}" \
