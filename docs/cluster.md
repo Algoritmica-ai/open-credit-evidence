@@ -22,8 +22,8 @@ What we have, verified 16 Sep 2026, and how the framework uses it.
 |---|---|---|
 | Assistant (Lightning) | NIM in the servers job (`scripts/cluster/servers.sbatch`), port from 8200 | Fixed seed on a local vLLM is reproducible; the free endpoint was not, and took 8–150 s per call. Runner at volume needs both. |
 | Teacher (Ultra) | NVIDIA Build, or Curiosity B300 (`scripts/cluster/serve_ultra.sh`) | 550B; too large for a single RTX GPU. Used once, to label the judge's training set. B300 option needs 4 GPUs (NVFP4 TP4). |
-| Judge (Nano) | vLLM in the servers job, next free port (`serve_nano.sh` to debug it alone) | Nemotron Nano 9B v2, un-tuned today — the baseline; the fine-tuned adapter is served by the same script with `ADAPTER=`. Loan files never leave the box. |
-| Embed | vLLM in the servers job, next free port (`serve_embed.sh` to debug it alone) | Nemotron 3 Embed 1B. With this, no case content and no query leaves the node, and a local run needs no NVIDIA key. |
+| Judge (Nano) | NIM `nvidia-nemotron-nano-9b-v2:1.12.2` in the servers job, next free port, 64k context, tool calling on — the NIM's packaged `nemotron_json` parser, non-streamed requests only | Nemotron Nano 9B v2, un-tuned today — the baseline. The fine-tuned adapter is served with vLLM by `serve_nano.sh ADAPTER=` until it can be served as a NIM profile. Loan files never leave the box. |
+| Embed | NIM `nemotron-3-embed-1b:2.2.2` in the servers job, next free port (`serve_embed.sh` to debug it alone) | Nemotron 3 Embed 1B. With this, no case content and no query leaves the node, and a local run needs no NVIDIA key. |
 
 Switching a role is two lines in `.env`; see `.env.example`. Every `ChatResponse`
 records its `endpoint`, so a transcript can always say cloud or on-prem.
@@ -65,15 +65,18 @@ kept for debugging one server at a time.
 
 ## Serving the Nano judge
 
+The servers job runs the Nano NIM. `serve_nano.sh` serves the same weights with
+vLLM (pinned by digest) for the fine-tuned adapter:
+
 ```
 srun --gres=gpu:1 -n1 -p defq --time=00:30:00 --pty bash
-GPU=7 bash ~/open-credit-evidence/scripts/cluster/serve_nano.sh
+GPU=7 ADAPTER=/data/team08/runs/<run>/adapter bash ~/open-credit-evidence/scripts/cluster/serve_nano.sh
 ```
 
 Pick a free GPU from `nvidia-smi` (run it through docker with `--gpus all` to see
-all eight; SLURM's cgroup hides the others). Port 8001 is taken on the node, so
-the judge is on 8002. Reachable from the laptop over the VPN at
-`http://10.130.232.20:8002/v1`.
+all eight; SLURM's cgroup hides the others). The judge and embed NIMs listen on
+8000/8001 inside their containers and are published on the job's ports; on the
+host network 8001 is taken by the Lightning NIM's backend.
 
 ## Serving Lightning
 
@@ -207,8 +210,8 @@ with `ADAPTER=`) becomes the runtime judge, and Ultra is no longer needed.
 | GPU | Use |
 |---|---|
 | one | Lightning NIM, long-lived |
-| one (GPU 7) | Nano judge, vLLM |
-| one (GPU 6) | Embedder, vLLM |
+| one | Nano judge NIM |
+| one | Embedder NIM |
 | one–two | LoRA training (`nemo:26.08.00`) |
 | rest | interactive work |
 

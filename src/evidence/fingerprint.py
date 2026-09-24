@@ -29,6 +29,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -40,6 +41,8 @@ import yaml
 from evidence.adapters.nvidia_build import endpoint_for
 
 TIMEOUT = 8
+# Settings that say where or under what name a model runs, not what it is.
+_LOCATION = re.compile(r"PORT|SERVED[-_]MODEL[-_]NAME|CACHE_PATH|served-model-name", re.I)
 
 
 def _get(url: str) -> Any:
@@ -108,24 +111,30 @@ def model_fingerprint(role: str) -> dict[str, Any]:
         "max_model_len": entry.get("max_model_len"),
     }
     weights: dict[str, Any] = {}
+    host = urlparse(base).netloc
+    node = _node_facts(host)
     meta = _get(f"{base}/metadata")
     if meta:  # a NIM describes its own build and profile
-        server |= {"nim_release": meta.get("version"),
-                   "model_build": [m.get("modelUrl") for m in meta.get("modelInfo", [])],
-                   "profile_id": meta.get("profile_id"),
-                   "profile_name": meta.get("profile_name")}
-        files = _nim_profile_files(_get(f"{base}/manifest"), meta.get("profile_id"))
+        version = meta.get("version")
+        # Older NIMs name the selected profile only in their log; the node records it.
+        picked = (node or {}).get("nim_profile") or {}
+        profile_id = meta.get("profile_id") or picked.get("id")
+        server |= {"nim_release": version.get("release") if isinstance(version, dict)
+                   else version,
+                   "model_build": [m.get("modelUrl") for m in meta.get("modelInfo", [])
+                                   if m.get("modelUrl")],
+                   "profile_id": profile_id,
+                   "profile_name": meta.get("profile_name") or picked.get("name")}
+        files = _nim_profile_files(_get(f"{base}/manifest"), profile_id)
         if files:
             weights = {"source": "NIM manifest, active profile", "files": files}
 
-    host = urlparse(base).netloc
-    node = _node_facts(host)
     container: dict[str, Any] = {}
     if node:
         container = {"image": node.get("image"), "image_id": node.get("image_id"),
                      "repo_digests": node.get("repo_digests"), "args": {
                          k: v for k, v in (node.get("args") or {}).items()
-                         if k != "--served-model-name"}}
+                         if not _LOCATION.search(k)}}
         w = node.get("weights") or {}
         if w.get("files") and not weights:
             weights = {"source": "Hugging Face download on the node",

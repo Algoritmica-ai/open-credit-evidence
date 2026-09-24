@@ -52,8 +52,12 @@ def _sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def weights(directory: Path) -> dict:
-    """Commit and per-file SHA-256 of a Hugging Face download."""
+def weights(directory: Path, hash_all: bool = False) -> dict:
+    """Commit and per-file SHA-256 of a Hugging Face download (or a NIM's model folder).
+
+    ``hash_all`` hashes large files that carry no download metadata too — a
+    NIM's own model folder, where there is no Hugging Face etag to read.
+    """
     meta_dir = directory / ".cache" / "huggingface" / "download"
     commits: set[str] = set()
     files: dict[str, str] = {}
@@ -69,10 +73,13 @@ def weights(directory: Path) -> dict:
                 etag = lines[1].strip()  # an LFS file: the etag is its SHA-256
         if etag:
             files[rel] = etag
-        elif path.stat().st_size <= SMALL:
+        elif hash_all or path.stat().st_size <= SMALL:
             files[rel] = _sha256(path)
         else:
             files[rel] = "unhashed: large file without download metadata"
+    marker = directory / "HF_COMMIT.txt"  # written by an NGC model download
+    if not commits and marker.is_file():
+        commits.add(marker.read_text().strip())
     return {"dir": str(directory), "hf_commit": sorted(commits)[0] if len(commits) == 1
             else sorted(commits) or None, "files": files}
 
@@ -90,6 +97,19 @@ def container(name: str) -> dict | None:
         repo_digests = []
     args = info.get("Args") or []
     kept = {a: args[i + 1] for i, a in enumerate(args[:-1]) if a in ARGS_THAT_MATTER}
+    # A NIM is configured by NIM_* environment variables. Only those set when the
+    # container was started: the image's own defaults are fixed by its digest.
+    # Keys and tokens never.
+    try:
+        image_env = set(json.loads(_docker("image", "inspect", "-f", "{{json .Config.Env}}",
+                                           image_id)) or [])
+    except (subprocess.CalledProcessError, json.JSONDecodeError):
+        image_env = set()
+    for item in info["Config"].get("Env") or []:
+        key, _, value = item.partition("=")
+        if (key.startswith("NIM_") and item not in image_env
+                and not re.search(r"KEY|TOKEN|SECRET|PASSWORD", key)):
+            kept[key] = value
     mounts = [m for m in info.get("Mounts", []) if m.get("Type") == "bind"]
     out = {
         "container": name,
@@ -101,11 +121,27 @@ def container(name: str) -> dict | None:
         "mounts": {m["Destination"]: m["Source"] for m in mounts},
         "weights": None,
     }
-    # a vLLM server's weights are the directory mounted at its --model path
+    # a vLLM server's weights are the directory mounted at its --model path; a
+    # NIM's are described by the NIM itself (/v1/metadata, /v1/manifest)
     model_arg = next((args[i + 1] for i, a in enumerate(args[:-1]) if a == "--model"), None)
+    env = dict(e.partition("=")[::2] for e in info["Config"].get("Env") or [])
+    nim_model_dir = env.get("NIM_ENGINE_MODEL_PATH")  # an embedding NIM's model folder
     for m in mounts:
         if model_arg and model_arg.startswith(m["Destination"]):
             out["weights"] = weights(Path(m["Source"]))
+        elif nim_model_dir and m["Destination"] == nim_model_dir:
+            out["weights"] = weights(Path(m["Source"]), hash_all=True)
+    # An LLM NIM names the profile it selected only in its log.
+    try:
+        log = subprocess.run(["docker", "logs", name], capture_output=True, text=True,
+                             timeout=60).stdout + ""
+        log += subprocess.run(["docker", "logs", name], capture_output=True, text=True,
+                              timeout=60).stderr
+    except (subprocess.SubprocessError, OSError):
+        log = ""
+    picked = re.findall(r"Selected profile: (\w+) \(([^)]+)\)", log)
+    if picked:
+        out["nim_profile"] = {"id": picked[-1][0], "name": picked[-1][1]}
     return out
 
 

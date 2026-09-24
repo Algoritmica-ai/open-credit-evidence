@@ -56,6 +56,7 @@ def test_vllm_is_pinned_by_the_weights_the_node_hashed(on_prem):
     assert fp["components"]["weights"]["hf_commit"] == "6533e8de"
     assert fp["components"]["container"]["image_id"] == "sha256:img"
     assert "--served-model-name" not in fp["components"]["container"]["args"]
+    assert fp["components"]["container"]["args"] == {"--dtype": "bfloat16"}
 
 
 def test_a_nim_is_pinned_by_its_active_profile(on_prem):
@@ -92,3 +93,42 @@ def test_a_model_that_changed_during_the_run_cannot_support_a_decision():
                      {"assistant": {"changed_during_run": True}})
     assert changed["verdict"] == "INCONCLUSIVE"
     assert any("assistant model changed" in c for c in changed["conditions"])
+
+
+def test_where_and_under_what_name_a_nim_runs_is_not_part_of_its_identity(on_prem, monkeypatch):
+    base = on_prem(nim=True)["fingerprint"]
+    doc = json.loads(open(fpm.os.environ["EVIDENCE_MODELS_FILE"]).read())
+    doc["servers"]["judge"]["args"] |= {"NIM_SERVER_PORT": "8201", "NIM_SERVED_MODEL_NAME": "x",
+                                        "NIM_CACHE_PATH": "/opt/nim/.cache"}
+    open(fpm.os.environ["EVIDENCE_MODELS_FILE"], "w").write(json.dumps(doc))
+    assert fpm.model_fingerprint("judge")["fingerprint"] == base
+    doc["servers"]["judge"]["args"]["NIM_ENABLE_AUTO_TOOL_CHOICE"] = "1"  # changes behaviour
+    open(fpm.os.environ["EVIDENCE_MODELS_FILE"], "w").write(json.dumps(doc))
+    assert fpm.model_fingerprint("judge")["fingerprint"] != base
+
+
+def test_an_older_nim_names_its_profile_through_the_node(monkeypatch, tmp_path):
+    # NIM 1.x: version is an object and the selected profile is only in the log
+    def get(url):
+        if url.endswith("/v1/models"):
+            return {"data": [{"id": "nano-judge", "max_model_len": 16384}]}
+        if url.endswith("/v1/metadata"):
+            return {"version": {"release": "1.12.2", "api": "3.1.0"},
+                    "modelInfo": [{"shortName": "nano-judge", "modelUrl": ""}]}
+        if url.endswith("/v1/manifest"):
+            return {"manifest_file": MANIFEST}
+        return None
+    monkeypatch.setattr(fpm, "_get", get)
+    monkeypatch.setenv("EVIDENCE_JUDGE_BASE_URL", "http://10.0.0.5:8201/v1")
+    monkeypatch.setenv("EVIDENCE_JUDGE_MODEL", "nano-judge")
+    path = tmp_path / "models.json"
+    path.write_text(json.dumps({"servers": {"judge": {
+        "address": "10.0.0.5:8201", "image_id": "sha256:nim", "args": {},
+        "nim_profile": {"id": "active", "name": "vllm-bf16-tp1-pp1"}}}}))
+    monkeypatch.setenv("EVIDENCE_MODELS_FILE", str(path))
+    fp = fpm.model_fingerprint("judge")
+    assert fp["level"] == "weights"
+    assert fp["components"]["server"]["nim_release"] == "1.12.2"
+    assert fp["components"]["server"]["profile_name"] == "vllm-bf16-tp1-pp1"
+    assert fp["components"]["weights"]["files"] == {"b.safetensors": "blake3:222",
+                                                     "c.json": "blake3:333"}

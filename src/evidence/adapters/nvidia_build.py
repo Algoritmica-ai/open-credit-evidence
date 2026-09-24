@@ -205,8 +205,11 @@ def embed(texts: list[str], *, input_type: str) -> list[list[float]]:
         raise ValueError("input_type must be 'passage' (indexing) or 'query' (searching)")
     ep = endpoint_for("embed")
     client = _client(ep)
-    if ep.is_build:
-        # NVIDIA Build takes the role as a parameter.
+    # NVIDIA Build and an embedding NIM take the role as a parameter. A plain
+    # vLLM server of the raw checkpoint takes it as a text prefix, per the model
+    # card: set EVIDENCE_EMBED_ROLE_STYLE=prefix for that.
+    style = os.environ.get("EVIDENCE_EMBED_ROLE_STYLE", "parameter").strip().lower()
+    if ep.is_build or style != "prefix":
         resp = client.embeddings.create(
             model=ep.model_id,
             input=texts,
@@ -214,7 +217,6 @@ def embed(texts: list[str], *, input_type: str) -> list[list[float]]:
             extra_body={"input_type": input_type, "truncate": "END"},
         )
     else:
-        # A self-hosted checkpoint (vLLM) takes it as a text prefix, per the model card.
         resp = client.embeddings.create(
             model=ep.model_id,
             input=[f"{input_type}: {t}" for t in texts],
