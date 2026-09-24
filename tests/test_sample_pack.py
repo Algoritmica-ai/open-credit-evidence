@@ -90,6 +90,7 @@ def test_decoys_are_the_declared_irrelevant_fields() -> None:
         assert set(it.grading.decoy_refs) == set(DECOYS), it.item_id
         assert "tenure_months" not in it.grading.decoy_refs
         assert "comparison_fidelity" in it.deterministic_checks
+        assert "claim_consistency" in it.deterministic_checks and it.grading.claim_aliases
 
 
 def test_a_debt_ratio_lever_accepts_every_cure_the_policy_names() -> None:

@@ -63,6 +63,10 @@ class GradingSpec(_Strict):
     # longer term or lower existing commitments: naming any one of them, in its
     # direction, names a way to change the outcome. Field and direction only.
     flip_alternatives: dict[str, list[FlipRef]] = Field(default_factory=dict)
+    # Quantities a briefing may hold against a policy limit, with the words that
+    # name them — so a claim ("debt service exceeds the 40% threshold") can be
+    # checked against the figure the same briefing gives. No threshold travels.
+    claim_aliases: dict[str, list[str]] = Field(default_factory=dict)
 
     contradiction_refs: list[str] = Field(default_factory=list)
     contradiction_labels: dict[str, str] = Field(default_factory=dict)

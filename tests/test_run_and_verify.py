@@ -89,6 +89,7 @@ def test_run_writes_transcripts_results_and_sealed_evidence(stubbed, tmp_path):
         "decoy_citation",
         "flip_accuracy",
         "comparison_fidelity",
+        "claim_consistency",
         "readability",
     }
     assert manifest["regulatory"]["status"] == "pass"
@@ -100,7 +101,7 @@ def test_run_writes_transcripts_results_and_sealed_evidence(stubbed, tmp_path):
     assert res["summary"]["checks"]["material_omission"]["failed"] >= 1
     v = verify_run(out, stubbed, recompute=True)
     assert v.ok, v.message
-    assert v.recomputed == 8 * 5
+    assert v.recomputed == 8 * 6
 
 
 def test_rerun_is_resumable_without_new_calls(stubbed, tmp_path):

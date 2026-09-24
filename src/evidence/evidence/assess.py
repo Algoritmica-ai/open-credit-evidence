@@ -51,6 +51,8 @@ MEANING = {
     "flip_accuracy": "The briefing did not say correctly what would change the outcome.",
     "comparison_fidelity": "The briefing stated a comparison that is false — a figure above "
                            "a threshold described as below it, or the reverse.",
+    "claim_consistency": "The briefing said a limit was breached, or met, and its own figure "
+                         "says otherwise.",
 }
 
 CAUSES: dict[str, dict[str, str]] = {
@@ -65,10 +67,10 @@ CAUSES: dict[str, dict[str, str]] = {
                   "it, that is the vendor's to fix.",
     },
     "misread_threshold": {
-        "label": "Threshold comparison stated wrongly",
+        "label": "Threshold stated the wrong way round",
         "lever": "context", "owner": "bank",
         "why": "The assistant compared a figure with a policy threshold and got the direction "
-               "wrong.",
+               "wrong, or said a limit was breached when its own figure says it was not.",
         "title": "Hand the assistant the rules the case breached",
         "action": "Pass in the list of policy rules the case breached, as the rules engine "
                   "decided them, so the assistant reports them instead of comparing figures "
@@ -124,6 +126,7 @@ DEFAULT_THRESHOLDS: dict[str, Any] = {
         "decoy_citation": {"go": 0.95, "conditional": 0.85},
         "flip_accuracy": {"go": 0.90, "conditional": 0.75},
         "comparison_fidelity": {"go": 0.98, "conditional": 0.90},
+        "claim_consistency": {"go": 0.98, "conditional": 0.90},
     },
     "min_results": 5,
     "repeat_agreement_min": 0.90,
@@ -177,6 +180,11 @@ def diagnose(results: list[dict[str, Any]]) -> dict[str, Any]:
             false = [e.get("reads_as") for e in by["comparison_fidelity"].get("evidence", [])
                      if e.get("holds") is False]
             add("comparison_fidelity", "misread_threshold", false_comparisons=false)
+
+        if "claim_consistency" in failed:
+            bad = [f"claims {e.get('claims')}, states {e.get('contradicted_by')}%"
+                   for e in by["claim_consistency"].get("evidence", []) if e.get("holds") is False]
+            add("claim_consistency", "misread_threshold", contradictions=bad)
 
         if "decoy_citation" in failed:
             ev = [e for e in by["decoy_citation"].get("evidence", []) if e.get("cited")]
