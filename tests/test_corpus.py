@@ -36,6 +36,12 @@ def test_eu_sources_chunk_and_manifest_is_reproducible(tmp_path):
     m1 = build_corpus("EU", tmp_path, embedder=fake_embed, embed_model="fake")
     m2 = build_corpus("EU", tmp_path, embedder=fake_embed, embed_model="fake")
     assert m1["passages"] >= 20 and m1["corpus_sha256"] == m2["corpus_sha256"]
+    # the same passages under the same model name, embedded differently, are a new version
+    m3 = build_corpus("EU", tmp_path, embedder=lambda texts, kind: [
+        list(reversed(v)) for v in fake_embed(texts, kind)], embed_model="fake")
+    assert m3["passages_sha256"] == m1["passages_sha256"]
+    assert m3["vectors_sha256"] != m1["vectors_sha256"]
+    assert m3["corpus_sha256"] != m1["corpus_sha256"]
     base, spec = load_corpus_spec("EU", tmp_path)
     assert {s["id"] for s in spec["sources"]} == {s["id"] for s in m1["sources"]}
     assert (tmp_path / "EU" / "index" / "passages.db").exists()

@@ -8,6 +8,7 @@
   "dimension": 2048,
   "passages": 26,
   "passages_sha256": "7f3c6ec680008d906f9a138fef5e7d040a608edaf2892c69da5c242313a2e93e",
+  "vectors_sha256": "559fb9fea06bfc19159bee0276ed080aec18fb576fbc2fdfdbffb48b38c15318",
   "sources": [
     {
       "id": "ai-act-art-13",
@@ -55,5 +56,5 @@
       "passages": 1
     }
   ],
-  "corpus_sha256": "1c42832279bbbee81d3f66568ac4b5ccd3488613bab5351e0536781f4bfb0535"
+  "corpus_sha256": "4cec98282f8332085eb68735dd75512f94be86fe648c21aac15ed9f34892d83b"
 }

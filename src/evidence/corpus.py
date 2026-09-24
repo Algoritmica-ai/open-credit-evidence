@@ -151,13 +151,11 @@ def build_corpus(
     (index / "passages.jsonl").write_bytes(passages_bytes)
 
     vectors = embedder([p.text for p in passages], "passage")
-    (index / "vectors.jsonl").write_text(
-        "".join(
-            json.dumps({"passage_id": p.passage_id, "vector": [round(x, 6) for x in v]}) + "\n"
-            for p, v in zip(passages, vectors, strict=True)
-        ),
-        encoding="utf-8",
-    )
+    vectors_bytes = "".join(
+        json.dumps({"passage_id": p.passage_id, "vector": [round(x, 6) for x in v]}) + "\n"
+        for p, v in zip(passages, vectors, strict=True)
+    ).encode("utf-8")
+    (index / "vectors.jsonl").write_bytes(vectors_bytes)
     backend = _build_milvus(index / "passages.db", passages, vectors)
 
     manifest = {
@@ -170,11 +168,15 @@ def build_corpus(
         "dimension": len(vectors[0]),
         "passages": len(passages),
         "passages_sha256": _sha256(passages_bytes),
+        # The vectors decide what the judge retrieves. A new embedder under the same
+        # model name, or a rebuild that embeds differently, is a new corpus version.
+        "vectors_sha256": _sha256(vectors_bytes),
         "sources": sources,
     }
     manifest["corpus_sha256"] = _sha256(
         json.dumps(
-            {k: manifest[k] for k in ("chunking", "embed_model", "passages_sha256", "sources")},
+            {k: manifest[k] for k in ("chunking", "embed_model", "passages_sha256",
+                                      "vectors_sha256", "sources")},
             sort_keys=True,
         ).encode("utf-8")
     )

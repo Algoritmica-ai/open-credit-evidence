@@ -59,3 +59,45 @@ def test_build_host_never_touches_proxy(monkeypatch):
     monkeypatch.setenv("NO_PROXY", "localhost")
     nb._bypass_proxy(nb.BASE_URL)
     assert os.environ["NO_PROXY"] == "localhost"
+
+
+class _FakeEmbeddings:
+    def __init__(self):
+        self.calls = []
+
+    def create(self, **kw):
+        self.calls.append(kw)
+
+        class _D:
+            embedding = [1.0, 0.0]
+
+        class _R:
+            data = [_D() for _ in kw["input"]]
+
+        return _R()
+
+
+def _embed_with(monkeypatch, **env):
+    fake = _FakeEmbeddings()
+
+    class _Client:
+        embeddings = fake
+
+    monkeypatch.setattr(nb, "_client", lambda ep: _Client())
+    monkeypatch.setenv("EVIDENCE_EMBED_BASE_URL", "http://rtx-3se-06-04:8202/v1")
+    monkeypatch.setenv("EVIDENCE_EMBED_MODEL", "nvidia/nemotron-3-embed-1b")
+    for k, v in env.items():
+        monkeypatch.setenv(k, v)
+    nb.embed(["human oversight"], input_type="query")
+    return fake.calls[0]
+
+
+def test_an_embedding_nim_takes_the_role_as_a_parameter(monkeypatch):
+    call = _embed_with(monkeypatch)
+    assert call["input"] == ["human oversight"]
+    assert call["extra_body"]["input_type"] == "query"
+
+
+def test_a_raw_vllm_checkpoint_takes_the_role_as_a_prefix(monkeypatch):
+    call = _embed_with(monkeypatch, EVIDENCE_EMBED_ROLE_STYLE="prefix")
+    assert call["input"] == ["query: human oversight"] and "extra_body" not in call

@@ -2,9 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2026 Algoritmica GmbH
 #
-# Serve Nemotron Nano 9B v2 on the team's Codefest node as the judge, with vLLM.
-# Today the un-tuned model (the baseline); later the same command with
-# ADAPTER=/data/team08/runs/<run>/adapter serves the fine-tuned judge.
+# Serve Nemotron Nano 9B v2 with vLLM, for the fine-tuned judge: with
+# ADAPTER=/data/team08/runs/<run>/adapter it serves the LoRA adapter on top of
+# the base weights. The judge in the servers job is the Nano NIM
+# (nvcr.io/nim/nvidia/nvidia-nemotron-nano-9b-v2); this script is for adapter
+# experiments until the fine-tuned judge is served the same way.
 #
 # Run inside an srun session on the GPU node:
 #   srun --gres=gpu:1 -n1 -p defq --time=00:30:00 --pty bash
@@ -16,7 +18,8 @@
 set -euo pipefail
 
 NAME=${NAME:-team08_nano-judge}
-IMAGE=${IMAGE:-vllm/vllm-openai:nightly}
+# pinned by digest: the vLLM build the judge ran on before the NIM (never "nightly")
+IMAGE=${IMAGE:-vllm/vllm-openai@sha256:1e1f56a164a3dfdf87a57168983602421a295b0b3570d27c5b49c54b97b341b4}
 MODEL_DIR=${MODEL_DIR:-/data/team08/models/nemotron-nano-9b-v2}
 SERVED=${SERVED:-nano-judge}
 PORT=${NANO_PORT:-8002}
