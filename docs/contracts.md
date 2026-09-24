@@ -41,7 +41,10 @@ One line of `packs/<pack>/items.jsonl`. Typed as `BenchmarkItem` in `contracts/i
     "omission_labels": { "dti_ratio": "...", "policy_limit_dti": "the 40% debt-to-income policy limit" },
     "omission_aliases": { "dti_ratio": ["47%", "exceeds the 40%", "..."], "policy_limit_dti": ["40%", "..."] },
     "flip_refs": [ { "ref": "gross_annual", "direction": "increase" } ],
-    "flip_aliases": { "gross_annual": ["income", "gross monthly income", "earnings"] },
+    "flip_aliases": { "gross_annual": ["income", "gross monthly income", "earnings"], "amount": ["loan amount", "..."] },
+    "flip_alternatives": { "gross_annual": [ { "ref": "amount", "direction": "decrease" },
+                                             { "ref": "term_months", "direction": "increase" },
+                                             { "ref": "existing_credit_monthly", "direction": "decrease" } ] },
     "contradiction_refs": [],
     "contradiction_labels": {}
   },

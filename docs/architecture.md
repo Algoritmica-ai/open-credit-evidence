@@ -107,7 +107,7 @@ briefing text + item
 | `numeric_fidelity` | Is every number in the briefing in the file, or one arithmetic step from it? | No ungrounded number |
 | `comparison_fidelity` | Does every comparison it states hold ("652 is below 600")? | No false comparison between two figures |
 | `decoy_citation` | Did it cite a field with no bearing on the outcome as a reason? | No decoy in a sentence with a reasoning cue |
-| `flip_accuracy` | Did it name what would change the outcome, and which way? | Every flip lever named with its direction |
+| `flip_accuracy` | Did it name what would change the outcome, and which way? | Every flip lever — or another lever that cures the same breach — named with its direction |
 
 Further checks register the same way: name on the item → function → uniform
 result.

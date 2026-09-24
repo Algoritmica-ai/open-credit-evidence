@@ -70,6 +70,9 @@ def test_answer_key_does_not_travel() -> None:
     for it in _items():
         for f in it.grading.flip_refs:
             assert set(f.model_dump()) == {"ref", "direction"}
+        for alts in it.grading.flip_alternatives.values():
+            for f in alts:
+                assert set(f.model_dump()) == {"ref", "direction"}
 
 
 def test_decoys_and_drivers_are_disjoint() -> None:
@@ -87,6 +90,20 @@ def test_decoys_are_the_declared_irrelevant_fields() -> None:
         assert set(it.grading.decoy_refs) == set(DECOYS), it.item_id
         assert "tenure_months" not in it.grading.decoy_refs
         assert "comparison_fidelity" in it.deterministic_checks
+
+
+def test_a_debt_ratio_lever_accepts_every_cure_the_policy_names() -> None:
+    # "a reduced facility, a longer term, or additional verified income" — and lower commitments
+    seen = 0
+    for it in _items():
+        for f in it.grading.flip_refs:
+            if f.ref == "gross_annual":
+                seen += 1
+                alts = {(a.ref, a.direction) for a in it.grading.flip_alternatives[f.ref]}
+                assert alts == {("amount", "decrease"), ("term_months", "increase"),
+                                ("existing_credit_monthly", "decrease")}
+                assert all(it.grading.flip_aliases.get(r) for r, _ in alts)
+    assert seen
 
 
 def test_negative_control_fails_on_every_real_item() -> None:

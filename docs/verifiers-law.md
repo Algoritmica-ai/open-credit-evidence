@@ -40,7 +40,7 @@ It also explains the boundary of the product without argument:
 | Use only numbers that are in the file | On 16 Sep, 8 of 10 briefings stated a wrong ratio | `numeric_fidelity` — every number must be in, or derivable from, the case file | instant |
 | Compare figures with thresholds the right way round | "652 is below 600" reads well and passes the other checks | `comparison_fidelity` — every stated comparison is tested on its own numbers | instant |
 | Ignore fields with no bearing on the outcome | Age band, dependants, postcode look relevant | `decoy_citation` — decoys are known by construction | instant |
-| Say what would have to change | Needs the policy, not a restatement of it | `flip_refs` — field and direction | instant |
+| Say what would have to change | Needs the policy, not a restatement of it | `flip_refs` — field and direction, with the other levers that cure the same breach | instant |
 | Give the same verdict every time | Serving is not deterministic | N runs, agreement rate | minutes |
 | Surveillance: flag accounts over a limit | Thousands of rows, several limits | recompute the limit | instant |
 | Keep the evidence pack intact | — | hash chain, tamper test | instant |
