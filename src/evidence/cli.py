@@ -5,6 +5,7 @@
 evidence run packs/underwriter-sample --repeats 3 --out runs/2026-10-07
 evidence report runs/2026-10-07 [--rewrite --thresholds bank_thresholds.yaml] [--for business]
 evidence verify runs/2026-10-07 [--recompute --pack packs/underwriter-sample]
+evidence export runs/2026-10-07 [--doc business] [--out exports/today]
 evidence compare runs/before runs/after
 evidence rules packs/underwriter-sample
 evidence checks
@@ -95,6 +96,21 @@ def _cmd_report(a: argparse.Namespace) -> int:
         print(f"{path} not found", file=sys.stderr)
         return 1
     sys.stdout.write(path.read_text(encoding="utf-8"))
+    return 0
+
+
+def _cmd_export(a: argparse.Namespace) -> int:
+    from evidence.evidence.export import DOCUMENTS, export_run
+
+    run = Path(a.run)
+    out = Path(a.out) if a.out else Path("exports") / run.name
+    res = export_run(run, out, a.doc or list(DOCUMENTS), pdf=not a.html)
+    for path in res["written"]:
+        print(path)
+    print(f"seal     {res['seal']}  (SHA-256 of {run / 'checksums.sha256'})")
+    if not res["pdf"] and not a.html:
+        print("no Chrome or Chromium found (set EVIDENCE_CHROME): wrote HTML; print it to PDF "
+              "from a browser", file=sys.stderr)
     return 0
 
 
@@ -224,6 +240,16 @@ def main(argv: list[str] | None = None) -> int:
     cp.add_argument("after")
     cp.add_argument("--json", action="store_true")
     cp.set_defaults(fn=_cmd_compare)
+
+    x = sub.add_parser("export", help="the run's reports as PDF, with timestamps and checksums")
+    x.add_argument("run")
+    x.add_argument("--out", help="directory (default exports/<run>); never inside the run")
+    x.add_argument("--doc", action="append",
+                   choices=["business", "credit-risk", "compliance", "operations", "vendor",
+                            "auditor", "full"],
+                   help="one document; repeat for several (default: all seven)")
+    x.add_argument("--html", action="store_true", help="write HTML only, no PDF")
+    x.set_defaults(fn=_cmd_export)
 
     v = sub.add_parser("verify", help="re-check a run's checksums, optionally re-derive results")
     v.add_argument("run")

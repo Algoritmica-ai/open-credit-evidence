@@ -276,7 +276,7 @@ textarea { font: 12px/1.55 var(--mono); min-height: 460px; resize: vertical; whi
 .sdd-flow .st b { font-variant-numeric: tabular-nums; }
 .sdd-flow .ar { color: var(--ink-3); }
 .sdd-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
-.sdd-actions a.btn { text-decoration: none; }
+a.btn, .sdd-actions a.btn { text-decoration: none; }
 .sdd-prov { font: 11.5px var(--mono); color: var(--ink-3); word-break: break-all; }
 table.sdd-recipe { table-layout: fixed; width: 100%; }
 table.sdd-recipe th, table.sdd-recipe td { white-space: normal; vertical-align: top; word-break: break-word; }

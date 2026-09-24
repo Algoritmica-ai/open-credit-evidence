@@ -373,6 +373,7 @@ async function showReader(runId, r) {
   state.readerText = res.ok ? await res.text() : ""; state.readerTitle = `${runId} — ${r.title}`;
   $("rd-body").innerHTML = res.ok ? md(state.readerText) : `<p class="nul">Not available for this run.</p>`;
   $("rd-download").href = url;
+  $("rd-pdf").href = `/api/runs/${runId}/pdf/${r.name}`;
 }
 
 function renderReaders(runId, readers) {
