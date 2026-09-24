@@ -115,17 +115,12 @@ def test_split_drops_the_file_note_and_refuses_unheaded_or_overrunning_text():
         split_passages(src, "## 5.\n\nmodel flaws.\n\nArticle 16\n\nObligations\n")
 
 
-def test_eu_passages_carry_no_file_note_or_structural_heading():
-    base, spec = load_corpus_spec("EU")
-    for s in spec["sources"]:
-        for p in split_passages(s, (base / s["file"]).read_text(encoding="utf-8")):
-            assert "Source: http" not in p.text and "consolidated text as of" not in p.text
-    # the repository's index is built from the sources as they are now
-    built = [(r["passage_id"], r["text"]) for r in map(json.loads, (
-        base / "index" / "passages.jsonl").read_text(encoding="utf-8").splitlines())]
-    fresh = [(p.passage_id, p.text) for s in spec["sources"]
-             for p in split_passages(s, (base / s["file"]).read_text(encoding="utf-8"))]
-    assert built == fresh
+def test_passages_carry_no_file_note_or_structural_heading():
+    for j in ("EU", "IT", "US"):
+        base, spec = load_corpus_spec(j)
+        for s in spec["sources"]:
+            for p in split_passages(s, (base / s["file"]).read_text(encoding="utf-8")):
+                assert "Source: http" not in p.text and "consolidated text as of" not in p.text
 
 
 def test_embedder_check_passes_for_the_builder_and_fails_for_another(regulations_root):
@@ -165,13 +160,46 @@ def test_verify_sources_finds_passages_and_says_where_one_diverges(regulations_r
     assert p0.passage_id in source_check_status("EU", edited, regulations_root)["unchecked"]
 
 
-def test_repository_source_check_covers_every_passage():
+@pytest.mark.parametrize("jurisdiction", ["EU", "IT", "US"])
+def test_repository_corpus_is_built_from_its_sources_and_checked(jurisdiction):
     from evidence.corpus import list_corpora
 
-    eu = next(c for c in list_corpora() if c["jurisdiction"] == "EU")
-    sc = eu["source_check"]
-    assert sc is not None, "run evidence corpus verify-sources EU"
-    assert sc["found"] == sc["passages"] == eu["passages"] and not sc["unchecked"]
+    base, spec = load_corpus_spec(jurisdiction)
+    built = [(r["passage_id"], r["text"]) for r in map(json.loads, (
+        base / "index" / "passages.jsonl").read_text(encoding="utf-8").splitlines())]
+    fresh = [(p.passage_id, p.text) for s in spec["sources"]
+             for p in split_passages(s, (base / s["file"]).read_text(encoding="utf-8"))]
+    assert built == fresh, f"rebuild: evidence corpus build {jurisdiction}"
+    c = next(c for c in list_corpora() if c["jurisdiction"] == jurisdiction)
+    sc = c["source_check"]
+    assert sc is not None, f"run evidence corpus verify-sources {jurisdiction}"
+    assert sc["found"] == sc["passages"] == c["passages"] and not sc["unchecked"]
+
+
+def test_new_content_is_in_the_corpora():
+    ids = {j: {json.loads(x)["passage_id"] for x in (ROOT / "regulations" / j / "index" /
+                                                     "passages.jsonl").read_text().splitlines()}
+           for j in ("EU", "IT", "US")}
+    assert {"ai-act-art-9#6", "ccd2-art-18#8", "ccd2-art-19#6"} <= ids["EU"]
+    assert {"tub-124-bis#2-bis", "tub-125#1-quinquies", "tub-127-ter#1",
+            "dlgs-212-2025-art-6#2"} <= ids["IT"]
+    assert {"sr-26-2#V", "sr-26-2-fn#3"} <= ids["US"]
+    # Normattiva's editorial marks are not law; repealed paragraphs are not passages
+    it = (ROOT / "regulations" / "IT" / "index" / "passages.jsonl").read_text()
+    assert "((" not in it and "ABROGATO" not in it and "tub-120-undecies#7" not in ids["IT"]
+
+
+def test_every_obligation_passage_is_in_the_pack_corpus():
+    from evidence.pack import load_pack
+
+    pack = load_pack(ROOT / "packs" / "underwriter-sample")
+    corpus = str(pack.obligations.get("corpus") or "EU")
+    ids = {json.loads(x)["passage_id"] for x in (ROOT / "regulations" / corpus / "index" /
+                                                 "passages.jsonl").read_text().splitlines()}
+    cited = {pid for ob in pack.obligations["obligations"] for pid in ob.get("passages", [])}
+    assert cited and cited <= ids, sorted(cited - ids)
+    art9 = next(ob for ob in pack.obligations["obligations"] if ob["id"] == "eu-ai-act:9")
+    assert art9["passages"]
 
 
 def test_parse_scores_reads_nested_per_question_citations():

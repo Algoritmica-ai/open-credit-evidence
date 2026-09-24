@@ -1,7 +1,7 @@
 {
   "jurisdiction": "EU",
-  "title": "EU Artificial Intelligence Act \u2014 provisions relevant to an assistant in a credit decision",
-  "verified": "2026-09-20",
+  "title": "EU AI Act and Consumer Credit Directive \u2014 provisions relevant to an assistant in a credit decision",
+  "verified": "2026-09-24",
   "chunking": "markdown-h2-paragraph-v2",
   "index_backend": "milvus-lite",
   "embed_model": "nvidia/nemotron-3-embed-1b",
@@ -12,10 +12,19 @@
     "level": "weights"
   },
   "dimension": 2048,
-  "passages": 26,
-  "passages_sha256": "cccaebf367558ea2d92ec06d2834b586576ca652871b08ab08cf33fd7beec297",
-  "vectors_sha256": "3c73833356f3bad9bfa9487bf591afbe783121f10af65ad46a1817e3f89e81cc",
+  "passages": 55,
+  "passages_sha256": "c79b7c9408d1a2125e167a713f06a16c5a115c37ebbd56fee1bd05d278c8fefe",
+  "vectors_sha256": "66b2161fd0a055fc9de37aed266de749faed18a46d510fee5fb00e26f1aa6ae2",
   "sources": [
+    {
+      "id": "ai-act-art-9",
+      "file": "sources/ai-act-article-9.md",
+      "citation": "AI Act Article 9",
+      "title": "Risk management system",
+      "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng",
+      "sha256": "38b830d5288765a37f923b6a983368e7be716a37af28711b54868e44d6b9a697",
+      "passages": 10
+    },
     {
       "id": "ai-act-art-13",
       "file": "sources/ai-act-article-13.md",
@@ -60,7 +69,25 @@
       "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng",
       "sha256": "ed8678a58392f28b3b1b426963f28aead8ab71ca29d9bcb6ea2ea20052e01da2",
       "passages": 1
+    },
+    {
+      "id": "ccd2-art-18",
+      "file": "sources/ccd2-article-18.md",
+      "citation": "CCD2 Article 18",
+      "title": "Obligation to assess the creditworthiness of the consumer",
+      "url": "https://eur-lex.europa.eu/eli/dir/2023/2225/oj/eng",
+      "sha256": "0fdbb6f8cf14d543c0413a1649ef7934f0429425136ac5e1f2645309828b26e4",
+      "passages": 11
+    },
+    {
+      "id": "ccd2-art-19",
+      "file": "sources/ccd2-article-19.md",
+      "citation": "CCD2 Article 19",
+      "title": "Databases",
+      "url": "https://eur-lex.europa.eu/eli/dir/2023/2225/oj/eng",
+      "sha256": "0b1c5d9bf0e004e1ad530f41986649df28d188bd3f63abf2fd808b21d295c6db",
+      "passages": 8
     }
   ],
-  "corpus_sha256": "ed3aab827cd150f8f45c62a6a2d913241d25df940b01dd6d89cfe3c64c836007"
+  "corpus_sha256": "4a7d4f6c5717220557107a6cb7760a41e9cd2b2431e89bf76625fef44064b523"
 }

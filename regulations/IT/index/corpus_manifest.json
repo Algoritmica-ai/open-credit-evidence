@@ -1,0 +1,66 @@
+{
+  "jurisdiction": "IT",
+  "title": "Testo unico bancario \u2014 valutazione del merito creditizio e banche dati (credito ai consumatori)",
+  "verified": "2026-09-24",
+  "chunking": "markdown-h2-paragraph-v2",
+  "index_backend": "milvus-lite",
+  "embed_model": "nvidia/nemotron-3-embed-1b",
+  "embedder": {
+    "model": "nvidia/nemotron-3-embed-1b",
+    "endpoint": "http://10.130.232.21:8202/v1",
+    "fingerprint": "ed2942bb7c71b8fbe8bb7fdf3946e96c714c475c1f7e8535afaca6d0645cc042",
+    "level": "weights"
+  },
+  "dimension": 2048,
+  "passages": 34,
+  "passages_sha256": "8b3173a236ef081336453b1a08957fe423c3f1caf8edf8124b3400e2e78926f0",
+  "vectors_sha256": "5ec906d0598d0ec7da693556fa790fa549f663117db7c743c88bcfa6f4f5120e",
+  "sources": [
+    {
+      "id": "tub-124-bis",
+      "file": "sources/tub-124-bis.md",
+      "citation": "TUB art. 124-bis",
+      "title": "Verifica del merito creditizio (credito ai consumatori)",
+      "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:1993-09-01;385~art124bis",
+      "sha256": "2506be58deb0f6823b0cde5a2565a1b2159e5dcef2b5e83150d95aaa8ddde2f4",
+      "passages": 12
+    },
+    {
+      "id": "tub-125",
+      "file": "sources/tub-125.md",
+      "citation": "TUB art. 125",
+      "title": "Banche dati",
+      "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:1993-09-01;385~art125",
+      "sha256": "ed71b85acef19ac0d5c373cff5f4f2bfc817775d402f8732fdd40c09833a3901",
+      "passages": 11
+    },
+    {
+      "id": "tub-127-ter",
+      "file": "sources/tub-127-ter.md",
+      "citation": "TUB art. 127-ter",
+      "title": "Valutazione del merito creditizio fondata sul trattamento automatizzato di dati personali",
+      "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:1993-09-01;385~art127ter",
+      "sha256": "d6ef0e9f75f7e746ef4f23749850a2cc5b524b1f91629182c1e06c6f9857dbdb",
+      "passages": 1
+    },
+    {
+      "id": "tub-120-undecies",
+      "file": "sources/tub-120-undecies.md",
+      "citation": "TUB art. 120-undecies",
+      "title": "Verifica del merito creditizio (credito immobiliare ai consumatori)",
+      "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:1993-09-01;385~art120undecies",
+      "sha256": "c18e24d199d71e8adfc4df752a4f887ef01c66558ce3b0e64a47df38a0f7e368",
+      "passages": 8
+    },
+    {
+      "id": "dlgs-212-2025-art-6",
+      "file": "sources/dlgs-212-2025-art-6.md",
+      "citation": "D.Lgs. 212/2025 art. 6",
+      "title": "Disposizioni transitorie (adeguamento entro il 20 novembre 2026)",
+      "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:1993-09-01;385~art124bis",
+      "sha256": "63513bdd1c9a0f370114c13a4c8b2160677ac1a3f3fcf3a5c24e8879c0cb7dbb",
+      "passages": 2
+    }
+  ],
+  "corpus_sha256": "5dfc008c88634b9e892c9b057690fbe303b0d69db6dbf56cb0f23efd27f30560"
+}

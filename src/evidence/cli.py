@@ -220,15 +220,23 @@ def _cmd_corpus(a: argparse.Namespace) -> int:
         if not a.official:
             print("verify-sources needs --official <saved official text>", file=sys.stderr)
             return 2
-        path = Path(a.official)
-        raw = path.read_text(encoding="utf-8", errors="replace")
-        text = _html_text(raw) if path.suffix.lower() in (".html", ".htm") else raw
-        rec = verify_sources(a.jurisdiction, text, official={
-            "id": a.official_id, "url": a.official_url, "file": path.name,
-            "obtained": "saved copy, read by evidence corpus verify-sources"})
+        import hashlib
+
+        paths = [Path(x) for x in a.official]
+        ids, urls = a.official_id or [], a.official_url or []
+        texts, docs = [], []
+        for i, path in enumerate(paths):
+            raw = path.read_text(encoding="utf-8", errors="replace")
+            texts.append(_html_text(raw) if path.suffix.lower() in (".html", ".htm") else raw)
+            docs.append({"id": ids[i] if i < len(ids) else path.name,
+                         "url": urls[i] if i < len(urls) else None, "file": path.name,
+                         "file_sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
+        rec = verify_sources(a.jurisdiction, "\n\n".join(texts), official={
+            "id": " + ".join(d["id"] for d in docs), "documents": docs,
+            "obtained": a.obtained or "saved copy, read by evidence corpus verify-sources"})
         sha = rec["official"]["text_sha256"][:12]
         print(f"{rec['jurisdiction']}: {rec['found']}/{rec['passages']} passages found verbatim "
-              f"in {a.official_id or path.name} (text sha256 {sha}…)")
+              f"in {rec['official']['id']} (text sha256 {sha}…)")
         for r in rec["results"]:
             if not r["found"]:
                 print(f"  {r['passage_id']}: matches {r['matches_up_to']}/{r['of']} characters, "
@@ -320,9 +328,15 @@ def main(argv: list[str] | None = None) -> int:
     k = sub.add_parser("corpus", help="build, list or verify regulation corpora for the judge")
     k.add_argument("action", choices=["build", "list", "verify-sources"])
     k.add_argument("jurisdiction", nargs="?", default="EU")
-    k.add_argument("--official", help="verify-sources: saved official text (.html or .txt)")
-    k.add_argument("--official-id", help="verify-sources: its document id, e.g. a CELEX number")
-    k.add_argument("--official-url", help="verify-sources: where it was obtained")
+    k.add_argument("--official", action="append",
+                   help="verify-sources: saved official text (.html or .txt); repeat for a "
+                   "corpus drawn from several instruments")
+    k.add_argument("--official-id", action="append",
+                   help="verify-sources: each document's id, e.g. a CELEX number, in order")
+    k.add_argument("--official-url", action="append",
+                   help="verify-sources: where each was obtained, in order")
+    k.add_argument("--obtained", help="verify-sources: how the saved texts were obtained and "
+                   "any processing (e.g. PDF text with page numbers removed)")
     k.set_defaults(fn=_cmd_corpus)
 
     w = sub.add_parser("ui", help="serve the local web UI")

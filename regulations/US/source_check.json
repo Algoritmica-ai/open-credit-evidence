@@ -1,0 +1,108 @@
+{
+  "jurisdiction": "US",
+  "checked_at": "2026-09-24T11:38:31+00:00",
+  "official": {
+    "id": "SR 26-2 attachment (SR2602a1.pdf)",
+    "documents": [
+      {
+        "id": "SR 26-2 attachment (SR2602a1.pdf)",
+        "url": "https://www.federalreserve.gov/supervisionreg/srletters/SR2602a1.pdf",
+        "file": "sr-26-2-clean.txt",
+        "file_sha256": "d0bf8f902036f29b43966de365fe130cd3b9b7e08f01fed420196b16be6ed4ec"
+      }
+    ],
+    "obtained": "SR2602a1.pdf (sha256 209ce4c14cea8aab3dc2f27bae1293efb6e1b60f9577a68d9595f85e4b94b0af) read with pdftotext -layout; page numbers removed, footnotes moved out of the running text, footnote markers removed, line-end hyphens rejoined",
+    "text_sha256": "099f55b3e45aca721a916631705f3f42e3819a32a9d4cca8a56e8dfcc58507c0",
+    "chars": 21087
+  },
+  "method": "passage text normalised (NFKC, quotes, dashes, whitespace) and searched for verbatim in the normalised official text",
+  "passages": 17,
+  "found": 17,
+  "results": [
+    {
+      "passage_id": "sr-26-2#I",
+      "text_sha256": "d9b2af026b968a4f45b26373f6501611c347fab5383494a25ae5e7a64b92205d",
+      "found": true
+    },
+    {
+      "passage_id": "sr-26-2#II",
+      "text_sha256": "73a684042b7c35c4e80f8c555f1abb3a857a4d22c0901959b175a91eb0ad1f42",
+      "found": true
+    },
+    {
+      "passage_id": "sr-26-2#III",
+      "text_sha256": "9812224e4f9f8d93d478cfb7ca8b87d629a0151ebe38fbe9742b3a3833fcc64c",
+      "found": true
+    },
+    {
+      "passage_id": "sr-26-2#IV.1",
+      "text_sha256": "2bd5dff0c7e4b02fccaca6f426158d0187d989716e3a844db31d24a404cb7616",
+      "found": true
+    },
+    {
+      "passage_id": "sr-26-2#IV.2",
+      "text_sha256": "c94e2b487aeb4748be403115e97c385fc28c8cdd8c452bf077d9d3a89ad42485",
+      "found": true
+    },
+    {
+      "passage_id": "sr-26-2#V",
+      "text_sha256": "6d6cd0c17607b65ea19646a98c15ca978048c35aff2be1bc28e98bfe0bfc1402",
+      "found": true
+    },
+    {
+      "passage_id": "sr-26-2#V.1",
+      "text_sha256": "cf152daf6815a8e1f2498339bea06e1614f0de740404c67c90705cce21a85823",
+      "found": true
+    },
+    {
+      "passage_id": "sr-26-2#V.2",
+      "text_sha256": "710a9a1a7c4dedf5d990a1118535f2585a307ed734faa36a91fbe3d45e60fc14",
+      "found": true
+    },
+    {
+      "passage_id": "sr-26-2#V.3",
+      "text_sha256": "9abee0ff49f7abdb0a344ac275b1d4131ed33e8120353905288dad34fdbf8b49",
+      "found": true
+    },
+    {
+      "passage_id": "sr-26-2#VI",
+      "text_sha256": "b1d3db17f243508d06234edbf0be1240b129ca481632c74063e835b794e5169e",
+      "found": true
+    },
+    {
+      "passage_id": "sr-26-2#VI.1",
+      "text_sha256": "e6a78cdd569152d24391abe73b451be6ac460ffc5289a4491cb5e609ace24e8c",
+      "found": true
+    },
+    {
+      "passage_id": "sr-26-2#VI.2",
+      "text_sha256": "2d1d484ba67fcdb97f5d88c5f7829eda88532edcc5f48c978a8e0a8c82323321",
+      "found": true
+    },
+    {
+      "passage_id": "sr-26-2#VI.3",
+      "text_sha256": "2aabaf0b8ae4c53e0d395c33fbbd42cdb3bf196a73d413ea703293de833cfa80",
+      "found": true
+    },
+    {
+      "passage_id": "sr-26-2#VII",
+      "text_sha256": "74b3ac7e20c26de23bcf5a5ee7c5cbe71baf0945b9870313cf4cd4e844cef0fb",
+      "found": true
+    },
+    {
+      "passage_id": "sr-26-2-fn#1",
+      "text_sha256": "0b4c49d296cec2229f82924d6d91f2174744d9370ebbe8c7566860265c7bd613",
+      "found": true
+    },
+    {
+      "passage_id": "sr-26-2-fn#2",
+      "text_sha256": "795ac4f48e491336ce803e3e876dc2c73842c2f18be4e88e002e302369a3fd2b",
+      "found": true
+    },
+    {
+      "passage_id": "sr-26-2-fn#3",
+      "text_sha256": "1ad35545bf7588515e4a3e03ecf41c569104a3f1df410fb93f61a3d882b8ae13",
+      "found": true
+    }
+  ]
+}

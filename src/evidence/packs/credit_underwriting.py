@@ -670,7 +670,7 @@ OBLIGATIONS: dict[str, Any] = {
                 "A continuous risk management process that identifies foreseeable risks and "
                 "tests the system against them, including on defined metrics."
             ),
-            "passages": [],
+            "passages": ["ai-act-art-9#2", "ai-act-art-9#6", "ai-act-art-9#8"],
             "grid": ["coverage_grid"],
             "basis": {
                 "coverage_grid": {
