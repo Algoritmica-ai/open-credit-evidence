@@ -43,6 +43,7 @@ from typing import Any
 import yaml
 
 from evidence.aggregate import by_obligation, items_failing_any, repeat_agreement, summarise_checks
+from evidence.evidence import panel_report
 from evidence.evidence.assess import (
     DEFAULT_THRESHOLDS,
     decide,
@@ -416,7 +417,7 @@ def build_evidence(run: Path) -> dict[str, str]:
     decision = decide(summary, diagnosis, thresholds, obligations, manifest.get("models"))
     readers = build_readers(manifest, results, summary, diagnosis, recs, decision, obligations,
                             report_parts(manifest, summary, obligations, regulatory))
-    return {
+    out = {
         "evidence/summary.json": json.dumps(summary, indent=2),
         "evidence/diagnosis.json": _dump(diagnosis),
         "evidence/recommendations.json": _dump(recs),
@@ -425,6 +426,11 @@ def build_evidence(run: Path) -> dict[str, str]:
                                       lead=report_sections(decision, diagnosis, recs)),
         **readers,
     }
+    panel = panel_report.summarise(run)  # a panel run later on the same briefings
+    if panel is not None:
+        out["evidence/panel.json"] = json.dumps(panel, indent=2, ensure_ascii=False)
+        out["evidence/panel.md"] = "\n".join(panel_report.lines(panel))
+    return out
 
 
 def write_evidence(

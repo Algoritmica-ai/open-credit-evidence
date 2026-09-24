@@ -110,6 +110,25 @@ one); they are renderings, so they are written outside the run and never sealed.
 `verify --recompute` rebuilds all of it from the results and names the first number
 that does not match — even if someone re-sealed the checksums after editing it.
 
+A second opinion from three agents, after a run:
+
+```bash
+.venv/bin/evidence panel runs/today                       # here, on the judge endpoint
+EVIDENCE_PANEL_SSH="codefest rtx-3se-06-04" \
+  .venv/bin/evidence panel runs/today --runtime nemoclaw   # inside the NemoClaw sandbox
+```
+
+A **Reader** scores each briefing as the underwriter would; a **Challenger** checks it
+against the case file and the deterministic checks, with tools (a case-file search, a
+calculator, each check's evidence); an **Arbiter** gives the final scores, citations and
+whether a person should review it. Every agent's replies and tool calls are kept in
+`panel/`, and `evidence/panel.md` sets the panel against the checks and the single judge.
+Like the judge it is reported, never gated. The panel is one standard-library file
+(`src/evidence/panel.py`), so the same code runs in the engine or inside a NemoClaw
+sandbox, where its calls go through OpenShell's managed inference route
+(`scripts/cluster/panel_nemoclaw.sh`; the route reaches the judge NIM through
+`scripts/cluster/stream_relay.py`).
+
 The same flow in a browser — pack (choose, build from a spec, or upload), cases,
 run (with cancel), evidence (the decision, why it failed and what to change, every
 briefing with its verdicts, then the pack by obligation), verify (with a tamper demo on

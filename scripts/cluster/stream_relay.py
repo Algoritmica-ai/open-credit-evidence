@@ -145,8 +145,14 @@ def make_handler(upstream: str, log=print) -> type[BaseHTTPRequestHandler]:
             self.status = resp.status
 
         def _headers(self) -> dict[str, str]:
-            keep = ("Content-Type", "Authorization", "Accept")
-            return {k: v for k, v in self.headers.items() if k in keep}
+            # Header names are case-insensitive: OpenShell's router sends them in lower
+            # case. A body with no type would go out as a form, which the NIM refuses.
+            keep = {"content-type": "Content-Type", "authorization": "Authorization",
+                    "accept": "Accept"}
+            out = {keep[k.lower()]: v for k, v in self.headers.items() if k.lower() in keep}
+            if self.command == "POST":
+                out.setdefault("Content-Type", "application/json")
+            return out
 
         def _handle(self, method: str) -> None:
             t0, self.status, how = time.time(), 0, "pass"

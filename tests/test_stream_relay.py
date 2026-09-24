@@ -49,6 +49,9 @@ class FakeNIM(BaseHTTPRequestHandler):
         self._send(200, json.dumps({"data": [{"id": "nano-judge"}]}).encode())
 
     def do_POST(self):  # noqa: N802
+        if self.headers.get("Content-Type") != "application/json":  # as the NIM does
+            self._send(415, b'{"message": "Unsupported media type"}')
+            return
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         FakeNIM.seen.append(body)
         if body.get("stream") and body.get("tools"):
@@ -130,3 +133,22 @@ def test_everything_else_passes_through_unchanged(servers):
         assert json.loads(r.read())["data"][0]["id"] == "nano-judge"
     with opener.open(rel + "/relay/health", timeout=10) as r:
         assert json.loads(r.read())["ok"]
+
+
+def test_header_names_in_any_case_reach_the_nim(servers):
+    import http.client
+
+    rel, _ = servers
+    host, port = rel.removeprefix("http://").split(":")
+    body = json.dumps({"model": "nano-judge", "messages": [{"role": "user",
+                                                            "content": "hi"}]}).encode()
+    for name in ("content-type", "Content-Type", None):  # the router sends lower case
+        c = http.client.HTTPConnection(host, int(port), timeout=10)
+        c.putrequest("POST", "/v1/chat/completions")
+        if name:
+            c.putheader(name, "application/json")
+        c.putheader("Content-Length", str(len(body)))
+        c.endheaders(body)
+        r = c.getresponse()
+        assert r.status == 200, (name, r.read())
+        r.read()
