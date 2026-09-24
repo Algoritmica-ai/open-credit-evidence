@@ -30,9 +30,11 @@ sources:
     citation: AI Act Article 26
     title: Obligations of deployers of high-risk AI systems
     url: https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng
-  - id: ai-act-annex-iii-5
-    file: sources/ai-act-annex-iii-5.md
+  - id: ai-act-annex-iii
+    file: sources/ai-act-annex-iii.md
     instrument: Regulation (EU) 2024/1689
-    citation: AI Act Annex III, point 5
-    title: Access to essential private and public services (incl. creditworthiness, 5(b))
+    citation: AI Act Annex III
+    # Annex points are cited "Annex III, point 5", not "Annex III(5)"
+    paragraph_citation: "{citation}, point {para}"
+    title: High-risk areas (point 5, access to essential services, covers creditworthiness)
     url: https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng

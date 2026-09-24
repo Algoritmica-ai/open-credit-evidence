@@ -219,3 +219,25 @@ def test_unlisted_file_fails_integrity(stubbed, tmp_path):
     (out / "evidence" / "extra.txt").write_text("x")
     v = verify_run(out)
     assert not v.ok and v.unlisted == ["evidence/extra.txt"]
+
+
+def test_run_stops_before_any_call_when_the_embedder_differs(stubbed, tmp_path, monkeypatch):
+    from conftest import fake_embed
+
+    from evidence.runner import EmbedderMismatch
+
+    monkeypatch.setattr("evidence.corpus.embed", lambda texts, kind: [
+        list(reversed(v)) for v in fake_embed(texts, kind)])
+    calls = []
+    monkeypatch.setattr("evidence.runner.chat", lambda *a, **k: calls.append(1))
+    out = tmp_path / "run5"
+    with pytest.raises(EmbedderMismatch, match="No model was called"):
+        run_pack(stubbed, out, repeats=1, limit=1, corpus="EU", log=lambda s: None)
+    assert not calls and not list((out / "transcripts").glob("*.json"))
+
+
+def test_run_records_the_embedder_check(stubbed, tmp_path):
+    out = tmp_path / "run6"
+    m = run_pack(stubbed, out, repeats=1, limit=1, corpus="EU", log=lambda s: None)
+    ec = m["judge"]["corpus"]["embedder_check"]
+    assert ec["ok"] and ec["cosine"] >= 0.999

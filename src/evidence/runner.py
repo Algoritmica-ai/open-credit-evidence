@@ -33,6 +33,10 @@ from evidence.regulations import assess
 ASSISTANT_MAX_TOKENS = 900
 
 
+class EmbedderMismatch(RuntimeError):
+    """The embedder at hand would not retrieve from the index as the one that built it."""
+
+
 def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
@@ -177,11 +181,38 @@ def run_pack(
         previous = json.loads((out / "manifest.json").read_text(encoding="utf-8")).get("models") \
             or {}
     fps: dict[str, dict[str, Any]] = {}
+    previous_corpus: dict[str, Any] = {}
+    if (out / "manifest.json").is_file():
+        previous_corpus = ((json.loads((out / "manifest.json").read_text(encoding="utf-8"))
+                            .get("judge") or {}).get("corpus") or {})
 
     def fp_for(role: str) -> str | None:
         if role not in fps:
             fps[role] = _fingerprint(role, log)
         return fps[role].get("fingerprint")
+
+    # The index is only valid for the embedder that built it. If this pass will
+    # retrieve, check that before the first model call of any kind.
+    embedder_check: dict[str, Any] | None = None
+    if corpus_obj is not None and any(
+        (judge and ("readability" in it.judges or judge is True))
+        and (it.item_id, rep) not in prior_judge
+        for it in items for rep in range(repeats)
+    ):
+        embedder_check = corpus_obj.check_embedder()
+        if not embedder_check["ok"]:
+            raise EmbedderMismatch(
+                f"the embedder serving {embedder_check['query_embed_model']} does not reproduce "
+                f"the {corpus_obj.jurisdiction} index (built with "
+                f"{embedder_check['index_embed_model']}): cosine "
+                f"{embedder_check['cosine']} on {embedder_check['probe']}, dimension "
+                f"{embedder_check['dimension']} vs {embedder_check['index_dimension']}; needs "
+                f"{embedder_check['min_cosine']}. Rebuild the index against this embedder "
+                f"(evidence corpus build {corpus_obj.jurisdiction}) or point EVIDENCE_EMBED_* at "
+                "the one that built it. No model was called."
+            )
+        log(f"  corpus {corpus_obj.jurisdiction}: embedder reproduces the index "
+            f"(cosine {embedder_check['cosine']} on {embedder_check['probe']})")
 
     results: list[dict[str, Any]] = []
     transcripts: list[Transcript] = []
@@ -276,6 +307,10 @@ def run_pack(
                     "passages": corpus_obj.manifest["passages"],
                     "embed_model": corpus_obj.manifest["embed_model"],
                     "index_backend": corpus_obj.backend,
+                    "embedder_check": embedder_check or (
+                        previous_corpus.get("embedder_check")
+                        if previous_corpus.get("corpus_sha256") == corpus_obj.sha256 else None),
+                    "source_check": corpus_obj.source_check(),
                 }
                 if corpus_obj
                 else None

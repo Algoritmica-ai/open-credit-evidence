@@ -1,0 +1,147 @@
+{
+  "jurisdiction": "EU",
+  "checked_at": "2026-09-24T11:05:00+00:00",
+  "official": {
+    "id": "CELEX:02024R1689-20260727",
+    "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng",
+    "file": null,
+    "obtained": "EUR-Lex page opened in a browser (scripted fetches get a bot challenge); text read from document.body.innerText",
+    "text_sha256": "a49e25edd6b00c4e572a781f3c9093699c7395ac09589744ac07bf4508a76f26",
+    "chars": 393198
+  },
+  "method": "passage text normalised (NFKC, quotes, dashes, whitespace) and searched for verbatim in the normalised official text",
+  "passages": 26,
+  "found": 26,
+  "results": [
+    {
+      "passage_id": "ai-act-art-13#1",
+      "text_sha256": "b3b78218878af905034859caaa8bd431f3800b78b2eb5ba1ccaa52be383a89fd",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-13#2",
+      "text_sha256": "f5d0cf2be9379a99f6ad1bbababa0e7b419736071dd1780f892f505a9b94203d",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-13#3",
+      "text_sha256": "9451dd47cc560b2a38b6e3bb2700d6bd26ef2cff8a81e4c72b79e82837882b9b",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-14#1",
+      "text_sha256": "0f58d9de45d9d2e06806d0dc0c58053c37bf2a2d4bdd4157a992b6870f8b6831",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-14#2",
+      "text_sha256": "7b0d4d5e796d1a0fed1ae58484a8c737b9fdbfea0e1d28ab9aa021df87325406",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-14#3",
+      "text_sha256": "bf5b28a31be85cddc02aa43c7896c3668883482f107664508d7cf9c3ad36e2e5",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-14#4",
+      "text_sha256": "badfaecd494490e45907119145c5c8ec20859514a6ef8bb1da1f11b2f36522e6",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-14#5",
+      "text_sha256": "2a5a6b87eafa646bed9b8d0e086d72c0be10d2b5e5d7d22ffb69254da4d8df3a",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-15#1",
+      "text_sha256": "82e34276ca8fcc7e5b78957ef0d0a871289b066df7a17a9eee03fa66dbcd3aaa",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-15#2",
+      "text_sha256": "8924018738486331d0ed2824624f3c4c80d72068d16dc6b6a7eb7d21d5261cb4",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-15#3",
+      "text_sha256": "dd49cba65a76c35868478e3e63fc227f2923d14fa61b3c17b82e501ea7293cdd",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-15#4",
+      "text_sha256": "1db1e39c327785a2c7c1ec5c05d44e131fe90311cfd47006ff2124b46161ba3e",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-15#5",
+      "text_sha256": "64ae481e39b24ff6a155a2e71fc1c5a088b65cefdd84d2c3526dd9e362c77e39",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-26#1",
+      "text_sha256": "90156ac5f3975d377afa371867d81dac7dff275ce46bfbb753da2c10ad246280",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-26#2",
+      "text_sha256": "ec6fcc70732e1560c1429e896d72052ae7542d36564311576e474a9e40518d47",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-26#3",
+      "text_sha256": "05ade194c6a40c6d13c1daf08add8bb4b9260b7c9b4e296818a07e0e762c77a5",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-26#4",
+      "text_sha256": "dbd302457f1c08348693bb6401613a26f5cf896e8b5da159029eb2d070c4d261",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-26#5",
+      "text_sha256": "e64aeca1e4206df821cf3d44d917be593a734b4093f715f273e6b6e6eddcdbeb",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-26#6",
+      "text_sha256": "2644a567c766e55d3b1eff5c0081319fa1c0b43450520ff4d7f5e75c2a3c3dfc",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-26#7",
+      "text_sha256": "1fa8c4a7b59990186eb13591a170e13bb336fd17ae0b64c1cb4cf1ca4bc864e7",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-26#8",
+      "text_sha256": "1c9031fb4dd1e9d92326dd0450f1f91dd7321d4f9770e278e62b80099afd9dd9",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-26#9",
+      "text_sha256": "259cdc777bd55c3fe5586e75460652c4fe5daf37ab9f380e5538b79eccf5b7a0",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-26#10",
+      "text_sha256": "6fcaf8ccd43ed908331731b7057589d2af3c458d2121d3319b40decd23c0ed26",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-26#11",
+      "text_sha256": "c01c7ffb0c641ed2afb87dfe4210a543d441eae363bc7208f8aede59776a8a1f",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-art-26#12",
+      "text_sha256": "dd4b24f9a77a6a28cf26747f773a38499c3448abe977128874f6df859d4639f8",
+      "found": true
+    },
+    {
+      "passage_id": "ai-act-annex-iii#5",
+      "text_sha256": "dcc3a8b5efef937091126817295398671fa91caed2efc6fd7076b5272d32528c",
+      "found": true
+    }
+  ]
+}

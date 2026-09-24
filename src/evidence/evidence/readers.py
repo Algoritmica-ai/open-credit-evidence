@@ -280,7 +280,7 @@ def credit_risk(manifest, results, summary, diagnosis, recs, decision, obligatio
                  "no threshold |")
     L.append("")
     for name, c in _judges(summary).items():
-        cited = (f"; cited a passage it was given in {c['citations']}/{c['results']}"
+        cited = (f"; {cite_phrase(c)} in {c['citations']}/{c['results']}"
                  if c.get("citations") is not None else "")
         judge = (manifest.get("judge") or {}).get("model_id", "a model")
         L += [f"Judge `{name}` (`{judge}`): mean {c['mean_value']} on 0–1 over {c['results']} "
@@ -475,6 +475,35 @@ def vendor(manifest, results, summary, recs) -> str:
 
 # --------------------------------------------------------------------------
 # auditor — what each file is and how to check it
+def cite_phrase(c: dict[str, Any]) -> str:
+    """How a judge summary counts citations: per question, or one per briefing (older runs)."""
+    per_question = set(c.get("cited_by_field") or {}) - {"any"}
+    return ("every citation was a passage it was given" if per_question
+            else "cited a passage it was given")
+
+
+def corpus_provenance(corpus: dict[str, Any] | None) -> str:
+    """Whether the index was retrieved from as built, and whether its words are the Act's."""
+    if not corpus:
+        return ""
+    if "embedder_check" not in corpus and "source_check" not in corpus:
+        return ""  # a run from before either was recorded
+    out = ""
+    ec = corpus.get("embedder_check")
+    if ec:
+        out += (f" The embedder reproduced the index before the first call (cosine {ec['cosine']}"
+                f" on `{ec['probe']}`)." if ec.get("ok") else
+                f" The embedder did NOT reproduce the index (cosine {ec['cosine']}).")
+    sc = corpus.get("source_check")
+    if sc:
+        out += (f" {sc['found']}/{sc['passages']} passages found verbatim in {sc['official']} "
+                f"(checked {str(sc['checked_at'])[:10]})"
+                + (f"; not checked: {', '.join(sc['unchecked'])}." if sc["unchecked"] else "."))
+    else:
+        out += " Passages not checked against the official text."
+    return out
+
+
 # --------------------------------------------------------------------------
 
 def auditor(manifest, results) -> str:
@@ -529,7 +558,8 @@ def auditor(manifest, results) -> str:
          f"- SDD spec hash `{(pack.get('sdd') or {}).get('spec_sha256', '—')}`, seed "
          f"{(pack.get('sdd') or {}).get('seed', '—')}.",
          f"- Regulation corpus sha256 `{corpus.get('corpus_sha256', '—')}`; rule pack "
-         f"`{reg.get('ruleset_id', '—')}` sha256 `{reg.get('ruleset_sha256') or '—'}`.",
+         f"`{reg.get('ruleset_id', '—')}` sha256 `{reg.get('ruleset_sha256') or '—'}`."
+         + corpus_provenance(corpus),
          f"- Model calls {manifest.get('started_at')} to {manifest.get('finished_at')}"
          + (f"; checks scored {manifest['scored_at']}." if manifest.get("scored_at") else "."),
          ""]

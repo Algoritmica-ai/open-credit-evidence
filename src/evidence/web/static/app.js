@@ -282,6 +282,14 @@ function renderCheck(r) {
     if ("matched" in e) return `<li>${e.matched ? "✓" : "✗"} <b>${esc(e.ref)}</b>${e.method ? ` · ${esc(e.method)}` : " · missing"}${e.form ? ` · “${esc(e.form)}”` : ""}${e.sentence ? `<br><i style="color:var(--ink-3)">${esc(e.sentence)}</i>` : ""}</li>`;
     if ("grounded" in e) return `<li>${e.grounded ? "✓" : "✗"} <b>${esc(e.value)}</b> · ${esc(e.method || "not in the case file")}${e.derivation ? ` = ${esc(e.derivation)}` : ""}</li>`;
     if ("cited" in e) return e.mentioned ? `<li>${e.cited ? "✗ cited as a factor" : "· mentioned"}: <b>${esc(e.ref)}</b><br><i style="color:var(--ink-3)">${esc(e.sentence)}</i></li>` : "";
+    if (e.citations && !("matched" in e)) {
+      const cite = (id, ok) => {
+        const p = passageIndex[id];
+        return id ? ` · cites <b>${esc(id)}</b>${ok === false ? ` <span class="badge bad">not among the passages given</span>` : ""}${p ? `<br><i style="color:var(--ink-3)">${esc(p.citation)}: ${esc(p.text.slice(0, 200))}…</i>` : ""}` : " · no citation";
+      };
+      return ["intelligible", "actionable", "overridable"].filter((k) => k in e)
+        .map((k) => `<li>${k} <b>${e[k]}</b>${cite((e.citations[k] || {}).citation, (e.citations[k] || {}).in_passages)}</li>`).join("");
+    }
     if ("citation" in e && !("matched" in e)) {
       const p = passageIndex[e.citation];
       return `<li>${["intelligible", "actionable", "overridable"].filter((k) => k in e).map((k) => `${k} <b>${e[k]}</b>`).join(" · ")}</li>` +

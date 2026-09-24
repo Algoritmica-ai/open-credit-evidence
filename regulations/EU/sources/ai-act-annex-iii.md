@@ -1,8 +1,10 @@
-# Annex III, point 5 — Access to and enjoyment of essential private services and essential public services and benefits
+# Annex III — High-risk AI systems referred to in Article 6(2)
 
 Regulation (EU) 2024/1689 (Artificial Intelligence Act), consolidated text as of 27 July 2026. High-risk AI systems referred to in Article 6(2).
 Source: https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng
 
+
+## 5.
 
 Access to and enjoyment of essential private services and essential public services and benefits:
 
