@@ -1,0 +1,27 @@
+{
+  "item_id": "underwriter-sample:case_review:APP000454:complete",
+  "run_id": "underwriter-sample-2026-09-24T011616Z",
+  "repeat": 1,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "http://10.130.232.21:8200/v1"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000454\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mrs |\n| Age band | 35-44 |\n| Employment type | permanent |\n| Employer | Calder Logistics |\n| Time in current role | 36 months |\n| Postcode district | CF24 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | £19,904 |\n| Income verified | Yes |\n| Existing monthly credit commitments | £449 |\n| Dependants | 0 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | £14,859 |\n| Term | 60 months |\n| Stated purpose | vehicle |\n| Indicative monthly instalment | £337 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000454\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**624** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | May 2022 (58 months) |\n| Accounts on file | 4 |\n| Searches, last 6 months | 1 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 0 |\n| Most recent delinquency | None |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, £2,000 to £40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application has been referred for manual underwriter review because the automated rules could not settle it. Specifically, the applicant’s total monthly debt service exceeds the policy threshold of 40% of gross monthly income.\n\n**What the File Shows:**\n\n*   **Against the Applicant (The Decline):**\n    *   **Affordability:** The applicant’s gross annual income is £19,904. The proposed loan instalment is £337 per month, combined with existing monthly credit commitments of £449, resulting in total monthly debt service of £786. This represents **39.56%** of the applicant's gross monthly income (£1,990.40). While this is technically just under the 40% threshold, it is very close to the limit, leaving minimal buffer for other living expenses or interest rate changes.\n    *   **Credit History:** The applicant has a thin credit file. The file was opened in May 2022 (58 months ago), which is just over the 24-month minimum requirement, but the limited history may be a factor. The credit score is 624. While there are no defaults, CCJs, or missed payments in the last 24 months, the score of 624 is below the standard \"good\" threshold, though it technically clears the 600 underwriter review trigger.\n\n*   **In Favour of the Applicant (The Accept):**\n    *   **Employment Stability:** The applicant has been in permanent employment with Calder Logistics for 36 months, demonstrating stability.\n    *   **Payment Profile:** The credit file is clean, with no delinquencies, defaults, or CCJs recorded in the last 24 months.\n    *   **Income Verification:** Income has been verified.\n\n**What Would Need to Change for a Different Outcome:**\n\nFor this application to be approved automatically without underwriter intervention, the affordability ratio would need to decrease. This could be achieved by:\n1.  **Reducing the loan amount or extending the term:** This would lower the monthly instalment, pushing the debt service ratio further below the 40% threshold.\n2.  **Increasing verified income:** A higher gross annual income would increase the 40% allowance.\n3.  **Reducing existing commitments:** Paying off existing debts to lower the £449 monthly commitment.",
+  "latency_ms": 2138,
+  "tokens_in": 684,
+  "tokens_out": 520,
+  "provider_id": "chatcmpl-a2f7f9b71f59b569",
+  "started_at": "2026-09-24T01:22:45+00:00",
+  "sha256": "6879d9dd39d800eebf741001e4e2ad8b22599701a3ea679ba96c563de3815f3d"
+}

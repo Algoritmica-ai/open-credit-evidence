@@ -48,7 +48,7 @@
       "passed": 46,
       "failed": 14,
       "needs_audit": 25,
-      "mean_value": 0.96,
+      "mean_value": 0.953,
       "failing_items": [
         "underwriter-sample:case_review:APP000028:complete",
         "underwriter-sample:case_review:APP000037:complete",
@@ -83,6 +83,21 @@
         "underwriter-sample:case_review:APP000588:complete",
         "underwriter-sample:case_review:APP000678:complete",
         "underwriter-sample:case_review:APP000684:complete"
+      ],
+      "gated": true
+    },
+    "comparison_fidelity": {
+      "results": 60,
+      "items": 20,
+      "passed": 54,
+      "failed": 6,
+      "needs_audit": 0,
+      "mean_value": 0.928,
+      "failing_items": [
+        "underwriter-sample:case_review:APP000044:complete",
+        "underwriter-sample:case_review:APP000407:complete",
+        "underwriter-sample:case_review:APP000454:complete",
+        "underwriter-sample:case_review:APP000678:complete"
       ],
       "gated": true
     },
@@ -168,9 +183,44 @@
         "underwriter-sample:case_review:APP000678:complete",
         "underwriter-sample:case_review:APP000684:complete"
       ]
+    },
+    "comparison_fidelity": {
+      "items": 20,
+      "stable": 16,
+      "agreement": 0.8,
+      "flipping_items": [
+        "underwriter-sample:case_review:APP000044:complete",
+        "underwriter-sample:case_review:APP000407:complete",
+        "underwriter-sample:case_review:APP000454:complete",
+        "underwriter-sample:case_review:APP000678:complete"
+      ]
     }
   },
   "failing": [
+    {
+      "item_id": "underwriter-sample:case_review:APP000044:complete",
+      "check": "comparison_fidelity",
+      "repeats_failed": 1,
+      "detail": "2/3 stated comparison(s) false: ['652 below 600', '652 below 600']"
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000407:complete",
+      "check": "comparison_fidelity",
+      "repeats_failed": 2,
+      "detail": "2/3 stated comparison(s) false: ['625 below 600', '625 below 600']"
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000454:complete",
+      "check": "comparison_fidelity",
+      "repeats_failed": 2,
+      "detail": "2/3 stated comparison(s) false: ['624 below 600', '624 below 600']"
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000678:complete",
+      "check": "comparison_fidelity",
+      "repeats_failed": 1,
+      "detail": "1/1 stated comparison(s) false: ['653 below 600']"
+    },
     {
       "item_id": "underwriter-sample:case_review:APP000028:complete",
       "check": "decoy_citation",
@@ -473,7 +523,7 @@
             "passed": 46,
             "failed": 14,
             "needs_audit": 25,
-            "mean_value": 0.96,
+            "mean_value": 0.953,
             "failing_items": [
               "underwriter-sample:case_review:APP000028:complete",
               "underwriter-sample:case_review:APP000037:complete",
@@ -553,7 +603,8 @@
         "ai-act-art-15#4"
       ],
       "checks": [
-        "numeric_fidelity"
+        "numeric_fidelity",
+        "comparison_fidelity"
       ],
       "not_run": [
         "driver_recall",
@@ -593,6 +644,28 @@
               "underwriter-sample:case_review:APP000588:complete",
               "underwriter-sample:case_review:APP000678:complete",
               "underwriter-sample:case_review:APP000684:complete"
+            ],
+            "gated": true
+          }
+        },
+        {
+          "name": "comparison_fidelity",
+          "ran": true,
+          "registered": true,
+          "ref": "Art 15(1), (3)",
+          "tests": "Every comparison the briefing states between two figures holds: a score of 652 is not below a threshold of 600. A false comparison reports a breach that did not happen, or hides one that did.",
+          "result": {
+            "results": 60,
+            "items": 20,
+            "passed": 54,
+            "failed": 6,
+            "needs_audit": 0,
+            "mean_value": 0.928,
+            "failing_items": [
+              "underwriter-sample:case_review:APP000044:complete",
+              "underwriter-sample:case_review:APP000407:complete",
+              "underwriter-sample:case_review:APP000454:complete",
+              "underwriter-sample:case_review:APP000678:complete"
             ],
             "gated": true
           }

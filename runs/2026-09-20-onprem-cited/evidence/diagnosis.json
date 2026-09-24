@@ -1,5 +1,5 @@
 {
-  "failures": 64,
+  "failures": 70,
   "causes": [
     {
       "cause": "miscalculated",
@@ -7,6 +7,7 @@
       "lever": "context",
       "owner": "bank",
       "why": "The assistant worked a figure out itself and got it wrong.",
+      "briefings": 33,
       "results": 35,
       "items": 19,
       "checks": [
@@ -21,6 +22,7 @@
       "lever": "template",
       "owner": "bank",
       "why": "The assistant did not name a valid way to change the outcome.",
+      "briefings": 15,
       "results": 15,
       "items": 12,
       "checks": [
@@ -33,10 +35,24 @@
       "lever": "instructions",
       "owner": "bank",
       "why": "The assistant blamed a field that has no bearing on the outcome.",
+      "briefings": 14,
       "results": 14,
       "items": 10,
       "checks": [
         "decoy_citation"
+      ]
+    },
+    {
+      "cause": "misread_threshold",
+      "label": "Threshold comparison stated wrongly",
+      "lever": "context",
+      "owner": "bank",
+      "why": "The assistant compared a figure with a policy threshold and got the direction wrong.",
+      "briefings": 6,
+      "results": 6,
+      "items": 4,
+      "checks": [
+        "comparison_fidelity"
       ]
     }
   ],
@@ -199,6 +215,20 @@
       "detail": {
         "levers": [
           "bureau_score increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000044:complete",
+      "repeat": 0,
+      "check": "comparison_fidelity",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "false_comparisons": [
+          "652 < 600",
+          "652 < 600"
         ]
       }
     },
@@ -604,6 +634,34 @@
     },
     {
       "item_id": "underwriter-sample:case_review:APP000407:complete",
+      "repeat": 1,
+      "check": "comparison_fidelity",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "false_comparisons": [
+          "625 < 600",
+          "625 < 600"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000407:complete",
+      "repeat": 2,
+      "check": "comparison_fidelity",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "false_comparisons": [
+          "625 < 600",
+          "625 < 600"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000407:complete",
       "repeat": 2,
       "check": "flip_accuracy",
       "cause": "wrong_lever",
@@ -665,6 +723,34 @@
         "figures_not_in_file": [
           "42.58%",
           "\u00a3886"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000454:complete",
+      "repeat": 1,
+      "check": "comparison_fidelity",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "false_comparisons": [
+          "624 < 600",
+          "624 < 600"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000454:complete",
+      "repeat": 2,
+      "check": "comparison_fidelity",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "false_comparisons": [
+          "624 < 600",
+          "624 < 600"
         ]
       }
     },
@@ -856,6 +942,19 @@
       "detail": {
         "figures_not_in_file": [
           "8.1"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000678:complete",
+      "repeat": 0,
+      "check": "comparison_fidelity",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "false_comparisons": [
+          "653 < 600"
         ]
       }
     },
