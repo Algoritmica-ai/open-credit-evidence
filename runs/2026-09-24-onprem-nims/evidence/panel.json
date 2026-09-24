@@ -1,0 +1,128 @@
+{
+  "panel": "panel-v1",
+  "runtime": {
+    "node": "rtx-3se-06-04",
+    "sandbox": "evidence-judge",
+    "started_at": "2026-09-24T12:16:12Z",
+    "endpoint": "https://inference.local/v1",
+    "nemoclaw": "0.0.124",
+    "openshell": "0.0.116",
+    "agent_runtime": "OpenClaw v2026.7.1",
+    "inference_route": {
+      "provider": "vllm-local",
+      "model": "nano-judge",
+      "timeout": "600s"
+    },
+    "network_policies": [
+      "clawhub",
+      "local_inference",
+      "managed_inference",
+      "npm_registry",
+      "nvidia",
+      "openclaw_api",
+      "openclaw_docs",
+      "openclaw_gateway_dialback"
+    ],
+    "policy_sha256": "5b582d0c399cdfb1aceab4d643f36a6cf63df99c23d43aef346e2d949470b361",
+    "kind": "nemoclaw",
+    "models": {
+      "reader": "nano-judge",
+      "challenger": "nano-judge",
+      "arbiter": "nano-judge"
+    }
+  },
+  "briefings": 60,
+  "answered": 60,
+  "errors": 0,
+  "mean_value": 0.692,
+  "judge_mean_value": 0.981,
+  "flagged": 46,
+  "with_failing_checks": {
+    "briefings": 46,
+    "flagged": 44,
+    "judge_full_marks": 42,
+    "panel_full_marks": 4,
+    "judge_full_marks_panel_flagged": 40
+  },
+  "without_failing_checks": {
+    "briefings": 14,
+    "flagged": 2
+  },
+  "challenger": {
+    "findings": 83,
+    "material_findings": 70,
+    "failing_checks_confirmed": 0,
+    "failing_checks": 61,
+    "checks_disputed": {
+      "claim_consistency": 2
+    },
+    "invented_check_names": 0,
+    "unread_check_verdicts": 193,
+    "mean_tool_calls": 0.8
+  },
+  "reader_arbiter_agreement": {
+    "intelligible": 0.7,
+    "actionable": 0.483,
+    "overridable": 0.3
+  },
+  "citations_all_given": {
+    "records": 60,
+    "ok": 60
+  },
+  "examples": [
+    {
+      "item_id": "underwriter-sample:case_review:APP000028:complete",
+      "repeat": 0,
+      "failing_checks": [
+        "claim_consistency",
+        "decoy_citation"
+      ],
+      "panel_value": 0.667,
+      "flag_reason": "Material error in debt service ratio claim (36.5% vs. incorrectly stated 40%) contradicts case file and undermines referral rationale",
+      "finding": {
+        "claim": "the applicant’s total monthly debt service exceeds the 40% affordability threshold",
+        "problem": "the actual debt service ratio is 36.5%, not above 40%",
+        "evidence": {
+          "claim": "exceeds 40%",
+          "contradicted_by": 36.5,
+          "figures": [
+            36.5
+          ],
+          "holds": false,
+          "quantity": "dti_ratio"
+        }
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000028:complete",
+      "repeat": 1,
+      "failing_checks": [
+        "decoy_citation"
+      ],
+      "panel_value": 0.667,
+      "flag_reason": "Material error in affordability calculation (3.04% vs. claimed 40%+), misuse of unverified income for critical assessment",
+      "finding": {
+        "claim": "total monthly debt service exceeds 40% of gross monthly income",
+        "problem": "Calculated total debt service (£760) is 3.04% of £24,951 annual income, not exceeding 40%",
+        "evidence": "calculate: (347 + 413) / (24951 / 12) * 100 = 3.04%"
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000028:complete",
+      "repeat": 2,
+      "failing_checks": [
+        "claim_consistency",
+        "comparison_fidelity",
+        "decoy_citation"
+      ],
+      "panel_value": 0.5,
+      "flag_reason": "Material error in debt service ratio claim (36.5% vs. 40% threshold)",
+      "finding": {
+        "claim": "The total monthly debt service exceeds the 40% threshold of gross monthly income",
+        "problem": "The actual debt service ratio is 36.5%, not above 40%",
+        "evidence": "0.365516 (calculated as £760 debt service / £2,079 monthly income)"
+      }
+    }
+  ],
+  "gated": false
+}
