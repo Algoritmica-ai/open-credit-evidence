@@ -401,7 +401,8 @@ pre { font: 7.8pt/1.45 var(--mono); background: var(--tint); padding: 7pt 9pt; b
 .appendix { page: wide; break-before: page; }
 .sums.all { font-size: 6.8pt; table-layout: fixed; }
 .sums.all td { padding: 1.4pt 5pt; white-space: nowrap; overflow: hidden; }
-.sums.all td:first-child { width: 57%; } .sums.all code.hash { word-break: normal; font-size: 6.8pt; }
+.sums.all td:first-child { width: 57%; }
+.sums.all code.hash { word-break: normal; font-size: 6.8pt; }
 .small { font-size: 7.6pt; color: var(--ink3); }
 """
 
