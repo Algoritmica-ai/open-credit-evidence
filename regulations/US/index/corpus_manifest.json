@@ -1,0 +1,39 @@
+{
+  "jurisdiction": "US",
+  "title": "US model risk management guidance (SR 26-2) for credit models",
+  "verified": "2026-09-24",
+  "chunking": "markdown-h2-paragraph-v2",
+  "index_backend": "milvus-lite",
+  "embed_model": "nvidia/nemotron-3-embed-1b",
+  "embedder": {
+    "model": "nvidia/nemotron-3-embed-1b",
+    "endpoint": "http://10.130.232.21:8202/v1",
+    "fingerprint": "ed2942bb7c71b8fbe8bb7fdf3946e96c714c475c1f7e8535afaca6d0645cc042",
+    "level": "weights"
+  },
+  "dimension": 2048,
+  "passages": 17,
+  "passages_sha256": "cae828a5cb3d3d066eb79c030af8c5f50236e3887e53a8f277705bbb3f43caf1",
+  "vectors_sha256": "db2d4635ec8a28a1361dc03dd817615ccaf817aee378d4ff18dd89ffa45e1960",
+  "sources": [
+    {
+      "id": "sr-26-2",
+      "file": "sources/sr-26-2.md",
+      "citation": "SR 26-2",
+      "title": "Supervisory Guidance on Model Risk Management",
+      "url": "https://www.federalreserve.gov/supervisionreg/srletters/SR2602a1.pdf",
+      "sha256": "53351c16709bc8adb8064646003047f6a816b2a14221178962591fe516165c05",
+      "passages": 14
+    },
+    {
+      "id": "sr-26-2-fn",
+      "file": "sources/sr-26-2-footnotes.md",
+      "citation": "SR 26-2",
+      "title": "Supervisory Guidance on Model Risk Management \u2014 footnotes (scope, applicability)",
+      "url": "https://www.federalreserve.gov/supervisionreg/srletters/SR2602a1.pdf",
+      "sha256": "4581de12f5b7f7be5e07134b06605f400af58c160ef0f0210c3506bc53c09375",
+      "passages": 3
+    }
+  ],
+  "corpus_sha256": "e2f614692faf3fc2c59ee3d31a14e24e650751aeadb22f882136a7a1cacd51db"
+}

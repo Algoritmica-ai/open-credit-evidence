@@ -3,9 +3,15 @@
 # records the sha256 of every source so a run can name exactly which text it
 # used. Official publications remain the canonical text.
 jurisdiction: EU
-title: EU Artificial Intelligence Act — provisions relevant to an assistant in a credit decision
-verified: 2026-09-20
+title: EU AI Act and Consumer Credit Directive — provisions relevant to an assistant in a credit decision
+verified: 2026-09-24
 sources:
+  - id: ai-act-art-9
+    file: sources/ai-act-article-9.md
+    instrument: Regulation (EU) 2024/1689
+    citation: AI Act Article 9
+    title: Risk management system
+    url: https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng
   - id: ai-act-art-13
     file: sources/ai-act-article-13.md
     instrument: Regulation (EU) 2024/1689
@@ -38,3 +44,17 @@ sources:
     paragraph_citation: "{citation}, point {para}"
     title: High-risk areas (point 5, access to essential services, covers creditworthiness)
     url: https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27/eng
+  # CCD2 applies from 20 November 2026. Art 18(8) gives the consumer a right to an
+  # explanation, to be heard and to a human review when the assessment is automated.
+  - id: ccd2-art-18
+    file: sources/ccd2-article-18.md
+    instrument: Directive (EU) 2023/2225
+    citation: CCD2 Article 18
+    title: Obligation to assess the creditworthiness of the consumer
+    url: https://eur-lex.europa.eu/eli/dir/2023/2225/oj/eng
+  - id: ccd2-art-19
+    file: sources/ccd2-article-19.md
+    instrument: Directive (EU) 2023/2225
+    citation: CCD2 Article 19
+    title: Databases
+    url: https://eur-lex.europa.eu/eli/dir/2023/2225/oj/eng

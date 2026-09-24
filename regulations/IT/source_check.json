@@ -1,0 +1,193 @@
+{
+  "jurisdiction": "IT",
+  "checked_at": "2026-09-24T11:38:31+00:00",
+  "official": {
+    "id": "D.Lgs. 385/1993 (TUB) artt. 120-undecies, 124-bis, 125, 127-ter, testo in vigore dal 10-1-2026 (Normattiva)",
+    "documents": [
+      {
+        "id": "D.Lgs. 385/1993 (TUB) artt. 120-undecies, 124-bis, 125, 127-ter, testo in vigore dal 10-1-2026 (Normattiva)",
+        "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:1993-09-01;385",
+        "file": "it-tub-clean.txt",
+        "file_sha256": "a9b7b0074d56508b160a14c28cca1f135832901b7b9ec8a137f937e3977b864b"
+      }
+    ],
+    "obtained": "Normattiva article pages opened in a browser; text read from document.body.innerText; Normattiva's editorial marks removed (amendment brackets (( )), deleted-text marks ((...)), note references ((120)))",
+    "text_sha256": "83581a1a8f42c51fdc19affbd19a1a2eb29690f720ce28c01f1c67fe54b481e9",
+    "chars": 16778
+  },
+  "method": "passage text normalised (NFKC, quotes, dashes, whitespace) and searched for verbatim in the normalised official text",
+  "passages": 34,
+  "found": 34,
+  "results": [
+    {
+      "passage_id": "tub-124-bis#1",
+      "text_sha256": "8eb0d9b6ebfeb6a846090a2d07bf4c8672013a91f8f136d72bea1db691f2d88e",
+      "found": true
+    },
+    {
+      "passage_id": "tub-124-bis#1-bis",
+      "text_sha256": "94c8251a37f5fd9483d7d02832c3e781c3e6a38b361fb0f679548eee914bf1aa",
+      "found": true
+    },
+    {
+      "passage_id": "tub-124-bis#1-ter",
+      "text_sha256": "639568cecc0a5722707d8e59fc64d903b10c6ba6d5f35797dae42322ce6961d1",
+      "found": true
+    },
+    {
+      "passage_id": "tub-124-bis#1-quater",
+      "text_sha256": "3cfd334fcda5d3ead8a9d5e678b53e68c601c0703a6db9b47d253f2e8b774017",
+      "found": true
+    },
+    {
+      "passage_id": "tub-124-bis#1-quinquies",
+      "text_sha256": "8e1c07ed97a822d303d69b664293bc915ac9193fba22ce0ad9f155ba30026b3e",
+      "found": true
+    },
+    {
+      "passage_id": "tub-124-bis#2",
+      "text_sha256": "12e0aca1f945059355c9e1324fc82b8c227aa764c7dacd9b2c8f04c9f3262e3a",
+      "found": true
+    },
+    {
+      "passage_id": "tub-124-bis#2-bis",
+      "text_sha256": "a00e30be0e2dd69fb3f59a6bb9676190a508db0c7b17d85cc74d0c66d06ce20f",
+      "found": true
+    },
+    {
+      "passage_id": "tub-124-bis#2-ter",
+      "text_sha256": "eb3c100a6004b1c0419b66472e10f2f2155a9cf37dda952910ede00ed6eb3453",
+      "found": true
+    },
+    {
+      "passage_id": "tub-124-bis#2-quater",
+      "text_sha256": "3d8be5e8a3dcf2a91ffb926fc3b248df86483ff25d23722cc0ac132e4923c899",
+      "found": true
+    },
+    {
+      "passage_id": "tub-124-bis#2-quinquies",
+      "text_sha256": "8b7178ec818adfd194d6538d77d3c4d77a774a889812d05f1dee7e42ea82ac1c",
+      "found": true
+    },
+    {
+      "passage_id": "tub-124-bis#2-sexies",
+      "text_sha256": "b26d714388c4fd922194f17845c1e6637645935706861602cd9065849bec9961",
+      "found": true
+    },
+    {
+      "passage_id": "tub-124-bis#3",
+      "text_sha256": "4d95ed77368ca049256269adf64030c32010283ed48aa6fe533b53c9bf846e55",
+      "found": true
+    },
+    {
+      "passage_id": "tub-125#1",
+      "text_sha256": "69665a3975ccd039b33e0c91a57b4797f5f04c9103248b1bbe23054608461877",
+      "found": true
+    },
+    {
+      "passage_id": "tub-125#1-bis",
+      "text_sha256": "b9625c49e4d9350caf76508790c28e07e4a59cefdcdaca27fcab309687a0ee42",
+      "found": true
+    },
+    {
+      "passage_id": "tub-125#1-ter",
+      "text_sha256": "ed6cf88d6b7be534c91c35e58b3dc846082d07c5014b36e0fc5a43260ff56df3",
+      "found": true
+    },
+    {
+      "passage_id": "tub-125#1-quater",
+      "text_sha256": "8562d80cea7a981573d9ce2498a23324a873a6a9b9ebf5351573d6a374ca990d",
+      "found": true
+    },
+    {
+      "passage_id": "tub-125#1-quinquies",
+      "text_sha256": "b8f83c0d5f4c35cae915f1caea5c2506ef06c7995124b480679710730b77540f",
+      "found": true
+    },
+    {
+      "passage_id": "tub-125#2",
+      "text_sha256": "395d4fce190abb69c02ac09741afc1965559b70cb3689a335b368a616f91851a",
+      "found": true
+    },
+    {
+      "passage_id": "tub-125#3",
+      "text_sha256": "a2342b8746e2550b03f2d6563def1bbc5758324b677b849c15336a3df93603d3",
+      "found": true
+    },
+    {
+      "passage_id": "tub-125#4",
+      "text_sha256": "9279039e8bdaea9f38c441945513b107342f3392655590efc48db6f611d6ceb3",
+      "found": true
+    },
+    {
+      "passage_id": "tub-125#4-bis",
+      "text_sha256": "c5604ddf84803668bc4e6afc9e812884f6c90cc8a081f15d946403c87a2ab8df",
+      "found": true
+    },
+    {
+      "passage_id": "tub-125#5",
+      "text_sha256": "90af5425db3e09c4617e64127582bafad71520995655d93b7a0785ef1278db97",
+      "found": true
+    },
+    {
+      "passage_id": "tub-125#6",
+      "text_sha256": "6182679ffd16e31145ca3c6888241d0212dea9115b7cbc3d82eabbe2b01c80a9",
+      "found": true
+    },
+    {
+      "passage_id": "tub-127-ter#1",
+      "text_sha256": "9a990c82f563d75bc0f8f3f80a900a278605afd01c18d8c2b1377c2acf35dcc2",
+      "found": true
+    },
+    {
+      "passage_id": "tub-120-undecies#1",
+      "text_sha256": "1847fc92fa22306eea679140f21497bd372b9981a1ea06da0cbcbc5fb06ee1d8",
+      "found": true
+    },
+    {
+      "passage_id": "tub-120-undecies#2",
+      "text_sha256": "b9fdb228541971abb8d3dd783253194f18be149dfa09f6a0944f10b313fae534",
+      "found": true
+    },
+    {
+      "passage_id": "tub-120-undecies#3",
+      "text_sha256": "52716c4ae48394eabba27bd3f23820458c88831a77369d2799eaefd1178deab3",
+      "found": true
+    },
+    {
+      "passage_id": "tub-120-undecies#4",
+      "text_sha256": "5ed5886f9864fd1ac2ee4a354ae1f76dc05726fa381a52625178fedd73f1d20b",
+      "found": true
+    },
+    {
+      "passage_id": "tub-120-undecies#5",
+      "text_sha256": "b4a5d3a1712fe45900ceca0582fe1beed8611acddfc5019189cea1b71be6f7f4",
+      "found": true
+    },
+    {
+      "passage_id": "tub-120-undecies#6",
+      "text_sha256": "6182679ffd16e31145ca3c6888241d0212dea9115b7cbc3d82eabbe2b01c80a9",
+      "found": true
+    },
+    {
+      "passage_id": "tub-120-undecies#8",
+      "text_sha256": "0d1065222955bbfc422b3160888fc71c85c67641e8b55883b1f288b06ab2137f",
+      "found": true
+    },
+    {
+      "passage_id": "tub-120-undecies#9",
+      "text_sha256": "309b9369caa6dc9e134ebe81ef856f5b35490ce272389b789e6ceb0cf74a1579",
+      "found": true
+    },
+    {
+      "passage_id": "dlgs-212-2025-art-6#2",
+      "text_sha256": "893f793567969bef18c060131b5a684141b8f2c24dcc29a125a52e2d26f9674f",
+      "found": true
+    },
+    {
+      "passage_id": "dlgs-212-2025-art-6#3",
+      "text_sha256": "33cf4ccc2861c40fb9e1a798c6e5ab4d9fd12ac89fb2513735b38683296720d7",
+      "found": true
+    }
+  ]
+}

@@ -35,6 +35,25 @@ does not determine legal applicability, interpret law, or certify compliance; a
 lender's legal and compliance functions approve the scope and the evidence behind
 each reference.
 
+## Regulation corpora
+
+A jurisdiction folder may also hold `corpus.yaml`: the texts, one markdown file per
+provision under `sources/`, that the readability judge retrieves and cites and that
+obligations link to by passage id.
+
+| corpus | contents | language |
+|---|---|---|
+| `EU` | AI Act Art 9, 13, 14, 15, 26 and Annex III point 5 (consolidated text of 27 July 2026); CCD2 (Directive (EU) 2023/2225) Art 18 and 19 | English |
+| `IT` | TUB Art 120-undecies, 124-bis, 125, 127-ter as amended by D.Lgs. 212/2025, and that decree's Art 6 transition rule | Italian |
+| `US` | SR 26-2, the interagency model risk management guidance of 17 April 2026, sections I–VII and footnotes | English |
+
+`evidence corpus build <J>` embeds the passages into `index/`; `evidence corpus
+verify-sources <J> --official <saved text>` checks every passage word for word against the
+official publication and records the result in `source_check.json`. A passage edited after
+the check counts as unchecked. SR 26-2 puts generative and agentic AI out of its scope
+(footnote 3): for a language-model assistant it is the starting point of a bank's model
+risk expectations, not a requirement that applies as written.
+
 ## Stable IDs
 
 `<COUNTRY>-<INSTRUMENT>-<PROVISION>`, uppercase, e.g. `IT-TUB-124-BIS-2-BIS-A`. IDs

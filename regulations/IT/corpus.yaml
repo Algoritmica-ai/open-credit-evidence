@@ -1,0 +1,45 @@
+# The regulation corpus for Italy: the Banking Act (TUB) articles on creditworthiness
+# assessment and credit databases, as amended by D.Lgs. 212/2025 (CCD2 transposition),
+# and that decree's transition rule. The passages are in Italian, as published.
+# Built with `evidence corpus build IT`; checked against Normattiva with
+# `evidence corpus verify-sources IT`. The rule pack (ruleset.json, registry.json)
+# cites these articles; Normattiva remains the canonical text.
+jurisdiction: IT
+title: Testo unico bancario — valutazione del merito creditizio e banche dati (credito ai consumatori)
+verified: 2026-09-24
+sources:
+  - id: tub-124-bis
+    file: sources/tub-124-bis.md
+    instrument: D.Lgs. 385/1993 (TUB)
+    citation: TUB art. 124-bis
+    paragraph_citation: "{citation}, comma {para}"
+    title: Verifica del merito creditizio (credito ai consumatori)
+    url: https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:1993-09-01;385~art124bis
+  - id: tub-125
+    file: sources/tub-125.md
+    instrument: D.Lgs. 385/1993 (TUB)
+    citation: TUB art. 125
+    paragraph_citation: "{citation}, comma {para}"
+    title: Banche dati
+    url: https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:1993-09-01;385~art125
+  - id: tub-127-ter
+    file: sources/tub-127-ter.md
+    instrument: D.Lgs. 385/1993 (TUB)
+    citation: TUB art. 127-ter
+    paragraph_citation: "{citation}, comma {para}"
+    title: Valutazione del merito creditizio fondata sul trattamento automatizzato di dati personali
+    url: https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:1993-09-01;385~art127ter
+  - id: tub-120-undecies
+    file: sources/tub-120-undecies.md
+    instrument: D.Lgs. 385/1993 (TUB)
+    citation: TUB art. 120-undecies
+    paragraph_citation: "{citation}, comma {para}"
+    title: Verifica del merito creditizio (credito immobiliare ai consumatori)
+    url: https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:1993-09-01;385~art120undecies
+  - id: dlgs-212-2025-art-6
+    file: sources/dlgs-212-2025-art-6.md
+    instrument: D.Lgs. 212/2025
+    citation: D.Lgs. 212/2025 art. 6
+    paragraph_citation: "{citation}, comma {para}"
+    title: Disposizioni transitorie (adeguamento entro il 20 novembre 2026)
+    url: https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:1993-09-01;385~art124bis

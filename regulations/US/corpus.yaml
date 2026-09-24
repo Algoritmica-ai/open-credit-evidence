@@ -1,0 +1,26 @@
+# The regulation corpus for the US jurisdiction: supervisory guidance a US bank's
+# model risk function applies to a credit model. Built into an index by
+# `evidence corpus build US`; checked against the official text with
+# `evidence corpus verify-sources US`. Official publications remain the canonical text.
+#
+# SR 26-2 puts generative and agentic AI models out of its scope (footnote 3):
+# for an assistant built on a language model it describes the expectations a
+# bank's model risk function starts from, not a requirement that applies as written.
+jurisdiction: US
+title: US model risk management guidance (SR 26-2) for credit models
+verified: 2026-09-24
+sources:
+  - id: sr-26-2
+    file: sources/sr-26-2.md
+    instrument: Supervisory Guidance on Model Risk Management (Federal Reserve, FDIC, OCC)
+    citation: SR 26-2
+    paragraph_citation: "{citation}, section {para}"
+    title: Supervisory Guidance on Model Risk Management
+    url: https://www.federalreserve.gov/supervisionreg/srletters/SR2602a1.pdf
+  - id: sr-26-2-fn
+    file: sources/sr-26-2-footnotes.md
+    instrument: Supervisory Guidance on Model Risk Management (Federal Reserve, FDIC, OCC)
+    citation: SR 26-2
+    paragraph_citation: "{citation}, footnote {para}"
+    title: Supervisory Guidance on Model Risk Management — footnotes (scope, applicability)
+    url: https://www.federalreserve.gov/supervisionreg/srletters/SR2602a1.pdf
