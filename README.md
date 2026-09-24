@@ -83,6 +83,22 @@ prove a change helped, run again and compare, case by case:
 .venv/bin/evidence report runs/today --rewrite --thresholds bank.yaml   # re-decide, no model calls
 ```
 
+The same evidence comes as a report for each person who acts on it, under
+`evidence/readers/`:
+
+| Report | For | Answers |
+|---|---|---|
+| `business.md` | Head of lending, product owner | Can we use it, and what does it take? One page. |
+| `credit-risk.md` | Model risk, second line | Is the method sound and the result stable? Test design, results with intervals over cases, stability, root causes, limitations. |
+| `compliance.md` | Compliance and legal | What does this evidence, article by article, and the lender's rule pack |
+| `operations.md` | Underwriters and team leads | What to watch for, with sentences the assistant actually wrote |
+| `vendor.md` | Whoever supplies the assistant | Every failing result, with its transcript and how to reproduce it |
+| `auditor.md` | Internal audit, a supervisor | What each file is and how to check that none has changed |
+
+```bash
+.venv/bin/evidence report runs/today --for business
+```
+
 `verify --recompute` rebuilds all of it from the results and names the first number
 that does not match — even if someone re-sealed the checksums after editing it.
 
