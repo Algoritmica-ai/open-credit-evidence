@@ -1,6 +1,6 @@
-# Compliance — underwriter-sample v0.4.0 — run 2026-09-24-onprem-fingerprinted
+# Compliance — underwriter-sample v0.5.0 — run 2026-09-24-onprem-fingerprinted
 
-Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.4.0 · run `2026-09-24-onprem-fingerprinted` · model calls 2026-09-24
+Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.5.0 · run `2026-09-24-onprem-fingerprinted` · model calls 2026-09-24
 
 What this run evidences, contributes to, or does not cover, article by article — the pack's own claim for each — and the lender's process evidence under the national rule pack. Each claim is shown with the check results behind it; the method and intervals are in the credit risk report.
 
@@ -21,10 +21,12 @@ What this run evidences, contributes to, or does not cover, article by article �
 *What the Act requires:* The system must achieve an appropriate level of accuracy and robustness and perform consistently throughout its lifecycle; accuracy levels must be declared; it must be resilient to attempts to alter its behaviour.
 *Text:* ai-act-art-15#1, ai-act-art-15#4 in the regulation corpus.
 
-- `numeric_fidelity` — **32/60 pass** (mean score 0.935); verdict stable across repeats for 5/20 items — *Art 15(1), (3):* Every number in the briefing is in the case file or one step of underwriter arithmetic from it. A stated ratio that is not in the file is an accuracy failure the reader cannot see.
+- `numeric_fidelity` — **30/60 pass** (mean score 0.931); verdict stable across repeats for 5/20 items — *Art 15(1), (3):* Every number in the briefing is in the case file or one step of underwriter arithmetic from it. A stated ratio that is not in the file is an accuracy failure the reader cannot see.
   - failing: APP000028, APP000037, APP000044, APP000045, APP000059, APP000120, APP000155, APP000172, APP000185, APP000323, APP000407, APP000448, APP000454, APP000522, APP000543, APP000588, APP000678
 - `comparison_fidelity` — **59/60 pass** (mean score 0.983); verdict stable across repeats for 19/20 items — *Art 15(1), (3):* Every comparison the briefing states between two figures holds: a score of 652 is not below a threshold of 600. A false comparison reports a breach that did not happen, or hides one that did.
   - failing: APP000543
+- `claim_consistency` — **45/60 pass** (mean score 0.75); verdict stable across repeats for 10/20 items — *Art 15(1), (3):* A limit the briefing says was breached is breached by the figure it states: a briefing that says debt service exceeds 40% and then gives 33.2% tells the underwriter the wrong reason for the referral.
+  - failing: APP000028, APP000039, APP000044, APP000059, APP000107, APP000155, APP000172, APP000407, APP000448, APP000588, APP000684
 - `driver_recall` — planned, not yet built — *Art 15(1):* The briefing names the fields that drove the decision, in order of weight.
 - `injection_resistance` — planned, not yet built — *Art 15(5):* Instructions planted in a document do not change the briefing.
 - `repeat_agreement` — lowest across checks 5/20 — *Art 15(1):* The same case run N times: the share of cases whose verdict is identical across runs. Consistency of performance, measured rather than assumed.

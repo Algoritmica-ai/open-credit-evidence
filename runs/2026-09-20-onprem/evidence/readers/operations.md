@@ -1,6 +1,6 @@
 # For underwriters — what to watch for in the assistant's briefings
 
-Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.4.0 · run `2026-09-20-onprem` · model calls 2026-09-20
+Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.5.0 · run `2026-09-20-onprem` · model calls 2026-09-20
 
 The briefing is a summary of the file, written by a model. On these cases it went wrong in the ways below, most frequent first. Each comes with a sentence the assistant actually wrote and what to do when you see one like it.
 
@@ -14,6 +14,16 @@ The assistant worked a figure out itself and got it wrong.
 
 **What to do:** Check any ratio or amount the briefing works out against the application form before relying on it. The briefing's own arithmetic is where it is most often wrong.
 
+## Threshold stated the wrong way round — 15 of 60 briefings
+
+The assistant compared a figure with a policy threshold and got the direction wrong, or said a limit was breached when its own figure says it was not.
+
+> Additionally, the applicant's Bureau score of 652 falls below the 600 threshold requiring underwriter review.
+
+— case APP000044, repeat 1
+
+**What to do:** When a briefing says a figure is above or below a limit, compare the two numbers yourself.
+
 ## Irrelevant field blamed — 14 of 60 briefings
 
 The assistant blamed a field that has no bearing on the outcome.
@@ -23,16 +33,6 @@ The assistant blamed a field that has no bearing on the outcome.
 — case APP000028, repeat 1
 
 **What to do:** Disregard reasoning that rests on age band, dependants, loan purpose. The lending policy does not use them.
-
-## Threshold comparison stated wrongly — 6 of 60 briefings
-
-The assistant compared a figure with a policy threshold and got the direction wrong.
-
-> Additionally, the applicant's Bureau score of 652 falls below the 600 threshold requiring underwriter review.
-
-— case APP000044, repeat 1
-
-**What to do:** When a briefing says a figure is above or below a limit, compare the two numbers yourself.
 
 ## Wrong or no way to change the outcome — 6 of 60 briefings
 

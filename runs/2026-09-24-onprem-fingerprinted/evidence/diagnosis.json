@@ -1,5 +1,5 @@
 {
-  "failures": 42,
+  "failures": 59,
   "causes": [
     {
       "cause": "miscalculated",
@@ -7,11 +7,25 @@
       "lever": "context",
       "owner": "bank",
       "why": "The assistant worked a figure out itself and got it wrong.",
-      "briefings": 28,
-      "results": 28,
+      "briefings": 30,
+      "results": 30,
       "items": 17,
       "checks": [
         "numeric_fidelity"
+      ]
+    },
+    {
+      "cause": "misread_threshold",
+      "label": "Threshold stated the wrong way round",
+      "lever": "context",
+      "owner": "bank",
+      "why": "The assistant compared a figure with a policy threshold and got the direction wrong, or said a limit was breached when its own figure says it was not.",
+      "briefings": 16,
+      "results": 16,
+      "items": 12,
+      "checks": [
+        "claim_consistency",
+        "comparison_fidelity"
       ]
     },
     {
@@ -39,19 +53,6 @@
       "checks": [
         "flip_accuracy"
       ]
-    },
-    {
-      "cause": "misread_threshold",
-      "label": "Threshold comparison stated wrongly",
-      "lever": "context",
-      "owner": "bank",
-      "why": "The assistant compared a figure with a policy threshold and got the direction wrong.",
-      "briefings": 1,
-      "results": 1,
-      "items": 1,
-      "checks": [
-        "comparison_fidelity"
-      ]
     }
   ],
   "records": [
@@ -65,6 +66,19 @@
       "detail": {
         "figures_not_in_file": [
           "699"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000028:complete",
+      "repeat": 0,
+      "check": "claim_consistency",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "contradictions": [
+          "claims above 40%, states 36.6%"
         ]
       }
     },
@@ -87,6 +101,19 @@
     {
       "item_id": "underwriter-sample:case_review:APP000028:complete",
       "repeat": 1,
+      "check": "claim_consistency",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "contradictions": [
+          "claims above 40%, states 36.6%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000028:complete",
+      "repeat": 1,
       "check": "decoy_citation",
       "cause": "decoy_blamed",
       "lever": "instructions",
@@ -97,6 +124,19 @@
         ],
         "sentences": [
           "Specifically, the applicant\u2019s total monthly debt service exceeds the 40% affordability threshold, and the applicant falls within the \"thin file\" category due to a credit file age of 44 months (just over the 24-month limit)."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000028:complete",
+      "repeat": 2,
+      "check": "claim_consistency",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "contradictions": [
+          "claims above 40%, states 36.6%"
         ]
       }
     },
@@ -143,6 +183,19 @@
       }
     },
     {
+      "item_id": "underwriter-sample:case_review:APP000039:complete",
+      "repeat": 1,
+      "check": "claim_consistency",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "contradictions": [
+          "claims above 40%, states 39.1%"
+        ]
+      }
+    },
+    {
       "item_id": "underwriter-sample:case_review:APP000044:complete",
       "repeat": 0,
       "check": "decoy_citation",
@@ -184,6 +237,19 @@
       "detail": {
         "figures_not_in_file": [
           "39.6%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000044:complete",
+      "repeat": 2,
+      "check": "claim_consistency",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "contradictions": [
+          "claims above 40%, states 39.6%"
         ]
       }
     },
@@ -260,6 +326,19 @@
     },
     {
       "item_id": "underwriter-sample:case_review:APP000059:complete",
+      "repeat": 0,
+      "check": "claim_consistency",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "contradictions": [
+          "claims above 40%, states 34.5%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000059:complete",
       "repeat": 2,
       "check": "numeric_fidelity",
       "cause": "miscalculated",
@@ -271,6 +350,7 @@
           "\u00a3854",
           "43.5%",
           "\u00a31,970",
+          "3.5%",
           "\u00a3788",
           "\u00a3229"
         ]
@@ -294,6 +374,19 @@
     },
     {
       "item_id": "underwriter-sample:case_review:APP000107:complete",
+      "repeat": 0,
+      "check": "claim_consistency",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "contradictions": [
+          "claims above 40%, states 33.2%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000107:complete",
       "repeat": 1,
       "check": "decoy_citation",
       "cause": "decoy_blamed",
@@ -309,6 +402,19 @@
       }
     },
     {
+      "item_id": "underwriter-sample:case_review:APP000107:complete",
+      "repeat": 2,
+      "check": "claim_consistency",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "contradictions": [
+          "claims above 40%, states 31.1%"
+        ]
+      }
+    },
+    {
       "item_id": "underwriter-sample:case_review:APP000120:complete",
       "repeat": 0,
       "check": "numeric_fidelity",
@@ -318,6 +424,45 @@
       "detail": {
         "figures_not_in_file": [
           "41.58%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000155:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "4.59%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000155:complete",
+      "repeat": 0,
+      "check": "claim_consistency",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "contradictions": [
+          "claims above 40%, states 4.59%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000155:complete",
+      "repeat": 1,
+      "check": "claim_consistency",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "contradictions": [
+          "claims above 40%, states 4.6%"
         ]
       }
     },
@@ -362,7 +507,21 @@
       "owner": "bank",
       "detail": {
         "figures_not_in_file": [
-          "35.8%"
+          "35.8%",
+          "650"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000172:complete",
+      "repeat": 2,
+      "check": "claim_consistency",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "contradictions": [
+          "claims above 40%, states 35.8%"
         ]
       }
     },
@@ -426,6 +585,19 @@
     {
       "item_id": "underwriter-sample:case_review:APP000407:complete",
       "repeat": 2,
+      "check": "claim_consistency",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "contradictions": [
+          "claims above 40%, states 36.67%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000407:complete",
+      "repeat": 2,
       "check": "decoy_citation",
       "cause": "decoy_blamed",
       "lever": "instructions",
@@ -450,6 +622,32 @@
         "figures_not_in_file": [
           "\u00a31,416",
           "\u00a317,000"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000448:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "4.04%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000448:complete",
+      "repeat": 2,
+      "check": "claim_consistency",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "contradictions": [
+          "claims above 40%, states 4.04%"
         ]
       }
     },
@@ -601,6 +799,19 @@
       }
     },
     {
+      "item_id": "underwriter-sample:case_review:APP000588:complete",
+      "repeat": 1,
+      "check": "claim_consistency",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "contradictions": [
+          "claims above 40%, states 34.7%"
+        ]
+      }
+    },
+    {
       "item_id": "underwriter-sample:case_review:APP000678:complete",
       "repeat": 0,
       "check": "numeric_fidelity",
@@ -650,6 +861,19 @@
       "detail": {
         "levers": [
           "bureau_score increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-sample:case_review:APP000684:complete",
+      "repeat": 2,
+      "check": "claim_consistency",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "contradictions": [
+          "claims above 40%, states 3.7%"
         ]
       }
     },

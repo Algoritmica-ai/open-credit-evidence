@@ -15,9 +15,9 @@
     {
       "check": "numeric_fidelity",
       "status": "no_go",
-      "pass_rate": 0.5333,
-      "passed": 32,
-      "failed": 28,
+      "pass_rate": 0.5,
+      "passed": 30,
+      "failed": 30,
       "go": 0.98,
       "conditional": 0.9,
       "repeat_agreement": 0.25,
@@ -59,7 +59,8 @@
   ],
   "conditions": [
     "numeric_fidelity: the same case got different verdicts across repeats for 75% of cases (limit 10%).",
-    "decoy_citation: the same case got different verdicts across repeats for 40% of cases (limit 10%)."
+    "decoy_citation: the same case got different verdicts across repeats for 40% of cases (limit 10%).",
+    "claim_consistency ran but has no threshold in thresholds.yaml, so it does not enter this decision."
   ],
   "risks": [
     {
@@ -68,11 +69,25 @@
       "lever": "context",
       "owner": "bank",
       "why": "The assistant worked a figure out itself and got it wrong.",
-      "briefings": 28,
-      "results": 28,
+      "briefings": 30,
+      "results": 30,
       "items": 17,
       "checks": [
         "numeric_fidelity"
+      ]
+    },
+    {
+      "cause": "misread_threshold",
+      "label": "Threshold stated the wrong way round",
+      "lever": "context",
+      "owner": "bank",
+      "why": "The assistant compared a figure with a policy threshold and got the direction wrong, or said a limit was breached when its own figure says it was not.",
+      "briefings": 16,
+      "results": 16,
+      "items": 12,
+      "checks": [
+        "claim_consistency",
+        "comparison_fidelity"
       ]
     },
     {
@@ -86,19 +101,6 @@
       "items": 8,
       "checks": [
         "decoy_citation"
-      ]
-    },
-    {
-      "cause": "wrong_lever",
-      "label": "Wrong or no way to change the outcome",
-      "lever": "template",
-      "owner": "bank",
-      "why": "The assistant did not name a valid way to change the outcome.",
-      "briefings": 2,
-      "results": 2,
-      "items": 1,
-      "checks": [
-        "flip_accuracy"
       ]
     }
   ],

@@ -26,6 +26,30 @@
   },
   {
     "rank": 2,
+    "cause": "misread_threshold",
+    "title": "Hand the assistant the rules the case breached",
+    "lever": "context",
+    "owner": "bank",
+    "raise_with_vendor": true,
+    "why": "The assistant compared a figure with a policy threshold and got the direction wrong, or said a limit was breached when its own figure says it was not.",
+    "action": "Pass in the list of policy rules the case breached, as the rules engine decided them, so the assistant reports them instead of comparing figures with thresholds itself. If it still states a comparison the wrong way round, that is the vendor's to fix.",
+    "addresses": {
+      "briefings": 12,
+      "results": 14,
+      "items": 7,
+      "checks": [
+        "claim_consistency",
+        "comparison_fidelity"
+      ]
+    },
+    "example": {
+      "item_id": "underwriter-sample:case_review:APP000028:complete",
+      "repeat": 1
+    },
+    "prove_it": "Run the pack again with the change, then compare the two runs (Compare step, or `evidence compare <before> <after>`). Accept it only if it helps and nothing else gets worse."
+  },
+  {
+    "rank": 3,
     "cause": "decoy_blamed",
     "title": "Tell the assistant which fields must not be used as reasons",
     "lever": "instructions",
@@ -43,29 +67,6 @@
     },
     "example": {
       "item_id": "underwriter-sample:case_review:APP000028:complete",
-      "repeat": 0
-    },
-    "prove_it": "Run the pack again with the change, then compare the two runs (Compare step, or `evidence compare <before> <after>`). Accept it only if it helps and nothing else gets worse."
-  },
-  {
-    "rank": 3,
-    "cause": "misread_threshold",
-    "title": "Hand the assistant the rules the case breached",
-    "lever": "context",
-    "owner": "bank",
-    "raise_with_vendor": true,
-    "why": "The assistant compared a figure with a policy threshold and got the direction wrong.",
-    "action": "Pass in the list of policy rules the case breached, as the rules engine decided them, so the assistant reports them instead of comparing figures with thresholds itself. If it still states a comparison the wrong way round, that is the vendor's to fix.",
-    "addresses": {
-      "briefings": 5,
-      "results": 5,
-      "items": 3,
-      "checks": [
-        "comparison_fidelity"
-      ]
-    },
-    "example": {
-      "item_id": "underwriter-sample:case_review:APP000107:complete",
       "repeat": 0
     },
     "prove_it": "Run the pack again with the change, then compare the two runs (Compare step, or `evidence compare <before> <after>`). Accept it only if it helps and nothing else gets worse."

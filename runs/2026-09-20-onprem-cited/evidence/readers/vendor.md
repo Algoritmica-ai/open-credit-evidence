@@ -1,6 +1,6 @@
 # For the assistant's vendor — what failed, and how to reproduce it
 
-Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.4.0 · run `2026-09-20-onprem-cited` · model calls 2026-09-20
+Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.5.0 · run `2026-09-20-onprem-cited` · model calls 2026-09-20
 
 ## The system under test
 
@@ -11,12 +11,21 @@ Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred
 ## Raised with you if they persist
 
 - **Hand the assistant the figures your systems already computed** — 33 briefings. The bank will first pass in the figures the rules engine already computed — the debt-to-income ratio and the limit it breaches — instead of relying on the model's arithmetic. If wrong figures persist once the correct ones are in front of it, that is the vendor's to fix.
-- **Hand the assistant the rules the case breached** — 6 briefings. The bank will first pass in the list of policy rules the case breached, as the rules engine decided them, so the assistant reports them instead of comparing figures with thresholds itself. If it still states a comparison the wrong way round, that is the vendor's to fix.
+- **Hand the assistant the rules the case breached** — 15 briefings. The bank will first pass in the list of policy rules the case breached, as the rules engine decided them, so the assistant reports them instead of comparing figures with thresholds itself. If it still states a comparison the wrong way round, that is the vendor's to fix.
 
-## Every failing result (60)
+## Every failing result (69)
 
 | case | repeat | check | detail | transcript |
 |---|---|---|---|---|
+| APP000028 | 2 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 30.6%'] | `transcripts/underwriter-sample_case_review_APP000028_complete-r1.json` |
+| APP000039 | 1 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 39.15%'] | `transcripts/underwriter-sample_case_review_APP000039_complete-r0.json` |
+| APP000059 | 1 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 34.8%'] | `transcripts/underwriter-sample_case_review_APP000059_complete-r0.json` |
+| APP000107 | 3 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 33.2%'] | `transcripts/underwriter-sample_case_review_APP000107_complete-r2.json` |
+| APP000407 | 1 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 36.67%'] | `transcripts/underwriter-sample_case_review_APP000407_complete-r0.json` |
+| APP000588 | 2 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 34.7%'] | `transcripts/underwriter-sample_case_review_APP000588_complete-r1.json` |
+| APP000588 | 3 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 34.7%'] | `transcripts/underwriter-sample_case_review_APP000588_complete-r2.json` |
+| APP000678 | 3 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 4.02%'] | `transcripts/underwriter-sample_case_review_APP000678_complete-r2.json` |
+| APP000684 | 1 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 3.7%'] | `transcripts/underwriter-sample_case_review_APP000684_complete-r0.json` |
 | APP000044 | 1 | `comparison_fidelity` | 2/3 stated comparison(s) false: ['652 below 600', '652 below 600'] | `transcripts/underwriter-sample_case_review_APP000044_complete-r0.json` |
 | APP000407 | 2 | `comparison_fidelity` | 2/3 stated comparison(s) false: ['625 below 600', '625 below 600'] | `transcripts/underwriter-sample_case_review_APP000407_complete-r1.json` |
 | APP000407 | 3 | `comparison_fidelity` | 2/3 stated comparison(s) false: ['625 below 600', '625 below 600'] | `transcripts/underwriter-sample_case_review_APP000407_complete-r2.json` |
@@ -87,6 +96,7 @@ Each case ran 3 times with the same prompt, temperature 0.0 and seed 7. Cases wh
 - `decoy_citation`: 9 of 20 cases — APP000037, APP000044, APP000107, APP000155, APP000172, APP000185, APP000522, APP000543, APP000684
 - `flip_accuracy`: 4 of 20 cases — APP000039, APP000059, APP000588, APP000684
 - `comparison_fidelity`: 4 of 20 cases — APP000044, APP000407, APP000454, APP000678
+- `claim_consistency`: 8 of 20 cases — APP000028, APP000039, APP000059, APP000107, APP000407, APP000588, APP000678, APP000684
 
 ## To reproduce
 

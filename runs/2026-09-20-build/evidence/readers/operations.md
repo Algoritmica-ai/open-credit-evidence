@@ -1,10 +1,10 @@
 # For underwriters — what to watch for in the assistant's briefings
 
-Assistant `nvidia/nemotron-3.5-lightning-30b-a3b` (cloud) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.4.0 · run `2026-09-20-build` · model calls 2026-09-20
+Assistant `nvidia/nemotron-3.5-lightning-30b-a3b` (cloud) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.5.0 · run `2026-09-20-build` · model calls 2026-09-20
 
 The briefing is a summary of the file, written by a model. On these cases it went wrong in the ways below, most frequent first. Each comes with a sentence the assistant actually wrote and what to do when you see one like it.
 
-## Figure worked out wrongly — 25 of 60 briefings
+## Figure worked out wrongly — 26 of 60 briefings
 
 The assistant worked a figure out itself and got it wrong.
 
@@ -24,6 +24,16 @@ The assistant blamed a field that has no bearing on the outcome.
 
 **What to do:** Disregard reasoning that rests on age band, dependants. The lending policy does not use them.
 
+## Threshold stated the wrong way round — 10 of 60 briefings
+
+The assistant compared a figure with a policy threshold and got the direction wrong, or said a limit was breached when its own figure says it was not.
+
+> This application has been referred for underwriter review because it triggers two specific policy rules: the applicant’s total monthly debt service exceeds the 40% affordability threshold, and the bureau score of 645 falls below the 600 benchmark requiring review.
+
+— case APP000107, repeat 1
+
+**What to do:** When a briefing says a figure is above or below a limit, compare the two numbers yourself.
+
 ## Wrong or no way to change the outcome — 9 of 60 briefings
 
 The assistant did not name a valid way to change the outcome.
@@ -33,16 +43,6 @@ The assistant did not name a valid way to change the outcome.
 — case APP000037, repeat 1
 
 **What to do:** If the briefing does not say what would change the outcome, work it out from the policy: which limit is breached, and by how much.
-
-## Threshold comparison stated wrongly — 7 of 60 briefings
-
-The assistant compared a figure with a policy threshold and got the direction wrong.
-
-> This application has been referred for underwriter review because it triggers two specific policy rules: the applicant’s total monthly debt service exceeds the 40% affordability threshold, and the bureau score of 645 falls below the 600 benchmark requiring review.
-
-— case APP000107, repeat 1
-
-**What to do:** When a briefing says a figure is above or below a limit, compare the two numbers yourself.
 
 ## Fact in front of it, left out — 6 of 60 briefings
 

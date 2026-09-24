@@ -1,6 +1,6 @@
 # underwriter-sample — the assistant, on one page
 
-Assistant `nvidia/nemotron-3.5-lightning-30b-a3b` (cloud) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.4.0 · run `2026-09-20-build` · model calls 2026-09-20
+Assistant `nvidia/nemotron-3.5-lightning-30b-a3b` (cloud) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-sample` v0.5.0 · run `2026-09-20-build` · model calls 2026-09-20
 
 ## Verdict: **NO-GO**
 
@@ -10,17 +10,18 @@ The assistant is not ready to brief underwriters on cases like these without cha
 
 | In how many briefings the assistant … | briefings | share | allowed for GO |
 |---|---|---|---|
-| stated a figure that is not in, or worked out from, the case file | 25 of 60 | 42% | at most 2% |
+| stated a figure that is not in, or worked out from, the case file | 26 of 60 | 43% | at most 2% |
 | gave a field with no bearing on the outcome as a reason | 11 of 60 | 18% | at most 5% |
 | did not say correctly what would change the outcome | 9 of 60 | 15% | at most 10% |
 | compared a figure with a threshold the wrong way round | 7 of 60 | 12% | at most 2% |
 | left out a fact the decision turned on | 7 of 60 | 12% | at most 5% |
+| said a limit was breached when its own figure says it was not | 4 of 60 | 7% | — |
 
 ## What to change first
 
-1. **Hand the assistant the figures your systems already computed** — the bank, then the vendor if it persists. Addresses 25 of 60 briefings.
+1. **Hand the assistant the figures your systems already computed** — the bank, then the vendor if it persists. Addresses 26 of 60 briefings.
 2. **Tell the assistant which fields must not be used as reasons** — the bank. Addresses 11 of 60 briefings.
-3. **Require a 'what would change the outcome' section** — the bank. Addresses 9 of 60 briefings.
+3. **Hand the assistant the rules the case breached** — the bank, then the vendor if it persists. Addresses 10 of 60 briefings.
 
 Make one change, run the pack again, and compare the two runs: a change is accepted only if it helps and nothing else gets worse.
 
