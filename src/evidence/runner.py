@@ -25,6 +25,7 @@ from evidence.checks import run_checks
 from evidence.contracts.item import BenchmarkItem
 from evidence.contracts.transcript import SUTPins, Transcript
 from evidence.corpus import Corpus
+from evidence.fingerprint import model_fingerprint
 from evidence.judge import judge_readability
 from evidence.pack import Pack
 from evidence.regulations import assess
@@ -78,13 +79,26 @@ def _transcript_sha(item_id: str, sut: SUTPins, system: str, user: str, output: 
     return h.hexdigest()
 
 
-def call_assistant(item: BenchmarkItem, run_id: str, repeat: int) -> Transcript:
+def _fingerprint(role: str, log: Callable[[str], None]) -> dict[str, Any]:
+    """The model serving ``role`` now. Never fails a run: an unreachable detail is recorded."""
+    try:
+        fp = model_fingerprint(role)
+    except Exception as exc:  # noqa: BLE001 — a fingerprint must not cost the run
+        fp = {"role": role, "level": "unavailable", "fingerprint": None, "error": str(exc)}
+    fp["checked_at"] = _now()
+    log(f"  {role} model {str(fp.get('fingerprint'))[:16]} ({fp['level']})")
+    return fp
+
+
+def call_assistant(item: BenchmarkItem, run_id: str, repeat: int,
+                   fingerprint: str | None = None) -> Transcript:
     """One recorded call. The assistant sees the task prompt and every document."""
     user = item.documents_text()
     started = _now()
     r = chat("assistant", system=item.prompt, user=user, max_tokens=ASSISTANT_MAX_TOKENS)
     sut = SUTPins(
-        model_id=r.model_id, prompt_version=r.prompt_version, params=r.params, endpoint=r.endpoint
+        model_id=r.model_id, prompt_version=r.prompt_version, params=r.params, endpoint=r.endpoint,
+        fingerprint=fingerprint,
     )
     return Transcript(
         item_id=item.item_id,
@@ -154,6 +168,21 @@ def run_pack(
             except FileNotFoundError as exc:
                 corpus_note = str(exc)
                 log(f"  warning: {exc}; judge runs without regulation passages")
+    # Which model, exactly, served each role — taken just before the first call a
+    # role makes in this pass, and again at the end. A pass that makes no calls
+    # (a re-score from transcripts on disk) keeps what the earlier pass recorded:
+    # today's servers did not write yesterday's briefings.
+    previous = {}
+    if (out / "manifest.json").is_file():
+        previous = json.loads((out / "manifest.json").read_text(encoding="utf-8")).get("models") \
+            or {}
+    fps: dict[str, dict[str, Any]] = {}
+
+    def fp_for(role: str) -> str | None:
+        if role not in fps:
+            fps[role] = _fingerprint(role, log)
+        return fps[role].get("fingerprint")
+
     results: list[dict[str, Any]] = []
     transcripts: list[Transcript] = []
     judge_seen: dict[str, Any] | None = None
@@ -172,7 +201,7 @@ def run_pack(
             if path.is_file():
                 t = Transcript.model_validate_json(path.read_text(encoding="utf-8"))
             else:
-                t = call_assistant(item, run_id, rep)
+                t = call_assistant(item, run_id, rep, fp_for("assistant"))
                 path.write_text(t.model_dump_json(indent=2), encoding="utf-8")
                 calls_made += 1
             transcripts.append(t)
@@ -183,7 +212,10 @@ def run_pack(
             if want_judge:
                 rec = prior_judge.get((item.item_id, rep))
                 if rec is None:
-                    rec = {"item_id": item.item_id, "repeat": rep, "check": "readability"}
+                    rec = {"item_id": item.item_id, "repeat": rep, "check": "readability",
+                           "model_fingerprint": fp_for("judge")}
+                    if corpus_obj is not None:
+                        fp_for("embed")  # the retrieval query is embedded on the node
                     rec |= judge_readability(output=t.output, item=item, corpus=corpus_obj)
                 results.append(rec)
                 judge_seen = judge_seen or {
@@ -253,6 +285,20 @@ def run_pack(
             and BUILD_HOST not in (judge_seen["endpoint"] or ""),
             "rubric": "readability",
         }
+    models = dict(previous)
+    for role, first in fps.items():
+        last = _fingerprint(role, log)
+        entry = first | {"checked_at": [first["checked_at"], last["checked_at"]]}
+        if last.get("fingerprint") != first.get("fingerprint"):
+            entry |= {"changed_during_run": True, "fingerprint_end": last.get("fingerprint")}
+        models[role] = entry
+    # A resumed run can hold briefings from more than one server start.
+    seen = sorted({t.sut.fingerprint for t in transcripts if t.sut.fingerprint})
+    if "assistant" in models and seen:
+        models["assistant"]["seen_in_transcripts"] = seen
+        if len(seen) > 1:
+            models["assistant"]["changed_during_run"] = True
+
     regulatory = assess(pack.regulatory_context)
     window = _call_window(transcripts, started, calls_made)
     manifest: dict[str, Any] = {
@@ -287,6 +333,7 @@ def run_pack(
             "context_sha256": regulatory.context_sha256,
             "status": regulatory.status,
         },
+        "models": models,
         "started_at": window[0],
         "finished_at": window[1],
         "scored_at": _now(),

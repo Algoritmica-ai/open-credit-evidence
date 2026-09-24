@@ -275,6 +275,7 @@ def decide(
     diagnosis: dict[str, Any],
     thresholds: dict[str, Any],
     obligations: dict[str, Any],
+    models: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     checks = summary["checks"]
     agreement = summary.get("repeat_agreement", {})
@@ -312,7 +313,14 @@ def decide(
         conditions.append(f"{name} ran but has no threshold in thresholds.yaml, so it does not "
                           f"enter this decision.")
 
+    # Briefings from two different models cannot support one decision about either.
+    changed = sorted(r for r, m in (models or {}).items() if m.get("changed_during_run"))
+    for role in changed:
+        conditions.append(f"The {role} model changed during the run: its fingerprint differs "
+                          f"between the start and the end, or across briefings.")
+
     verdict = ("NO-GO" if any(r["status"] == "no_go" for r in rows)
+               else "INCONCLUSIVE" if changed
                else "INCONCLUSIVE" if any(r["status"] in ("insufficient", "not_run") for r in rows)
                else "GO WITH CONDITIONS" if conditions else "GO")
 

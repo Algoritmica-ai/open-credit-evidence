@@ -18,3 +18,4 @@ __pycache__/
 /results/
 /regulations/*/index/passages.db
 /exports/
+/models.json

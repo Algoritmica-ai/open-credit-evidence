@@ -87,6 +87,13 @@ EVIDENCE_EMBED_BASE_URL=http://$IP:$EMBED_PORT/v1
 EVIDENCE_EMBED_MODEL=nemotron-3-embed-1b
 ENV
 
+# What only the node can see about the servers — image digests, weights commits
+# and file hashes — for the model fingerprints in every evidence pack. Copy it
+# next to .env with servers.env.
+python3 "$HOME/open-credit-evidence/scripts/cluster/fingerprint_models.py" \
+  --out /data/team08/runs/models.json --servers-env /data/team08/runs/servers.env \
+  || echo "fingerprint_models.py failed: runs will record server-reported fingerprints only"
+
 # Hold the allocation while the servers live; SLURM accounts every minute of it.
 # A server that stops is started again with the same GPU, port and settings: on
 # 23 Sep the judge received a SIGTERM from outside the job and, with no restart,
