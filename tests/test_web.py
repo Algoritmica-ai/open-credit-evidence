@@ -136,6 +136,22 @@ def test_run_evidence_verify_and_tamper(client):
     biz = client.get(f"/api/runs/{job['run_id']}/readers/business")
     assert biz.status_code == 200 and biz.text.startswith("# underwriter-sample — the assistant")
     assert client.get(f"/api/runs/{job['run_id']}/readers/nobody").status_code == 404
+    # the same report as a PDF: printed by a local browser, or a clear 501 without one
+    from evidence.evidence import export
+
+    assert client.get(f"/api/runs/{job['run_id']}/pdf/nobody").status_code == 404
+    if export.find_chrome():
+        pdf = client.get(f"/api/runs/{job['run_id']}/pdf/business")
+        assert pdf.status_code == 200 and pdf.content[:5] == b"%PDF-"
+    original = export.find_chrome
+    export.find_chrome = lambda: None
+    try:
+        assert client.get(f"/api/runs/{job['run_id']}/pdf/business").status_code == 501
+    finally:
+        export.find_chrome = original
+    # the export left nothing inside the run: it still verifies
+    assert client.post(f"/api/runs/{job['run_id']}/verify", json={}).json()["ok"]
+
 
 
 def test_pack_shows_where_its_cases_come_from(client):

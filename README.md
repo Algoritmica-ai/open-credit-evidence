@@ -97,7 +97,15 @@ The same evidence comes as a report for each person who acts on it, under
 
 ```bash
 .venv/bin/evidence report runs/today --for business
+.venv/bin/evidence export runs/today            # all seven as PDF, into exports/today/
 ```
+
+A PDF carries what ties it to its run: the run's seal (SHA-256 of
+`checksums.sha256`) on every page, the SHA-256 of the Markdown it renders, when
+the model calls ran, when the checks were scored and when it was exported, and an
+integrity section saying how to check it. The auditor's PDF lists every file's
+checksum. PDFs are printed by a local Chrome or Chromium (`EVIDENCE_CHROME` names
+one); they are renderings, so they are written outside the run and never sealed.
 
 `verify --recompute` rebuilds all of it from the results and names the first number
 that does not match — even if someone re-sealed the checksums after editing it.

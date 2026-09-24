@@ -34,7 +34,7 @@ from typing import Any
 
 import yaml
 from fastapi import Body, FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from evidence import __version__
@@ -632,6 +632,28 @@ def run_detail(run_id: str) -> dict[str, Any]:
             for name, meta in READERS.items()
         ],
     }
+
+
+@app.get("/api/runs/{run_id}/pdf/{name}")
+def run_pdf(run_id: str, name: str) -> Response:
+    """One report as a PDF, with the run's timestamps and checksums. Needs Chrome on the host."""
+    from evidence.evidence.export import DOCUMENTS, export_run, find_chrome
+
+    if name not in DOCUMENTS:
+        raise HTTPException(404, f"no document {name!r}; documents: {', '.join(DOCUMENTS)}")
+    run = _run_dir(run_id)
+    if not (run / "checksums.sha256").is_file():
+        raise HTTPException(400, "run is not sealed")
+    if find_chrome() is None:
+        raise HTTPException(501, "PDF export needs Chrome or Chromium on this host; use Print")
+    with tempfile.TemporaryDirectory(prefix="evidence-pdf-") as tmp:
+        try:
+            res = export_run(run, Path(tmp), [name])
+        except FileNotFoundError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        data = Path(res["written"][0]).read_bytes()
+    return Response(data, media_type="application/pdf", headers={
+        "Content-Disposition": f'attachment; filename="{run_id}-{name}.pdf"'})
 
 
 @app.get("/api/runs/{run_id}/readers/{name}")

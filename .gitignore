@@ -17,3 +17,4 @@ __pycache__/
 /.venv-nel/
 /results/
 /regulations/*/index/passages.db
+/exports/
