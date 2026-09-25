@@ -344,11 +344,25 @@ def flip_refs(contrib: dict[str, float], disposition: str) -> list[FlipRef]:
 # --------------------------------------------------------------------------
 
 
-def render_documents(row: pd.Series, f: dict[str, float], env: Environment) -> list[ItemContext]:
+# A market sets how the case file is presented and which jurisdiction's rules the
+# lender answers to. The generated cases, the scorecard and the marking key are the
+# same in every market: only the currency and the regulatory overlay change.
+MARKETS: dict[str, dict[str, str]] = {
+    # the original sample: sterling figures, Italian rule pack
+    "sample": {"currency": "£", "jurisdiction": "IT", "version": "0.5.0"},
+    # a German public lender (Sparkasse, Landesbank, development bank): euro figures,
+    # German rule pack
+    "de": {"currency": "€", "jurisdiction": "DE", "version": "0.6.0"},
+}
+
+
+def render_documents(row: pd.Series, f: dict[str, float], env: Environment,
+                     currency: str = "£") -> list[ItemContext]:
     received = date(2026, 3, 31)
     opened_year = 2026 - int(row.file_age_months // 12)
     opened_month = ((3 - int(row.file_age_months % 12)) - 1) % 12 + 1
     ctx = dict(row.items()) | {
+        "cur": currency,
         "received": received.strftime("%-d %B %Y"),
         "instalment": f["_instalment"],
         "file_opened": date(opened_year, opened_month, 1).strftime("%B %Y"),
@@ -390,9 +404,14 @@ PROMPT = (
 
 
 def build(
-    n: int, keep: int, seed: int, out: Path, pack_id: str, spec: Path | None = None
+    n: int, keep: int, seed: int, out: Path, pack_id: str, spec: Path | None = None,
+    market: str = "sample",
 ) -> dict[str, Any]:
-    """Generate, decide, attribute, render, write. ``spec`` defaults to the bundled recipe."""
+    """Generate, decide, attribute, render, write. ``spec`` defaults to the bundled recipe;
+    ``market`` (see MARKETS) sets the currency and the jurisdiction overlay."""
+    if market not in MARKETS:
+        raise ValueError(f"unknown market {market!r}; one of {sorted(MARKETS)}")
+    mk = MARKETS[market]
     from sdd import api
 
     spec = Path(spec) if spec else SPEC
@@ -433,7 +452,7 @@ def build(
                 domain="credit_underwriting",
                 task="case_review",
                 prompt=PROMPT,
-                context=render_documents(row, f, env),
+                context=render_documents(row, f, env, mk["currency"]),
                 deterministic_checks=[
                     "material_omission",
                     "numeric_fidelity",
@@ -490,7 +509,9 @@ def build(
 
     manifest = {
         "pack_id": pack_id,
-        "version": "0.5.0",
+        "version": mk["version"],
+        "market": market,
+        "currency": mk["currency"],
         "domain": "credit_underwriting",
         "domain_version": "0.1",
         "sdd": {
@@ -513,9 +534,9 @@ def build(
     (out / "answer_key.json").write_text(json.dumps(answer_key, indent=2) + "\n")
     (out / "obligations.yaml").write_text(yaml.safe_dump(OBLIGATIONS, sort_keys=False))
     # Jurisdiction overlay: the lender and product the assistant serves. The
-    # example context from the IT rule pack, so `evidence rules` has something
-    # to evaluate; a lender replaces every reference with its own artefacts.
-    example = ROOT / "regulations" / "IT" / "case-context.example.json"
+    # example context from the market's rule pack, so `evidence rules` has
+    # something to evaluate; a lender replaces every reference with its own artefacts.
+    example = ROOT / "regulations" / mk["jurisdiction"] / "case-context.example.json"
     if example.is_file():
         (out / "regulatory_context.json").write_text(example.read_text())
     return manifest
@@ -711,8 +732,10 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=ROOT / "packs" / "underwriter-sample")
     ap.add_argument("--pack-id", default="underwriter-sample")
     ap.add_argument("--spec", type=Path, default=None, help="SDD spec (default: bundled)")
+    ap.add_argument("--market", choices=sorted(MARKETS), default="sample",
+                    help="currency and jurisdiction overlay (default: sample)")
     a = ap.parse_args()
-    m = build(a.n, a.keep, a.seed, a.out, a.pack_id, a.spec)
+    m = build(a.n, a.keep, a.seed, a.out, a.pack_id, a.spec, a.market)
     keys = ("pack_id", "population", "items", "items_sha256")
     print(json.dumps({k: m[k] for k in keys}, indent=2))
 

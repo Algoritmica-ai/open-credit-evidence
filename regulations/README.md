@@ -45,6 +45,7 @@ obligations link to by passage id.
 |---|---|---|
 | `EU` | AI Act Art 9, 13, 14, 15, 26 and Annex III point 5 (consolidated text of 27 July 2026); CCD2 (Directive (EU) 2023/2225) Art 18 and 19 | English |
 | `IT` | TUB Art 120-undecies, 124-bis, 125, 127-ter as amended by D.Lgs. 212/2025, and that decree's Art 6 transition rule | Italian |
+| `DE` | BGB §§ 505a–505d, KWG § 18a and BDSG § 31 as in force today; from the CCD2 transposition act (BGBl. 2026 I Nr. 139, in force 20 November 2026) the new KWG § 18a, BGB § 505b Abs. 1–2, BDSG § 30 Abs. 2–9 and § 37a | German |
 | `US` | SR 26-2, the interagency model risk management guidance of 17 April 2026, sections I–VII and footnotes | English |
 
 `evidence corpus build <J>` embeds the passages into `index/`; `evidence corpus

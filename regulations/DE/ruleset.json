@@ -1,0 +1,394 @@
+{
+  "$schema": "../ruleset.schema.json",
+  "ruleset_id": "DE-CREDIT-LENDING",
+  "version": "1.0.0",
+  "jurisdiction": "DE",
+  "last_verified": "2026-09-25",
+  "scope": {
+    "lenders": "German credit institutions (including Sparkassen, Landesbanken and development banks) granting consumer credit",
+    "products": [
+      "consumer_credit"
+    ],
+    "note": "An operational baseline, not an exhaustive legal inventory: real-estate consumer loans, overdrafts and business lending are out of scope."
+  },
+  "eu_baseline": [
+    "Regulation (EU) 2024/1689 (AI Act)",
+    "Directive (EU) 2023/2225 (CCD2)",
+    "Regulation (EU) 2016/679 (GDPR), in particular Art. 22"
+  ],
+  "platform_control_mapping": {
+    "mi-4": "model inventory and validation",
+    "mi-5": "decision traceability",
+    "mi-11": "data governance"
+  },
+  "rules": [
+    {
+      "id": "DE-BGB-505A-1",
+      "title": "Creditworthiness assessment before the contract",
+      "citation": "BGB § 505a Abs. 1; for credit institutions also KWG § 18a Abs. 1",
+      "category": "creditworthiness",
+      "enforcement": "required",
+      "obligation_owner": "lender",
+      "applicability": {
+        "product_type": [
+          "consumer_credit"
+        ],
+        "customer_type": [
+          "consumer"
+        ]
+      },
+      "requirement_summary": "Assess the borrower's creditworthiness before concluding a consumer loan; for a general consumer loan conclude it only if the assessment raises no significant doubt that the borrower will meet the contractual obligations.",
+      "evidence_requirements": [
+        {
+          "key": "creditworthiness_assessment",
+          "description": "Completed assessment, dated before the contract"
+        },
+        {
+          "key": "decision_rationale",
+          "description": "Rationale tying the decision to the assessed facts"
+        }
+      ],
+      "finos_controls": [
+        "mi-4",
+        "mi-5"
+      ],
+      "official_sources": [
+        {
+          "publisher": "gesetze-im-internet.de (BMJV)",
+          "url": "https://www.gesetze-im-internet.de/bgb/__505a.html"
+        },
+        {
+          "publisher": "gesetze-im-internet.de (BMJV)",
+          "url": "https://www.gesetze-im-internet.de/kredwg/__18a.html"
+        }
+      ],
+      "corpus_passages": [
+        "bgb-505a#1",
+        "kwg-18a#1"
+      ]
+    },
+    {
+      "id": "DE-BGB-505B-1",
+      "title": "Information the assessment rests on",
+      "citation": "BGB § 505b Abs. 1",
+      "category": "creditworthiness",
+      "enforcement": "required",
+      "obligation_owner": "lender",
+      "applicability": {
+        "product_type": [
+          "consumer_credit"
+        ],
+        "customer_type": [
+          "consumer"
+        ]
+      },
+      "requirement_summary": "For a general consumer loan, base the assessment on information from the borrower and, where necessary, from credit reference agencies allowed to supply data for assessing consumers' creditworthiness.",
+      "evidence_requirements": [
+        {
+          "key": "information_sources",
+          "description": "Sources used: borrower's information and any credit reference agency"
+        },
+        {
+          "key": "information_verification",
+          "description": "How the information was checked, including contradictions"
+        }
+      ],
+      "finos_controls": [
+        "mi-4",
+        "mi-11"
+      ],
+      "official_sources": [
+        {
+          "publisher": "gesetze-im-internet.de (BMJV)",
+          "url": "https://www.gesetze-im-internet.de/bgb/__505b.html"
+        }
+      ],
+      "corpus_passages": [
+        "bgb-505b#1"
+      ]
+    },
+    {
+      "id": "DE-BDSG-31",
+      "title": "Admissible use of scores",
+      "citation": "BDSG § 31 Abs. 1 (in force until 19 November 2026)",
+      "category": "scoring",
+      "enforcement": "required",
+      "obligation_owner": "lender",
+      "applicability": {
+        "product_type": [
+          "consumer_credit"
+        ],
+        "customer_type": [
+          "consumer"
+        ],
+        "uses_private_credit_bureau": [
+          true
+        ]
+      },
+      "requirement_summary": "Use a probability score for a contract decision only if data protection law is met, the data are shown to be significant for the prediction by a scientifically recognised mathematical-statistical method, the score does not rest on address data alone, and, where address data are used, the person was informed beforehand and this is documented.",
+      "evidence_requirements": [
+        {
+          "key": "scoring_method_validation",
+          "description": "Evidence that the scoring method is scientifically recognised and its data significant"
+        },
+        {
+          "key": "scoring_data_inventory",
+          "description": "Data used for the score, showing it does not rest on address data alone"
+        },
+        {
+          "key": "address_data_notice",
+          "description": "Documented notice to the person where address data are used"
+        }
+      ],
+      "finos_controls": [
+        "mi-4",
+        "mi-5"
+      ],
+      "official_sources": [
+        {
+          "publisher": "gesetze-im-internet.de (BMJV)",
+          "url": "https://www.gesetze-im-internet.de/bdsg_2018/__31.html"
+        }
+      ],
+      "corpus_passages": [
+        "bdsg-31#1"
+      ]
+    },
+    {
+      "id": "DE-BGB-505A-1-S3",
+      "title": "Telling the borrower about a refusal",
+      "citation": "BGB § 505a Abs. 1 Satz 3 n.F.",
+      "category": "adverse_decision",
+      "enforcement": "transition",
+      "transition_note": "From 20 November 2026 (BGBl. 2026 I Nr. 139, Art. 16). Tracked as a non-blocking transition rule until then; compliance should approve a ruleset version that makes it required from that date.",
+      "obligation_owner": "lender",
+      "applicability": {
+        "product_type": [
+          "consumer_credit"
+        ],
+        "customer_type": [
+          "consumer"
+        ],
+        "adverse_decision": [
+          true
+        ]
+      },
+      "requirement_summary": "If the lender decides not to conclude the contract, tell the borrower without delay and, for a general consumer loan, where appropriate refer them to easily accessible debt advice services.",
+      "evidence_requirements": [
+        {
+          "key": "rejection_notice",
+          "description": "Notice of refusal sent without delay"
+        },
+        {
+          "key": "debt_advice_referral",
+          "description": "Referral to debt advice services, where appropriate"
+        }
+      ],
+      "finos_controls": [
+        "mi-5"
+      ],
+      "official_sources": [
+        {
+          "publisher": "Bundesgesetzblatt",
+          "url": "https://www.recht.bund.de/eli/bund/bgbl-1/2026/139"
+        }
+      ],
+      "corpus_passages": [
+        "bgb-505a-neu#1"
+      ]
+    },
+    {
+      "id": "DE-BGB-505B-2-NEU",
+      "title": "Relevant and accurate information; no special categories",
+      "citation": "BGB § 505b Abs. 2 n.F.",
+      "category": "creditworthiness",
+      "enforcement": "transition",
+      "transition_note": "From 20 November 2026 (BGBl. 2026 I Nr. 139, Art. 16). Tracked as a non-blocking transition rule until then; compliance should approve a ruleset version that makes it required from that date.",
+      "obligation_owner": "lender",
+      "applicability": {
+        "product_type": [
+          "consumer_credit"
+        ],
+        "customer_type": [
+          "consumer"
+        ]
+      },
+      "requirement_summary": "Base the assessment on relevant and accurate information on income, expenses and other financial and economic circumstances that is necessary and proportionate; for general consumer loans it must not include special categories of personal data under Art. 9(1) GDPR.",
+      "evidence_requirements": [
+        {
+          "key": "information_sources",
+          "description": "Information used and why it is necessary and proportionate"
+        },
+        {
+          "key": "special_category_exclusion",
+          "description": "Evidence that Art. 9(1) GDPR data are not used"
+        }
+      ],
+      "finos_controls": [
+        "mi-4",
+        "mi-11"
+      ],
+      "official_sources": [
+        {
+          "publisher": "Bundesgesetzblatt",
+          "url": "https://www.recht.bund.de/eli/bund/bgbl-1/2026/139"
+        }
+      ],
+      "corpus_passages": [
+        "bgb-505b-neu#2"
+      ]
+    },
+    {
+      "id": "DE-BDSG-30-6",
+      "title": "Human intervention in an automated assessment",
+      "citation": "BDSG § 30 Abs. 6 n.F.",
+      "category": "automated_processing",
+      "enforcement": "transition",
+      "transition_note": "From 20 November 2026 (BGBl. 2026 I Nr. 139, Art. 16). Tracked as a non-blocking transition rule until then; compliance should approve a ruleset version that makes it required from that date.",
+      "obligation_owner": "lender",
+      "applicability": {
+        "product_type": [
+          "consumer_credit"
+        ],
+        "customer_type": [
+          "consumer"
+        ],
+        "decision_mode": [
+          "assisted",
+          "automated"
+        ]
+      },
+      "requirement_summary": "Where the assessment for a general consumer loan involves automated processing of personal data, the borrower can require the intervention of a person: a clear and comprehensible explanation of the assessment (including the logic and risks of the automated processing and its significance for the decision), the chance to state their own view, and a review of the assessment and the decision. The lender must inform the borrower of these rights once the automated processing is complete.",
+      "evidence_requirements": [
+        {
+          "key": "human_intervention_route",
+          "description": "How a borrower obtains review by a person"
+        },
+        {
+          "key": "assessment_explanation",
+          "description": "The explanation given: logic, risks, significance for the decision"
+        },
+        {
+          "key": "automated_processing_rights_notice",
+          "description": "Notice of these rights after the automated processing"
+        }
+      ],
+      "finos_controls": [
+        "mi-4",
+        "mi-5",
+        "mi-11"
+      ],
+      "official_sources": [
+        {
+          "publisher": "Bundesgesetzblatt",
+          "url": "https://www.recht.bund.de/eli/bund/bgbl-1/2026/139"
+        }
+      ],
+      "corpus_passages": [
+        "bdsg-30-neu#6"
+      ]
+    },
+    {
+      "id": "DE-BDSG-30-7",
+      "title": "Refusal based on a credit database or automated processing",
+      "citation": "BDSG § 30 Abs. 7 n.F.",
+      "category": "adverse_decision",
+      "enforcement": "transition",
+      "transition_note": "From 20 November 2026 (BGBl. 2026 I Nr. 139, Art. 16). Tracked as a non-blocking transition rule until then; compliance should approve a ruleset version that makes it required from that date.",
+      "obligation_owner": "lender",
+      "applicability": {
+        "product_type": [
+          "consumer_credit"
+        ],
+        "customer_type": [
+          "consumer"
+        ],
+        "adverse_decision": [
+          true
+        ]
+      },
+      "requirement_summary": "A lender that refuses a consumer loan because of a credit reference agency's information must tell the consumer without delay, with the information received, the database consulted and the data categories considered; where the assessment rests on automated processing, it must also tell the borrower that fact, the right to review by a person and how to contest the refusal.",
+      "evidence_requirements": [
+        {
+          "key": "rejection_notice",
+          "description": "Notice of refusal"
+        },
+        {
+          "key": "database_disclosure",
+          "description": "Information received, database consulted, data categories"
+        },
+        {
+          "key": "contest_route",
+          "description": "How to obtain review by a person and contest the refusal"
+        }
+      ],
+      "finos_controls": [
+        "mi-5"
+      ],
+      "official_sources": [
+        {
+          "publisher": "Bundesgesetzblatt",
+          "url": "https://www.recht.bund.de/eli/bund/bgbl-1/2026/139"
+        }
+      ],
+      "corpus_passages": [
+        "bdsg-30-neu#7"
+      ]
+    },
+    {
+      "id": "DE-BDSG-37A",
+      "title": "Scoring: data that may not be used, disclosure and challenge",
+      "citation": "BDSG § 37a n.F.",
+      "category": "scoring",
+      "enforcement": "transition",
+      "transition_note": "From 20 November 2026 (BGBl. 2026 I Nr. 139, Art. 16). Tracked as a non-blocking transition rule until then; compliance should approve a ruleset version that makes it required from that date.",
+      "obligation_owner": "lender",
+      "applicability": {
+        "product_type": [
+          "consumer_credit"
+        ],
+        "customer_type": [
+          "consumer"
+        ],
+        "uses_private_credit_bureau": [
+          true
+        ]
+      },
+      "requirement_summary": "A score may be created or used only if it does not use special categories of data, age, gender, name, social-network data, payment flows on bank accounts or address data, does not concern a minor, and rests on data shown to be significant by a scientifically recognised method; on request the person is told the data and criteria used, their weighting and the score's meaning, and may contest the decision, state their view and obtain a decision by a natural person.",
+      "evidence_requirements": [
+        {
+          "key": "scoring_data_inventory",
+          "description": "Features used, showing none of the excluded data"
+        },
+        {
+          "key": "scoring_method_validation",
+          "description": "Scientifically recognised method; significance of the data"
+        },
+        {
+          "key": "scoring_disclosure_route",
+          "description": "How data, criteria, weighting and meaning are disclosed on request"
+        },
+        {
+          "key": "contest_route",
+          "description": "How the person contests and obtains a decision by a natural person"
+        }
+      ],
+      "finos_controls": [
+        "mi-4",
+        "mi-5",
+        "mi-11"
+      ],
+      "official_sources": [
+        {
+          "publisher": "Bundesgesetzblatt",
+          "url": "https://www.recht.bund.de/eli/bund/bgbl-1/2026/139"
+        }
+      ],
+      "corpus_passages": [
+        "bdsg-37a-neu#2",
+        "bdsg-37a-neu#4",
+        "bdsg-37a-neu#5"
+      ]
+    }
+  ]
+}

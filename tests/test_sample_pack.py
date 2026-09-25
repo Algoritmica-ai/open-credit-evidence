@@ -116,3 +116,38 @@ def test_negative_control_fails_on_every_real_item() -> None:
     for it in _items():
         (r,) = run_checks(["material_omission"], output=strengths_only, item=it)
         assert not r.passed, it.item_id
+
+
+DE = Path(__file__).resolve().parents[1] / "packs" / "underwriter-de"
+
+
+@pytest.mark.skipif(not (DE / "items.jsonl").exists(), reason="German pack not built")
+def test_german_pack_is_the_sample_in_euros_under_german_rules():
+    import json
+
+    a = [json.loads(x) for x in (PACK / "items.jsonl").read_text().splitlines()]
+    b = [json.loads(x) for x in (DE / "items.jsonl").read_text().splitlines()]
+    case = lambda it: it["item_id"].split(":")[2]  # noqa: E731
+    assert [case(x) for x in a] == [case(x) for x in b]
+    assert all(x["grading"] == y["grading"] for x, y in zip(a, b, strict=True))
+    assert "£" not in (DE / "items.jsonl").read_text()
+    assert "€" in b[0]["context"][0]["content"]
+    m = json.loads((DE / "manifest.json").read_text())
+    assert (m["market"], m["currency"]) == ("de", "€")
+    ctx = json.loads((DE / "regulatory_context.json").read_text())
+    assert ctx["jurisdiction"] == "DE"
+
+
+def test_german_rule_pack_evaluates():
+    import json
+
+    from evidence.contracts.regulatory import RegulatoryContext
+    from evidence.regulations import assess
+
+    root = Path(__file__).resolve().parents[1] / "regulations" / "DE"
+    a = assess(RegulatoryContext.model_validate_json((root / "case-context.example.json")
+                                                     .read_text()))
+    status = {f.rule_id: f.status for f in a.findings}
+    assert status["DE-BGB-505A-1"] == "pass" and status["DE-BDSG-30-6"] == "advisory"
+    rules = json.loads((root / "ruleset.json").read_text())["rules"]
+    assert {r["enforcement"] for r in rules if r["citation"].endswith("n.F.")} == {"transition"}
