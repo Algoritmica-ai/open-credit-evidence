@@ -257,3 +257,36 @@ def test_run_detail_carries_decision_and_compare_works(tmp_path, monkeypatch):
     assert cmp["verdict"] in ("ACCEPT", "REJECT", "INCONCLUSIVE", "NO EFFECT")
     assert any(ch["what"] == "assistant endpoint" for ch in cmp["changed"])
     assert c.get("/api/compare", params={"before": "x", "after": "x"}).status_code == 400
+
+
+def test_review_endpoints_on_a_copy_of_a_committed_run(tmp_path, monkeypatch):
+    import shutil
+
+    src = ROOT / "runs" / "2026-09-24-onprem-super"
+    if not (src / "panel" / "records.jsonl").is_file():
+        pytest.skip("committed Super run not present")
+    runs = tmp_path / "runs"
+    shutil.copytree(src, runs / src.name)
+    monkeypatch.setattr(web, "RUNS", runs)
+    monkeypatch.setattr(web, "PACKS", ROOT / "packs")
+    c = TestClient(web.app)
+    q = c.get(f"/api/review/{src.name}").json()
+    assert q["summary"]["memos"] == 60 and q["memos"][0]["lane"] == "red"
+    memo = q["memos"][0]["memo"]
+    m = c.get(f"/api/review/{src.name}/memo", params={"memo": memo}).json()
+    assert m["cards"] and m["case_file"] and m["text"]
+    bad = c.post(f"/api/review/{src.name}/submit",
+                 json={"memo": memo, "reviewer": "t",
+                       "verdicts": [{"card_id": m["cards"][0]["card_id"], "action": "dispute"}]})
+    assert bad.status_code == 400
+    ok = c.post(f"/api/review/{src.name}/submit",
+                json={"memo": memo, "reviewer": "t", "seconds": 12,
+                      "verdicts": [{"card_id": x["card_id"], "action": "confirm",
+                                    "correction": "fixed"} for x in m["cards"]]})
+    assert ok.status_code == 200
+    assert c.post(f"/api/runs/{src.name}/verify", json={}).json()["ok"]
+    fb = c.post(f"/api/review/{src.name}/feedback").json()
+    assert fb["counts"]["judge_labels.jsonl"] >= 1
+    assert c.get(f"/api/review/{src.name}/feedback/manifest.json").status_code == 200
+    assert "Credit Evidence Engine" in c.get("/").text
+    assert c.get("/advanced/").status_code == 200

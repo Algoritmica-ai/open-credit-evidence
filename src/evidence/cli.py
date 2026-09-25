@@ -323,6 +323,28 @@ def _cmd_panel(a: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_review(a: argparse.Namespace) -> int:
+    from evidence import review
+    from evidence.evidence import write_evidence
+
+    run = Path(a.run)
+    manifest = json.loads((run / "manifest.json").read_text(encoding="utf-8"))
+    pack = load_pack(a.pack or Path("packs") / manifest["pack"]["pack_id"])
+    q = review.queue(run, {i.item_id: i for i in pack.items})
+    if a.feedback:
+        m = review.build_feedback(run, q)
+        out = write_evidence(run)
+        print(f"feedback pack in {run / 'feedback'}: " + ", ".join(
+            f"{v} {k}" for k, v in m["counts"].items()) + f"; {out['files_sealed']} files sealed")
+        return 0
+    s = review.summary(run, q)
+    print(f"{s['memos']} memos: red {s['lanes']['red']}, amber {s['lanes']['amber']}, green "
+          f"{s['lanes']['green']}; reviewed {s['reviewed']}; awaiting a ruling "
+          f"{s['needs_adjudication']}; settled verdicts {s['settled']}")
+    print("review them in the web UI: evidence ui, then Review")
+    return 0
+
+
 def _cmd_checks(_: argparse.Namespace) -> int:
     for name in available_checks():
         print(name)
@@ -409,6 +431,13 @@ def main(argv: list[str] | None = None) -> int:
     pn.add_argument("--redo", action="store_true",
                     help="discard the run's panel records and start over (default: resume)")
     pn.set_defaults(fn=_cmd_panel)
+
+    rv = sub.add_parser("review", help="the run's review queue; --feedback builds the "
+                        "feedback pack from settled verdicts")
+    rv.add_argument("run")
+    rv.add_argument("--pack", help="pack directory (default packs/<pack id of the run>)")
+    rv.add_argument("--feedback", action="store_true", help="build feedback/ and reseal")
+    rv.set_defaults(fn=_cmd_review)
 
     w = sub.add_parser("ui", help="serve the local web UI")
     w.add_argument("--host", default="127.0.0.1")

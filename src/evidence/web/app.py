@@ -573,6 +573,26 @@ def run_status(job_id: str) -> dict[str, Any]:
         return dict(job)
 
 
+def _headline(run: Path) -> dict[str, Any]:
+    """What a business reader needs first: the verdict and how many memos had an error."""
+    dec = run / "evidence" / "decision.json"
+    verdict = _read_json(dec).get("verdict") if dec.is_file() else None
+    bad: set[str] = set()
+    memos: set[str] = set()
+    res = run / "results.jsonl"
+    if res.is_file():
+        for line in res.read_text(encoding="utf-8").splitlines():
+            if line:
+                r = json.loads(line)
+                key = f"{r['item_id']}#{r['repeat']}"
+                memos.add(key)
+                if r.get("passed") is False:
+                    bad.add(key)
+    return {"verdict": verdict, "memos": len(memos), "memos_with_error": len(bad),
+            "reviewed": (run / "review" / "records.jsonl").is_file(),
+            "panel": (run / "panel" / "records.jsonl").is_file()}
+
+
 @app.get("/api/runs")
 def runs() -> list[dict[str, Any]]:
     out = []
@@ -592,6 +612,7 @@ def runs() -> list[dict[str, Any]]:
                 "transcripts": m.get("transcripts"),
                 "finished_at": m.get("finished_at"),
                 "sealed": (path.parent / "checksums.sha256").is_file(),
+                **_headline(path.parent),
                 "checks": {
                     k: {
                         "passed": v["passed"],
@@ -748,9 +769,142 @@ def _tamper_copy(src: Path, dst: Path, payload: dict[str, Any]) -> dict[str, Any
 # ------------------------------------------------------------------ static
 
 
+# ------------------------------------------------------------------ review and feedback
+
+
+def _review_queue(run: Path) -> list[dict[str, Any]]:
+    from evidence import review
+
+    pack_id = _read_json(run / "manifest.json")["pack"]["pack_id"]
+    try:
+        items = {i.item_id: i for i in _pack(pack_id).items}
+    except HTTPException:
+        items = {}
+    return review.queue(run, items)
+
+
+def _reseal(run: Path) -> None:
+    from evidence.evidence import write_evidence
+
+    write_evidence(run)
+
+
+@app.get("/api/review/{run_id}")
+def review_queue(run_id: str) -> dict[str, Any]:
+    """The run's memos as a review queue: lane, findings and whether each was reviewed."""
+    from evidence import review
+
+    run = _run_dir(run_id)
+    q = _review_queue(run)
+    done = review.reviews(run)
+    return {"summary": review.summary(run, q),
+            "memos": [{k: m[k] for k in ("memo", "case", "repeat", "lane", "failing_checks",
+                                         "panel_flag")}
+                      | {"findings": len(m["cards"]), "reviewed": m["memo"] in done}
+                      for m in q]}
+
+
+@app.get("/api/review/{run_id}/memo")
+def review_memo(run_id: str, memo: str) -> dict[str, Any]:
+    """One memo to review: its text, its findings as cards, the case file, any earlier review."""
+    from evidence import review
+
+    run = _run_dir(run_id)
+    m = next((x for x in _review_queue(run) if x["memo"] == memo), None)
+    if m is None:
+        raise HTTPException(404, "memo not in this run")
+    pack_id = _read_json(run / "manifest.json")["pack"]["pack_id"]
+    try:
+        item = next(i for i in _pack(pack_id).items if i.item_id == m["item_id"])
+        case_file = [{"title": d.renderer.replace("_", " ").capitalize(), "content": d.content}
+                     for d in item.context]
+    except (HTTPException, StopIteration):
+        case_file = []
+    return m | {"case_file": case_file, "review": review.reviews(run).get(memo),
+                "reasons": list(review.REASONS)}
+
+
+@app.post("/api/review/{run_id}/submit")
+def review_submit(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    from evidence import review
+
+    run = _run_dir(run_id)
+    try:
+        rec = review.submit(run, str(payload.get("memo", "")), str(payload.get("reviewer", "")),
+                            list(payload.get("verdicts") or []), list(payload.get("raised") or []),
+                            payload.get("seconds"), _review_queue(run))
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    _reseal(run)
+    return rec
+
+
+@app.get("/api/review/{run_id}/adjudication")
+def review_adjudication(run_id: str) -> list[dict[str, Any]]:
+    """Verdicts model risk must rule on before they can train anything."""
+    from evidence import review
+
+    run = _run_dir(run_id)
+    return [x for x in review.labels(run, _review_queue(run))
+            if x["standing"] == "needs_adjudication"]
+
+
+@app.post("/api/review/{run_id}/adjudicate")
+def review_adjudicate(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    from evidence import review
+
+    run = _run_dir(run_id)
+    try:
+        rec = review.adjudicate(run, str(payload.get("verdict_id", "")),
+                                str(payload.get("decision", "")), str(payload.get("by", "")),
+                                str(payload.get("note", "")))
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    _reseal(run)
+    return rec
+
+
+@app.post("/api/review/{run_id}/feedback")
+def review_feedback(run_id: str) -> dict[str, Any]:
+    """Build the feedback pack from the settled verdicts and seal it with the run."""
+    from evidence import review
+
+    run = _run_dir(run_id)
+    manifest = review.build_feedback(run, _review_queue(run))
+    _reseal(run)
+    return manifest
+
+
+@app.get("/api/review/{run_id}/feedback/{name}")
+def review_feedback_file(run_id: str, name: str) -> FileResponse:
+    if name not in ("sft.jsonl", "preferences.jsonl", "judge_labels.jsonl", "check_fixes.jsonl",
+                    "manifest.json"):
+        raise HTTPException(404, "no such feedback file")
+    path = _run_dir(run_id) / "feedback" / name
+    if not path.is_file():
+        raise HTTPException(404, "feedback pack not built yet")
+    return FileResponse(path, filename=f"{run_id}-{name}")
+
+
+# ------------------------------------------------------------------ pages
+
+
 @app.get("/")
 def index() -> FileResponse:
     return FileResponse(STATIC / "index.html")
+
+
+@app.get("/advanced/")
+def advanced() -> FileResponse:
+    """The full engine console: packs, corpora, runs, verify and the tamper demo."""
+    return FileResponse(STATIC / "advanced" / "index.html")
+
+
+@app.get("/advanced")
+def advanced_slash() -> Response:
+    from fastapi.responses import RedirectResponse
+
+    return RedirectResponse("/advanced/")
 
 
 app.mount("/", StaticFiles(directory=STATIC), name="static")

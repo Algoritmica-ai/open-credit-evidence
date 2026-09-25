@@ -426,6 +426,12 @@ def build_evidence(run: Path) -> dict[str, str]:
                                       lead=report_sections(decision, diagnosis, recs)),
         **readers,
     }
+    if (run / "review" / "records.jsonl").is_file():  # people reviewed this run's memos
+        from evidence import review
+
+        s = review.summary(run, review.queue(run, {}))
+        out["evidence/review.json"] = json.dumps(s, indent=2, ensure_ascii=False)
+        out["evidence/review.md"] = "\n".join(review.lines(s))
     panel = panel_report.summarise(run)  # a panel run later on the same briefings
     if panel is not None:
         out["evidence/panel.json"] = json.dumps(panel, indent=2, ensure_ascii=False)
