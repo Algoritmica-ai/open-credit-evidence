@@ -54,3 +54,10 @@ def stub_model_fingerprint(monkeypatch):
 
     monkeypatch.setattr("evidence.runner.model_fingerprint", fake)
     return fake
+
+
+@pytest.fixture(autouse=True)
+def one_memo_at_a_time(monkeypatch):
+    """Stubs that vary their answer by call order need calls in order. Parallel runs are
+    tested on their own, with a stub that answers by memo (test_run_and_verify)."""
+    monkeypatch.setenv("EVIDENCE_WORKERS", "1")
