@@ -1,0 +1,28 @@
+{
+  "item_id": "underwriter-de:case_review:APP000678:complete",
+  "run_id": "2026-09-25-de",
+  "repeat": 1,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "http://10.130.232.21:8200/v1",
+    "fingerprint": "1869632eafca897436984f33787f7a00bdb65e00462c86c6abb7ba9d15ee7e15"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000678\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Ms |\n| Age band | 45-54 |\n| Employment type | self_employed |\n| Employer | Vogt & Partner |\n| Time in current role | 69 months |\n| Postal code | 80331 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | €20,045 |\n| Income verified | Yes |\n| Existing monthly credit commitments | €288 |\n| Dependants | 0 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | €22,732 |\n| Term | 60 months |\n| Stated purpose | debt consolidation |\n| Indicative monthly instalment | €516 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000678\n**Bureau:** Rheinland Kreditauskunft\n**Search date:** 31 March 2026\n\n## Score\n\n**653** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | December 2020 (75 months) |\n| Accounts on file | 5 |\n| Credit enquiries, last 6 months | 1 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 0 |\n| Most recent delinquency | None |\n| Defaults recorded | None |\n| Debtor register entries | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, €2,000 to €40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application has been referred for underwriter review because the automated rules could not settle it. Specifically, the applicant’s total monthly debt service exceeds the policy threshold of 40% of gross monthly income.\n\n**What the File Shows:**\n\n*   **Against the Applicant (The Decline):**\n    *   **Affordability:** The applicant’s gross annual income is €20,045. The proposed loan instalment is €516, and existing monthly credit commitments are €288. This results in total monthly debt service of €804. As a percentage of gross monthly income (€1,670.42), this equals **48.1%**, which exceeds the 40% policy threshold.\n    *   **Credit Bureau Score:** The applicant has a score of 653. While this is above the 600 trigger for underwriter review, it is not \"good\" by typical standards, though the payment history is clean (no defaults or delinquencies in the last 24 months).\n    *   **Time in Role:** The applicant has been in their current role for 69 months, which is stable, but this does not offset the affordability gap.\n\n*   **In Favor of the Applicant (The Mitigating Factors):**\n    *   **Clean Payment History:** The credit file shows zero delinquencies in the last 24 months and no defaults or debtor register entries.\n    *   **Tenure:** The credit file has been open for 75 months, and the applicant has held their current job for 69 months, indicating stability.\n    *   **Purpose:** The stated purpose is debt consolidation, which is a valid use case.\n\n**What Would Need to Change for a Different Outcome:**\nFor the application to fall within policy without underwriter intervention, the total monthly debt service must be reduced to €668.43 or less (40% of €1,670.42 gross monthly income). This could be achieved by:\n1.  **Reducing the loan amount** to lower the monthly instalment.\n2.  **Extending the loan term** to lower the monthly instalment.\n3.  **Providing additional verified income** to increase the gross monthly income baseline, thereby increasing the 40% affordability ceiling.",
+  "latency_ms": 2084,
+  "tokens_in": 695,
+  "tokens_out": 507,
+  "provider_id": "chatcmpl-ab43a3b08b4ab5e3",
+  "started_at": "2026-09-25T04:59:54+00:00",
+  "sha256": "86b021850e2be563cd165370e7d67dafa159087a1d6bf2b1762131c012db6fd3"
+}

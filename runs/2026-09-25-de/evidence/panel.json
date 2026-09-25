@@ -1,0 +1,124 @@
+{
+  "panel": "panel-v2",
+  "complete": true,
+  "planned": 60,
+  "runtime": {
+    "node": "rtx-3se-06-04",
+    "sandbox": "evidence-judge",
+    "started_at": "2026-09-25T05:56:29Z",
+    "endpoint": "https://inference.local/v1",
+    "nemoclaw": "0.0.124",
+    "openshell": "0.0.116",
+    "agent_runtime": "OpenClaw v2026.7.1",
+    "inference_route": {
+      "provider": "vllm-local",
+      "model": "nemotron-3-super",
+      "timeout": "600s"
+    },
+    "network_policies": [
+      "clawhub",
+      "local_inference",
+      "managed_inference",
+      "npm_registry",
+      "nvidia",
+      "openclaw_api",
+      "openclaw_docs",
+      "openclaw_gateway_dialback"
+    ],
+    "policy_sha256": "5b582d0c399cdfb1aceab4d643f36a6cf63df99c23d43aef346e2d949470b361",
+    "kind": "nemoclaw",
+    "models": {
+      "reader": "nemotron-3-super",
+      "challenger": "nemotron-3-super",
+      "arbiter": "nemotron-3-super"
+    }
+  },
+  "briefings": 60,
+  "answered": 60,
+  "errors": 0,
+  "mean_value": 0.733,
+  "judge_mean_value": 0.992,
+  "flagged": 46,
+  "with_failing_checks": {
+    "briefings": 44,
+    "flagged": 40,
+    "judge_full_marks": 42,
+    "panel_full_marks": 8,
+    "judge_full_marks_panel_flagged": 38
+  },
+  "without_failing_checks": {
+    "briefings": 16,
+    "flagged": 6
+  },
+  "challenger": {
+    "findings": 109,
+    "material_findings": 82,
+    "failing_checks_confirmed": 46,
+    "failing_checks": 64,
+    "checks_disputed": {
+      "claim_consistency": 4,
+      "decoy_citation": 2,
+      "numeric_fidelity": 6
+    },
+    "invented_check_names": 0,
+    "unread_check_verdicts": 93,
+    "mean_tool_calls": 9.1
+  },
+  "reader_arbiter_agreement": {
+    "intelligible": 0.917,
+    "actionable": 0.383,
+    "overridable": 0.317
+  },
+  "citations_all_given": {
+    "records": 60,
+    "ok": 60
+  },
+  "examples": [
+    {
+      "item_id": "underwriter-de:case_review:APP000028:complete",
+      "repeat": 0,
+      "failing_checks": [
+        "decoy_citation",
+        "material_omission"
+      ],
+      "panel_value": 0.333,
+      "flag_reason": "Incorrect debt-service-to-income ratio claim (states exceeds 40% but calculated 36.55%)",
+      "finding": {
+        "claim": "The applicant’s total monthly debt service exceeds the 40% affordability threshold.",
+        "problem": "The calculated debt‑service‑to‑income ratio is 36.55%, which is below the 40% threshold.",
+        "evidence": "Gross monthly income = €24,951 / 12 = €2,079.25 (calculate). Total monthly debt service = €413 + €347 = €760. Ratio = €760 / €2,079.25 = 0.3655 → 36.55% (calculate)."
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000028:complete",
+      "repeat": 1,
+      "failing_checks": [
+        "decoy_citation",
+        "numeric_fidelity"
+      ],
+      "panel_value": 0.667,
+      "flag_reason": "The debt service ratio is misstated as 43.2% when the correct figure is 36.55%.",
+      "finding": {
+        "claim": "This represents approximately **43.2%** of the applicant's gross monthly income (€1,996), exceeding the 40% policy threshold.",
+        "problem": "The percentage and gross monthly income are incorrect. Correct gross monthly income is €2079.25 (€24,951/12). Total monthly debt service is €760 (€347+€413), which is 36.55% of gross monthly income, not exceeding the 40% threshold.",
+        "evidence": "Gross annual income from case file: €24,951. Monthly income = €24,951/12 = €2079.25. Debt service = €347+€413 = €760. Ratio = €760/€2079.25 = 0.3655 = 36.55%."
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000028:complete",
+      "repeat": 2,
+      "failing_checks": [
+        "claim_consistency",
+        "decoy_citation"
+      ],
+      "panel_value": 0.833,
+      "flag_reason": "Material misstatement: the briefing claims the applicant's total monthly debt service exceeds the 40% affordability threshold, but the calculated ratio is 36.5%, which is below the threshold.",
+      "finding": {
+        "claim": "Specifically, the applicant’s total monthly debt service exceeds the 40% affordability threshold",
+        "problem": "The debt service ratio is 36.5%, which is below the 40% threshold.",
+        "evidence": "The briefing states the ratio as 36.5%; calculation from case file figures (existing commitments €413 + proposed instalment €347 = €760; gross monthly income €24,951/12 = €2,079.25; ratio = 760/2079.25*100 = 36.55%) confirms it is under 40%."
+      }
+    }
+  ],
+  "gated": false
+}

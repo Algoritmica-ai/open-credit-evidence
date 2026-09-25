@@ -1,0 +1,344 @@
+{
+  "run_id": "2026-09-25-de",
+  "engine": {
+    "package": "credit-evidence-engine",
+    "version": "0.1.0.dev0",
+    "git_commit": "b5596d7"
+  },
+  "pack": {
+    "pack_id": "underwriter-de",
+    "version": "0.7.0",
+    "items_sha256": "76912232c9c22ec3e73ee330d62a4cca19d0b3ab17aaa4f543c17bf00f94d3f7",
+    "items": 20,
+    "domain": "credit_underwriting",
+    "scorecard_version": "underwriter-scorecard-0.1.0",
+    "sdd": {
+      "spec": "specs/credit_underwriting.yaml",
+      "spec_sha256": "5a827b5de979bad9",
+      "generated": 700,
+      "seed": 7
+    }
+  },
+  "sut": {
+    "role": "assistant",
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "endpoint": "http://10.130.232.21:8200/v1",
+    "on_prem": true,
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "max_tokens": 900,
+    "endpoints_seen": [
+      "http://10.130.232.21:8200/v1"
+    ]
+  },
+  "judge": {
+    "model_id": "nemotron-3-super",
+    "endpoint": "http://10.130.232.21:8204/v1",
+    "corpus": {
+      "jurisdiction": "EU",
+      "corpus_sha256": "4a7d4f6c5717220557107a6cb7760a41e9cd2b2431e89bf76625fef44064b523",
+      "passages": 55,
+      "embed_model": "nvidia/nemotron-3-embed-1b",
+      "index_backend": "cosine",
+      "embedder_check": {
+        "probe": "ai-act-art-9#1",
+        "cosine": 1.0,
+        "min_cosine": 0.999,
+        "ok": true,
+        "dimension": 2048,
+        "index_dimension": 2048,
+        "index_embed_model": "nvidia/nemotron-3-embed-1b",
+        "query_embed_model": "nvidia/nemotron-3-embed-1b"
+      },
+      "source_check": {
+        "checked_at": "2026-09-24T11:38:13+00:00",
+        "official": "CELEX:02024R1689-20260727 + CELEX:32023L2225",
+        "official_text_sha256": "ff5e682aabd9557ca3c6070829f4a6c5f80b277ccdbbf57ba1e985ff2702d96c",
+        "passages": 55,
+        "found": 55,
+        "unchecked": []
+      }
+    },
+    "corpus_note": null,
+    "on_prem": true,
+    "rubric": "readability"
+  },
+  "checks": [
+    "material_omission",
+    "numeric_fidelity",
+    "decoy_citation",
+    "flip_accuracy",
+    "comparison_fidelity",
+    "claim_consistency"
+  ],
+  "repeats": 3,
+  "transcripts": 60,
+  "planned": 60,
+  "cancelled": false,
+  "model_calls_made": 60,
+  "regulatory": {
+    "jurisdiction": "DE",
+    "ruleset_id": "DE-CREDIT-LENDING",
+    "ruleset_version": "1.0.0",
+    "ruleset_sha256": "e47e562381d65fbd945bfcf56fbc4e0b9554f87dd410b47b6566318ebaa4e5f7",
+    "context_sha256": "da4c1da9ddbe09b345212398338952f7d24eaa356ccecdf9957dcfb6aa27ef21",
+    "status": "pass"
+  },
+  "models": {
+    "assistant": {
+      "role": "assistant",
+      "level": "weights",
+      "served_as": "nvidia/nemotron-3.5-lightning",
+      "endpoint": "http://10.130.232.21:8200/v1",
+      "node": "rtx-3se-06-04",
+      "node_recorded_at": "2026-09-24T13:02:22+00:00",
+      "components": {
+        "server": {
+          "engine_version": "0.25.1",
+          "max_model_len": 262144,
+          "nim_release": "2.0.9-variant",
+          "model_build": [
+            "ngc://nim/nvidia/nemotron-3.5-lightning:hf-3db7814"
+          ],
+          "profile_id": "2ef85c7286907e706eb0d6c4750a1aefa719447097d151ab34c7837fc02bdac4",
+          "profile_name": "vllm-int4-tp1-pp1-32.0"
+        },
+        "weights": {
+          "source": "NIM manifest, active profile",
+          "files": {
+            ".boosted_mtp_replacement_complete": "blake3:3745eb3133be07a066752e8638425c060dcc42211e538691aa2aa97d21c9daff",
+            "BOOSTED_MTP_REPLACEMENT.json": "blake3:702707778d2c3f762490b2eb69156ad20a737ef944aa5bc65ace6ab17fbd1eb5",
+            "README.md": "blake3:199211e4bacb6abfc5becde952a0964522f6113b623df434015797a96cd476bf",
+            "chat_template.jinja": "blake3:d231496de48a7c4332069d0a53a89e1a3cb2c82a8f7383f9a49f0784ab28da71",
+            "checksums.blake3": "blake3:78d13a749619eb9b1052babda831811487f3fb69bbe4bf48b94d444af0919ca9",
+            "config.json": "blake3:3af475825712fd746f5e3884a3e561e05927b41ef87b38619ef2317d06c3af93",
+            "generation_config.json": "blake3:453d7486ba0ef6e34b5a4679376146daf0e449fcb2d0cae73a81d16acbbd7170",
+            "hf_quant_config.json": "blake3:2d51b727d597709d3c66b989ccc2f850ff33c469d5da7edbd7a618f09fa82940",
+            "model-00001-of-00052.safetensors": "blake3:5d8f8bd004308873da0ee844f2a069c7b4a46e74b6915477f00f8353d2ec8177",
+            "model-00002-of-00052.safetensors": "blake3:f64b710b7974561f824ac5662915722b220ed14023e3ff5aa3dafbbafcd6ff0c",
+            "model-00003-of-00052.safetensors": "blake3:b237045081a177ca39a04f82bea5d37dc58bea51bb540a22c9b93a9b3db454ff",
+            "model-00004-of-00052.safetensors": "blake3:de65ad02accc847ddd609f650fc3f29f90b90b64b80fa6631034198a7ad9e1fa",
+            "model-00005-of-00052.safetensors": "blake3:fdb0f26d3e19391e31bc9ae26bd1bce9d09bf0715845f3a36be114b0b800a271",
+            "model-00006-of-00052.safetensors": "blake3:66de82731706f976ccb46bd28a57e1086195994523abb51f9e89c1ad58f883e4",
+            "model-00007-of-00052.safetensors": "blake3:974fd0082b3c393ab7d14dbcbe4e359ed5d2c58d24a3432ae6e0b5232e697b72",
+            "model-00008-of-00052.safetensors": "blake3:df2d1736be5d061170184d56140787d72fee4742694d335c74f596f102d97ad1",
+            "model-00009-of-00052.safetensors": "blake3:351f91b308cd192a7332e2c6870109199350c46c30530996e8daf9469167b84b",
+            "model-00010-of-00052.safetensors": "blake3:358c00ffa5888a707226bdb3ad52deac117f4829268b34a0ee83e284e94355ed",
+            "model-00011-of-00052.safetensors": "blake3:8c6c34b930231ce4b1617f43731f23e76d186f2bd09e74c0f5dabe0dfde365f7",
+            "model-00012-of-00052.safetensors": "blake3:c6409e4b27aa41b0ca436f0407f04fd4306cc5d18b300e48221503b8fbbfa28a",
+            "model-00013-of-00052.safetensors": "blake3:479106978721605c97bf35c409f5ec9bd172ea85e22110bb2a8bf2bd48662247",
+            "model-00014-of-00052.safetensors": "blake3:a7d957058b293bbae43fa14b29ff32fc9a83a654606d7ddfcb888fcfcbfefb3e",
+            "model-00015-of-00052.safetensors": "blake3:5c4c90933353e9db7528b8a0d57bd66aabe2c81bae429e4d4bb00650ced2dfb7",
+            "model-00016-of-00052.safetensors": "blake3:3da0f7e5b3bb890bb4bfaf17763142de01210ca2c397d002f88cd5f762ae77ca",
+            "model-00017-of-00052.safetensors": "blake3:631856da4ca05284b0767d5a39612e17febd27baa56f45af6655a36b6b5eedf7",
+            "model-00018-of-00052.safetensors": "blake3:8bde8bbfd7f84a05155723723ded20ff277c26184bf3e1f70152ee393fb44183",
+            "model-00019-of-00052.safetensors": "blake3:5a872a8f53df9af4c6f62188bd2f141e1ceaed9b5e669b630c1cf49f41bc78b9",
+            "model-00020-of-00052.safetensors": "blake3:e9ad1b8ed8eb53b02ec32e343d088aba4ee82a3eca9d27e7e3bb721fb9d9cfd2",
+            "model-00021-of-00052.safetensors": "blake3:e8c529a121267ef0614b6a782a5472ea693246bc1903d2a7fb9e749f2be7982a",
+            "model-00022-of-00052.safetensors": "blake3:84bf2449960baf784e9b1c921e74697eeebcdfe0f07644cc040479c0982c0546",
+            "model-00023-of-00052.safetensors": "blake3:af0c6690ead91a149e94f38a4c8d43b4fb9c88b28d4ee3393464751e08aa7c0c",
+            "model-00024-of-00052.safetensors": "blake3:027755c1a7723362d7733e0f67fdf798a86ed4ac6a88b9e930f89da2fbb0578c",
+            "model-00025-of-00052.safetensors": "blake3:652ed2321217c930184a97c0c366412c4851278fd06895f7e24168847d718d2a",
+            "model-00026-of-00052.safetensors": "blake3:0e17253653a467cc83355884a61ae0fe729293f86ad0042703c7ffb9a4bc6b49",
+            "model-00027-of-00052.safetensors": "blake3:389eec5aacef966213a93eb1a1dc99f008e14f58585f0bd5923b66befbef8d73",
+            "model-00028-of-00052.safetensors": "blake3:2f4eb479c6a52fb13c1a6620ce3ce671d29961effb14840f324c02fca3abfe68",
+            "model-00029-of-00052.safetensors": "blake3:a330894fa2835720e027057e809e6163fecc541084fb9c1c388622e9cea87042",
+            "model-00030-of-00052.safetensors": "blake3:0027af5188f9f66349f7232eab707e3c62799e9e31806e6c2f8f34bc7e9cb439",
+            "model-00031-of-00052.safetensors": "blake3:77da91590535c67a169875eb383d7c4300d547fadb650cfe5c71b1ec0aeb2781",
+            "model-00032-of-00052.safetensors": "blake3:915f3c0dca0a5ce62540b87981b298609000ddf3557c063f3c25286615e8b52b",
+            "model-00033-of-00052.safetensors": "blake3:ac3c951f50adf7861450563dd19fb7bd168e52166dd668527c98a89344c9fcc1",
+            "model-00034-of-00052.safetensors": "blake3:5bdc1332e376e4b36122c53b42980e395fe0303b300ffe9a07fe8cbd29eac1d4",
+            "model-00035-of-00052.safetensors": "blake3:e5d07a6205b205f6475b634b29c34ccf939fb9fe5cd76ccb42073c2c4b5136d8",
+            "model-00036-of-00052.safetensors": "blake3:fc0b4e1221f8618152506cd907f8642a13023b29c6c3404b72deb925f8390696",
+            "model-00037-of-00052.safetensors": "blake3:159637360546a0dcdbd6ad8f2025d138eef25590c487b16eb2ea3dfc1dbe3ad1",
+            "model-00038-of-00052.safetensors": "blake3:3ca7a99428a36f78a821ddd5a9b11c39ece2f52d436925b502f0a4622d57aadf",
+            "model-00039-of-00052.safetensors": "blake3:1735703f62bc1b6671f08ff043ab82e6574240ac20d6b9f5c4ef691b3e53cafb",
+            "model-00040-of-00052.safetensors": "blake3:01de817f495236b7023692022827864183195a212eec4970e469b30b7d3ccb8a",
+            "model-00041-of-00052.safetensors": "blake3:0c086d5cddcb427dcb36fdf3d51a3113c774dd566795ea3f63760b7ee1e311fe",
+            "model-00042-of-00052.safetensors": "blake3:ce9290cdea26dc0479f7b6d6fbb7e38cd2e97b34c4408a56c45cc5126254e8fc",
+            "model-00043-of-00052.safetensors": "blake3:86827433f4121dd6eaa046faec4807048ef20bd022d21312b392f182e38d7a9a",
+            "model-00044-of-00052.safetensors": "blake3:765bc02889d437ccab1b218b413e29b908fc69278ffd25cf14542005644d41d9",
+            "model-00045-of-00052.safetensors": "blake3:418618e09e0e95c8505d9bff951e4d4e555d1a5d6d90e5b3f3c1be6ba25a027c",
+            "model-00046-of-00052.safetensors": "blake3:b5096ee1968bf4f75b6e81677e02866bc70d70fdf0ecff7244974e7fa40940dd",
+            "model-00047-of-00052.safetensors": "blake3:453576875180b7230ac815d68e01ed46c928115fb694a0a70801bfdd40f08578",
+            "model-00048-of-00052.safetensors": "blake3:af528dd9b8d2159baec8f70e6ea004c9678038b3851cf1c24d05550f29a256f3",
+            "model-00049-of-00052.safetensors": "blake3:8c180963f5533a40f3849cfb8c7cdca21b372962acfaa1ddaa2651af4b6e42a7",
+            "model-00050-of-00052.safetensors": "blake3:fa0fe058c756c04282783a213993100852a35e4d7acc9815e434ea8e79847b9a",
+            "model-00051-of-00052.safetensors": "blake3:0c2d66c59dfa414ebc8b5f88fa347844c36ef032aef48b55686938508cdf5eab",
+            "model-00052-of-00052.safetensors": "blake3:1689a70186311d1ef1ec6298edc8acdcfff7a44f50a54f84365c79b28e5f8ed8",
+            "model.safetensors.index.json": "blake3:31dd8ea83854171b5f2f0527e72e41ca9cf7d3eccc27a5209ada47318954fe8e",
+            "special_tokens_map.json": "blake3:a71d291a496cd2d4fa25defa6e0f6debf483db3d12f2d8a48e573e1dc1363070",
+            "tokenizer.json": "blake3:29a5eae59f68dc4d0dc2a7d67c95e24291a7ee8b88ac0afaaf2d2200abf69a23",
+            "tokenizer_config.json": "blake3:0ff753519556b545e70bd7ced67356b5ec98efe58a25c3be57f4855386950501"
+          }
+        },
+        "container": {
+          "image": "nvcr.io/nim/nvidia/nemotron-3.5-lightning-30b-a3b:2.0.9-variant",
+          "image_id": "sha256:c2b2138e056dcfbd5da634477c3aa2ffcc01a672fc5946422f7a9afc8e315d3f",
+          "repo_digests": [
+            "nvcr.io/nim/nvidia/nemotron-3.5-lightning-30b-a3b@sha256:c2b2138e056dcfbd5da634477c3aa2ffcc01a672fc5946422f7a9afc8e315d3f"
+          ],
+          "args": {}
+        }
+      },
+      "fingerprint": "1869632eafca897436984f33787f7a00bdb65e00462c86c6abb7ba9d15ee7e15",
+      "note": null,
+      "checked_at": [
+        "2026-09-25T04:56:21+00:00",
+        "2026-09-25T05:08:54+00:00"
+      ],
+      "seen_in_transcripts": [
+        "1869632eafca897436984f33787f7a00bdb65e00462c86c6abb7ba9d15ee7e15"
+      ]
+    },
+    "judge": {
+      "role": "judge",
+      "level": "weights",
+      "served_as": "nemotron-3-super",
+      "endpoint": "http://10.130.232.21:8204/v1",
+      "node": "rtx-3se-06-04",
+      "node_recorded_at": "2026-09-24T13:02:22+00:00",
+      "components": {
+        "server": {
+          "engine_version": "0.28.0",
+          "max_model_len": 65536,
+          "nim_release": "2.0.13",
+          "model_build": [
+            "ngc://nim/nvidia/nemotron-3-super-120b-a12b:rl-030326-fp8"
+          ],
+          "profile_id": "1e705d1cf3866d22b04077194c735b651f0bfec8e7ae4cf8d8f551f803c064f6",
+          "profile_name": "vllm-fp8-tp2-pp1-65.0"
+        },
+        "weights": {
+          "source": "NIM manifest, active profile",
+          "files": {
+            "__init__.py": "blake3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+            "chat_template.jinja": "blake3:a26049ffb4e6e7aab052f1dff283e28b5b9526380051326c9a540895c8c20df5",
+            "checksums.blake3": "blake3:a385dda77182b0831bd76bef8a569fc911a8afc50c295bbdc5987da16616abef",
+            "config.json": "blake3:b16c1a4b106d59f665583b4093ac254f41ba703ffc95aa9a7eb92e106cd86c33",
+            "configuration_nemotron_h.py": "blake3:de99108f6080f108d45e2f611464f15dac5e285c29554747d0cf67af6b71bee8",
+            "generation_config.json": "blake3:2d202307fce906facd5c5898087c6584c1865e07aed51d3fda3e351bb01c56af",
+            "hf_quant_config.json": "blake3:a5e321c5fb95af905a29be0b68627bfa42215311dfccd6abf785af91d943ad1e",
+            "model-00001-of-00026.safetensors": "blake3:4ded4485f56246087e02a704303fe1c0428b20b09388f3da9e8bcca61a714972",
+            "model-00002-of-00026.safetensors": "blake3:7b8889f62744089238760d4df7e0e0351772eda0215e9522cce0fc9e09de8035",
+            "model-00003-of-00026.safetensors": "blake3:cc16ce9e36e8f6ca7a0db03be30cf3651b5701b823cef08c07c57b16bbd3272a",
+            "model-00004-of-00026.safetensors": "blake3:bee6d10f31af63766e4df7cc99256315c3995064dd490939e08af0e7ba0172dc",
+            "model-00005-of-00026.safetensors": "blake3:988cdb22941dbf3153df945301437f1681346c09b024623eb3214b9e15876400",
+            "model-00006-of-00026.safetensors": "blake3:a1c98e8fcb4e47ff877b9ae2f9cd9add7005a17c191ace4f65411ff7f29e3616",
+            "model-00007-of-00026.safetensors": "blake3:00af4ce40045dbc80915bce2c27b1710781c311d7cd03dc982fd13aebe667f11",
+            "model-00008-of-00026.safetensors": "blake3:76e1677f2a8c05e7a306669650e19386d4dbcef6d2d9e222fcf9f141c751d8b2",
+            "model-00009-of-00026.safetensors": "blake3:851d8e5c9df07503ee3dab7511d6f46c765c55bc9f54f2a7e9931c4ddf228878",
+            "model-00010-of-00026.safetensors": "blake3:5905e75ecc261aea9b491d90914b0bd2e803688daf22b5c7da39f67f3a226c94",
+            "model-00011-of-00026.safetensors": "blake3:13cab8094333cde69d4b9cd76ae03782e5460d0dceaefa45647489ca7cbe323b",
+            "model-00012-of-00026.safetensors": "blake3:3dd0267e56cadf315d1ff148c591378b35223fddf042bb3f5c5623d068e1c555",
+            "model-00013-of-00026.safetensors": "blake3:46707d486903a18f77b556732d1d1135985809d1aae1401519765cf7c3873daa",
+            "model-00014-of-00026.safetensors": "blake3:ee71736d859233c0db2de115811d43c509d3c90095d8866982011db4283394e5",
+            "model-00015-of-00026.safetensors": "blake3:72835c047eba76fb2924ae7ffd0140df89175151ad87660f856014a47cfb68c1",
+            "model-00016-of-00026.safetensors": "blake3:d21e728df9a406e0cea3ffd0123e0b8d195e85e49c6dd96dfcbdeece0593b330",
+            "model-00017-of-00026.safetensors": "blake3:75e8f437f708082ce71f63f300ca2f5cd1649c21fcefe520d4ac6faf6bd491ca",
+            "model-00018-of-00026.safetensors": "blake3:3fa6f71623c93e219c42574f8ad3e65c93e3967fe619a28a909c413c25724431",
+            "model-00019-of-00026.safetensors": "blake3:368a4da092bcbfbb3032f92c196d014e6863625115a60d2eeda56c703dc58a8e",
+            "model-00020-of-00026.safetensors": "blake3:bc217cf9dd52007e421d3ed31d4d48ae87677485f4eb8cdc28c2b84afe726a41",
+            "model-00021-of-00026.safetensors": "blake3:e08e4c9a9415a97cbe6ce0ceedc72d73a0874ec615ee22612948d1ccd2cc63a1",
+            "model-00022-of-00026.safetensors": "blake3:0dde8b2c427ca49e1856f3305766f054f0b4fbad1c94ab385cf74c333e2942ed",
+            "model-00023-of-00026.safetensors": "blake3:55bbf8bbb24b19599c2823781b1d6f1bf5c71ae96373346e6d2492f65ed18ba1",
+            "model-00024-of-00026.safetensors": "blake3:ba8e77615385df7c6f5f83ac7db019c1a33b1636564f199d6d6ad8931b3c2727",
+            "model-00025-of-00026.safetensors": "blake3:d32d639876c7716a02399abbacb886eafb4298e6117bc279540737d154bddbeb",
+            "model-00026-of-00026.safetensors": "blake3:df134b2d93b04ddbdec6ff4296189ded1ed42ecaf329fd9120bd284696504002",
+            "model.safetensors.index.json": "blake3:ec61cadc22a7efaa1dcb58f489f2367e8f1018193ae0f51e1c8bf45c6ccd695e",
+            "modeling_nemotron_h.py": "blake3:74d9ba34d3e669522d79987b8665f8882a0bb4818e66837f1eeeb98d777cd2e7",
+            "special_tokens_map.json": "blake3:a71d291a496cd2d4fa25defa6e0f6debf483db3d12f2d8a48e573e1dc1363070",
+            "super_v3_reasoning_parser.py": "blake3:30ba849fc1db17a544ef6cfa1e7199895f674e74d61fa4f6f700713343ed60fc",
+            "tokenizer.json": "blake3:29a5eae59f68dc4d0dc2a7d67c95e24291a7ee8b88ac0afaaf2d2200abf69a23",
+            "tokenizer_config.json": "blake3:0ff753519556b545e70bd7ced67356b5ec98efe58a25c3be57f4855386950501"
+          }
+        },
+        "container": {
+          "image": "nvcr.io/nim/nvidia/nemotron-3-super-120b-a12b@sha256:d56c72bdbb532008dc97c16d291f638e1b47fdb4d6a1daf02568ff9b2e1b66fc",
+          "image_id": "sha256:d56c72bdbb532008dc97c16d291f638e1b47fdb4d6a1daf02568ff9b2e1b66fc",
+          "repo_digests": [
+            "nvcr.io/nim/nvidia/nemotron-3-super-120b-a12b@sha256:d56c72bdbb532008dc97c16d291f638e1b47fdb4d6a1daf02568ff9b2e1b66fc"
+          ],
+          "args": {
+            "NIM_MODEL_PROFILE": "1e705d1cf3866d22b04077194c735b651f0bfec8e7ae4cf8d8f551f803c064f6",
+            "NIM_ENABLE_AUTO_TOOL_CHOICE": "1",
+            "NIM_MAX_MODEL_LEN": "65536"
+          }
+        }
+      },
+      "fingerprint": "50b3265fb2c0eb7584995d76d592e76ce0e5229dce108843ea016c3e3e35d074",
+      "note": null,
+      "checked_at": [
+        "2026-09-25T04:56:26+00:00",
+        "2026-09-25T05:08:57+00:00"
+      ]
+    },
+    "embed": {
+      "role": "embed",
+      "level": "weights",
+      "served_as": "nvidia/nemotron-3-embed-1b",
+      "endpoint": "http://10.130.232.21:8202/v1",
+      "node": "rtx-3se-06-04",
+      "node_recorded_at": "2026-09-24T13:02:22+00:00",
+      "components": {
+        "server": {
+          "engine_version": null,
+          "max_model_len": null,
+          "nim_release": "2.2.2",
+          "model_build": [
+            "nvidia/nemotron-3-embed-1b"
+          ],
+          "profile_id": null,
+          "profile_name": null
+        },
+        "weights": {
+          "source": "Hugging Face download on the node",
+          "hf_commit": "1d46dbbb2ede6d94dc9725340f287f7205992dd7",
+          "files": {
+            ".gitattributes": "34448b82c17d60fec9b65b1f093c115ddbaadc04beb1b0140b6bfed2e012a930",
+            "1_Pooling/config.json": "6dcf44c2f7e7878ac0ee2e992c8e7d1f6812e12724b00d1d0cb0fa3336f07f0d",
+            "CONTRIBUTING.md": "bd0b6e3e1be8b2d9443f907bd44b24d0eabaf37cf66558cadb83818a7dcec78c",
+            "HF_COMMIT.txt": "e903f3c29f5d10de35c5e6a011762fc6be40b69793fb06bce0b47beada3b47d7",
+            "LICENSE": "5ae76a0d16eef67e28c81bfdb0b3c8687d14e9b57094090151e7541aac457ae9",
+            "NOTICE": "22f544b05a669f13a6f59920debbc86d2031c0420763c8421dcdc05f5db27f57",
+            "README.md": "70800853124a5c4407cfaadd1bb1a8716b93c78d18d13e24ea1e6488664d3664",
+            "THIRD_PARTY_NOTICES.md": "309735912e02e1c79ead9693958d23ed40795aa56b3004bb619bdbb868c8dd67",
+            "checkpoint_manifest.json": "b7e65bf58908def61b78bd9e240fc554d161e4e6102542add6b77a81483bb03d",
+            "config.json": "2d31f78d7d8e60d69c14da92954e40eedea32a6e8db3fa9a316c9e4a049d77d0",
+            "config_sentence_transformers.json": "dc2bc223baa9e5eedd8593d1d4230210681001e7dec73ac53d89697df97079ee",
+            "hf_quant_config.json": "33f124d2093f8d08aee8d82d36e651baee2e7c37b1ad474bc2728cefdc5172a7",
+            "model.safetensors": "f2753954c89055eb679a45b7dfea27a3e05c04ecbdb1f4e6c086180fe8c32bc7",
+            "modules.json": "21ddb3037a55ebf4549eb5c1dc44c3f28f10b56ec7f1335c92fd90e5b30d88ac",
+            "quantization_metadata.json": "253540001763781c33834b109bf8d62b266320c7ff8c99b28035ded1232b60c1",
+            "sentence_bert_config.json": "0b1d25d4d13c72c255a7eaaf8921ca481c4cd61ad894e7209c52dc5e1ac3f3bd",
+            "tokenizer.json": "797410dfb649a5b9ba92bc4fef7dbf4022d00e73de6867c4ac199a8846439421",
+            "tokenizer_config.json": "7bbb77c55282bc679b86d21a1b3953ed8d5d63aaf75f10800c20596eab30b980"
+          }
+        },
+        "container": {
+          "image": "nvcr.io/nim/nvidia/nemotron-3-embed-1b:2.2.2",
+          "image_id": "sha256:16f49c13bc9ee101f4abfaba972b2dc2e587871ab7474913ac40dbf0bffb7d92",
+          "repo_digests": [
+            "nvcr.io/nim/nvidia/nemotron-3-embed-1b@sha256:16f49c13bc9ee101f4abfaba972b2dc2e587871ab7474913ac40dbf0bffb7d92"
+          ],
+          "args": {}
+        }
+      },
+      "fingerprint": "ed2942bb7c71b8fbe8bb7fdf3946e96c714c475c1f7e8535afaca6d0645cc042",
+      "note": null,
+      "checked_at": [
+        "2026-09-25T04:56:28+00:00",
+        "2026-09-25T05:08:58+00:00"
+      ]
+    }
+  },
+  "started_at": "2026-09-25T04:56:18+00:00",
+  "finished_at": "2026-09-25T05:08:58+00:00",
+  "scored_at": "2026-09-25T05:08:58+00:00"
+}

@@ -1,0 +1,141 @@
+{
+  "jurisdiction": "DE",
+  "ruleset_id": "DE-CREDIT-LENDING",
+  "ruleset_version": "1.0.0",
+  "ruleset_sha256": "e47e562381d65fbd945bfcf56fbc4e0b9554f87dd410b47b6566318ebaa4e5f7",
+  "context_sha256": "da4c1da9ddbe09b345212398338952f7d24eaa356ccecdf9957dcfb6aa27ef21",
+  "status": "pass",
+  "coverage_complete": true,
+  "total_rules": 8,
+  "applicable_rules": 6,
+  "passed_rules": 3,
+  "failed_rules": 0,
+  "advisory_rules": 3,
+  "findings": [
+    {
+      "rule_id": "DE-BGB-505A-1",
+      "title": "Creditworthiness assessment before the contract",
+      "status": "pass",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [
+        "creditworthiness_assessment",
+        "decision_rationale"
+      ],
+      "evidence_references": {
+        "creditworthiness_assessment": "artifact://case/assessment.json",
+        "decision_rationale": "artifact://case/decision-rationale.json"
+      },
+      "reason": "all required evidence references are present"
+    },
+    {
+      "rule_id": "DE-BGB-505B-1",
+      "title": "Information the assessment rests on",
+      "status": "pass",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [
+        "information_sources",
+        "information_verification"
+      ],
+      "evidence_references": {
+        "information_sources": "artifact://case/source-manifest.json",
+        "information_verification": "artifact://case/verification.json"
+      },
+      "reason": "all required evidence references are present"
+    },
+    {
+      "rule_id": "DE-BDSG-31",
+      "title": "Admissible use of scores",
+      "status": "pass",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [
+        "scoring_method_validation",
+        "scoring_data_inventory",
+        "address_data_notice"
+      ],
+      "evidence_references": {
+        "scoring_method_validation": "model-risk://scorecards/consumer/validation-2026.pdf",
+        "scoring_data_inventory": "model-risk://scorecards/consumer/features.json",
+        "address_data_notice": "artifact://case/notices/address-data.pdf"
+      },
+      "reason": "all required evidence references are present"
+    },
+    {
+      "rule_id": "DE-BGB-505A-1-S3",
+      "title": "Telling the borrower about a refusal",
+      "status": "not_applicable",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [],
+      "evidence_references": {},
+      "reason": "case facts do not meet this rule's applicability conditions"
+    },
+    {
+      "rule_id": "DE-BGB-505B-2-NEU",
+      "title": "Relevant and accurate information; no special categories",
+      "status": "advisory",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [
+        "information_sources",
+        "special_category_exclusion"
+      ],
+      "evidence_references": {
+        "information_sources": "artifact://case/source-manifest.json",
+        "special_category_exclusion": "model-risk://scorecards/consumer/features.json#excluded"
+      },
+      "reason": "From 20 November 2026 (BGBl. 2026 I Nr. 139, Art. 16). Tracked as a non-blocking transition rule until then; compliance should approve a ruleset version that makes it required from that date."
+    },
+    {
+      "rule_id": "DE-BDSG-30-6",
+      "title": "Human intervention in an automated assessment",
+      "status": "advisory",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [
+        "human_intervention_route",
+        "assessment_explanation",
+        "automated_processing_rights_notice"
+      ],
+      "evidence_references": {
+        "human_intervention_route": "workflow://customer-rights/human-review",
+        "assessment_explanation": "artifact://case/explanation.pdf",
+        "automated_processing_rights_notice": "artifact://case/notices/automated-processing-rights.pdf"
+      },
+      "reason": "From 20 November 2026 (BGBl. 2026 I Nr. 139, Art. 16). Tracked as a non-blocking transition rule until then; compliance should approve a ruleset version that makes it required from that date."
+    },
+    {
+      "rule_id": "DE-BDSG-30-7",
+      "title": "Refusal based on a credit database or automated processing",
+      "status": "not_applicable",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [],
+      "evidence_references": {},
+      "reason": "case facts do not meet this rule's applicability conditions"
+    },
+    {
+      "rule_id": "DE-BDSG-37A",
+      "title": "Scoring: data that may not be used, disclosure and challenge",
+      "status": "advisory",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [
+        "scoring_data_inventory",
+        "scoring_method_validation",
+        "scoring_disclosure_route",
+        "contest_route"
+      ],
+      "evidence_references": {
+        "scoring_data_inventory": "model-risk://scorecards/consumer/features.json",
+        "scoring_method_validation": "model-risk://scorecards/consumer/validation-2026.pdf",
+        "scoring_disclosure_route": "workflow://customer-rights/score-disclosure",
+        "contest_route": "workflow://customer-rights/contest"
+      },
+      "reason": "From 20 November 2026 (BGBl. 2026 I Nr. 139, Art. 16). Tracked as a non-blocking transition rule until then; compliance should approve a ruleset version that makes it required from that date."
+    }
+  ],
+  "note": "evidence-presence assessment only; legal applicability and substantive compliance require lender and legal review"
+}

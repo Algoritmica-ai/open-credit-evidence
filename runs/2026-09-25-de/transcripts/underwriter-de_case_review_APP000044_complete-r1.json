@@ -1,0 +1,28 @@
+{
+  "item_id": "underwriter-de:case_review:APP000044:complete",
+  "run_id": "2026-09-25-de",
+  "repeat": 1,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "http://10.130.232.21:8200/v1",
+    "fingerprint": "1869632eafca897436984f33787f7a00bdb65e00462c86c6abb7ba9d15ee7e15"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000044\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mr |\n| Age band | 55-64 |\n| Employment type | self_employed |\n| Employer | Kessler Handel GmbH |\n| Time in current role | 16 months |\n| Postal code | 01067 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | €15,922 |\n| Income verified | Yes |\n| Existing monthly credit commitments | €316 |\n| Dependants | 3 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | €9,323 |\n| Term | 36 months |\n| Stated purpose | debt consolidation |\n| Indicative monthly instalment | €314 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000044\n**Bureau:** Rheinland Kreditauskunft\n**Search date:** 31 March 2026\n\n## Score\n\n**652** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | December 2020 (75 months) |\n| Accounts on file | 5 |\n| Credit enquiries, last 6 months | 1 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 0 |\n| Most recent delinquency | None |\n| Defaults recorded | None |\n| Debtor register entries | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, €2,000 to €40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application was referred for underwriter review because the automated rules flagged the file for exceeding the **40% affordability threshold**. The calculated monthly debt service exceeds the maximum allowable limit based on the applicant's gross income.\n\n**What the File Shows – Against the Applicant:**\n*   **Affordability Breach:** The applicant’s total monthly debt service (existing commitments of €316 plus the proposed instalment of €314) totals **€630** per month. Against a gross annual income of **€15,922**, this represents a debt-to-income ratio of approximately **47.5%**, which exceeds the policy threshold of 40%.\n*   **Age Band:** The applicant is in the 55-64 age bracket. While not a policy breach in itself, this demographic often faces stricter scrutiny regarding retirement income sustainability.\n*   **Thin File Status:** The credit file opened in December 2020 is 75 months old, which satisfies the \"thick file\" requirement (over 24 months). However, the relatively short time in the current role (16 months) may be viewed as a stability factor.\n\n**What the File Shows – In Favour of the Applicant:**\n*   **Strong Credit History:** The credit bureau report is clean. There are **no defaults, no debtor register entries, and no missed payments in the last 24 months**. The most recent delinquency is listed as \"None.\"\n*   **Verified Income:** Gross annual income is verified at €15,922.\n*   **Limited Enquiries:** Only 1 credit enquiry in the last 6 months, suggesting limited appetite for credit.\n\n**Conditions for a Different Outcome:**\nFor the application to be approved within automated policy limits, one of the following would need to change:\n1.  **Reduce the Requested Facility:** Lowering the loan amount or extending the term to reduce the monthly instalment so that the total debt service (€316 existing + new instalment) falls to or below **€633** (40% of gross monthly income).\n2.  **Increase Verified Income:** Providing additional evidence of income to increase the gross annual figure, thereby raising the 40% affordability ceiling.\n3.  **Reduce Existing Commitments:** Evidence that existing monthly credit commitments (currently €316) can be reduced or restructured.",
+  "latency_ms": 2159,
+  "tokens_in": 695,
+  "tokens_out": 528,
+  "provider_id": "chatcmpl-b89d67d8c485cc54",
+  "started_at": "2026-09-25T04:56:37+00:00",
+  "sha256": "414ceb9d0ff058c013d98a92ce2da09198770252e737ce47074094191e62bd43"
+}

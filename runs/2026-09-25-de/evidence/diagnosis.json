@@ -1,0 +1,1010 @@
+{
+  "failures": 64,
+  "causes": [
+    {
+      "cause": "miscalculated",
+      "label": "Figure worked out wrongly",
+      "lever": "context",
+      "owner": "bank",
+      "why": "The assistant worked a figure out itself and got it wrong.",
+      "briefings": 28,
+      "results": 30,
+      "items": 17,
+      "checks": [
+        "material_omission",
+        "numeric_fidelity"
+      ]
+    },
+    {
+      "cause": "decoy_blamed",
+      "label": "Irrelevant field blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "why": "The assistant blamed a field that has no bearing on the outcome.",
+      "briefings": 25,
+      "results": 25,
+      "items": 16,
+      "checks": [
+        "decoy_citation"
+      ]
+    },
+    {
+      "cause": "misread_threshold",
+      "label": "Threshold stated the wrong way round",
+      "lever": "context",
+      "owner": "bank",
+      "why": "The assistant compared a figure with a policy threshold and got the direction wrong, or said a limit was breached when its own figure says it was not.",
+      "briefings": 5,
+      "results": 5,
+      "items": 5,
+      "checks": [
+        "claim_consistency",
+        "comparison_fidelity"
+      ]
+    },
+    {
+      "cause": "wrong_lever",
+      "label": "Wrong or no way to change the outcome",
+      "lever": "template",
+      "owner": "bank",
+      "why": "The assistant did not name a valid way to change the outcome.",
+      "briefings": 3,
+      "results": 3,
+      "items": 2,
+      "checks": [
+        "flip_accuracy"
+      ]
+    },
+    {
+      "cause": "skipped",
+      "label": "Fact in front of it, left out",
+      "lever": "instructions",
+      "owner": "bank",
+      "why": "The fact was in the documents the assistant was handed, and it left it out.",
+      "briefings": 1,
+      "results": 1,
+      "items": 1,
+      "checks": [
+        "material_omission"
+      ]
+    }
+  ],
+  "records": [
+    {
+      "item_id": "underwriter-de:case_review:APP000028:complete",
+      "repeat": 0,
+      "check": "material_omission",
+      "cause": "skipped",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "missing": [
+          "income_verified"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000028:complete",
+      "repeat": 0,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "Specifically, the applicant\u2019s total monthly debt service exceeds the 40% affordability threshold, and the applicant falls within the \"thin file\" category due to a credit file age of 44 months (under 24 months is the policy limit, though this file is older, the score and history rules still apply)."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000028:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "43.2%",
+          "\u20ac1,996",
+          "\u20ac798"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000028:complete",
+      "repeat": 1,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "Additionally, the applicant falls within the \"thin file\" category due to a credit file age of 44 months (under 24 months is the policy limit, though this file is older, the score and income verification status are the primary drivers for review)."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000028:complete",
+      "repeat": 2,
+      "check": "claim_consistency",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "contradictions": [
+          "claims above 40%, states 36.5%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000028:complete",
+      "repeat": 2,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "Specifically, the applicant\u2019s total monthly debt service exceeds the 40% affordability threshold, and the applicant falls within the \"thin file\" category due to a credit file age of 44 months (under 24 months is the policy limit, though this file is older, the initial risk assessment requires manual intervention due to the affordability breach)."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000037:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "50.5%",
+          "\u20ac888",
+          "\u20ac2,229",
+          "\u20ac228"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000039:complete",
+      "repeat": 0,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "**File Age:** The credit file would need to be older than 24 months to be considered a \"thick file.\""
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000039:complete",
+      "repeat": 0,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "bureau_score increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000039:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "32.7%",
+          "\u20ac2,372.33"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000039:complete",
+      "repeat": 1,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "*   **Age Band & Experience:** While the applicant has stable employment (164 months in current role) and no missed payments or defaults in the last 24 months, the limited credit history duration combined with a sub-600 score presents a risk profile requiring explanation."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000039:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "41.3%",
+          "13.5"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000039:complete",
+      "repeat": 2,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "bureau_score increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000044:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "50.4%",
+          "\u20ac1,247",
+          "700",
+          "\u20ac499",
+          "\u20ac23,888"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000044:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "\u20ac633"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000044:complete",
+      "repeat": 2,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "While not \"thin\" by the policy's under-24-month definition, the relatively low number of accounts (5) and the age of the file may be relevant to the underwriter's assessment of stability."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000045:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "\u20ac831.72",
+          "\u20ac2,079.33",
+          "\u20ac302.72",
+          "\u20ac40.20"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000045:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "4.18%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000059:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "\u20ac295",
+          "\u20ac854",
+          "45.8%",
+          "\u20ac1,863",
+          "\u20ac745.20",
+          "\u20ac186.20"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000059:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "\u20ac295",
+          "\u20ac854",
+          "43.5%",
+          "\u20ac1,965"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000059:complete",
+      "repeat": 1,
+      "check": "flip_accuracy",
+      "cause": "wrong_lever",
+      "lever": "template",
+      "owner": "bank",
+      "detail": {
+        "levers": [
+          "bureau_score increase"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000107:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "13.5",
+          "\u20ac34,000"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000107:complete",
+      "repeat": 1,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "**File Age:** The credit file would need to age beyond 24 months to no longer be considered \"thin.\""
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000107:complete",
+      "repeat": 2,
+      "check": "comparison_fidelity",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "false_comparisons": [
+          "645 < 600"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000107:complete",
+      "repeat": 2,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "*   **Age Band:** The applicant is in the 45-54 age band, which typically correlates with higher earning potential and stability."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000120:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "\u20ac2,225.90"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000120:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "10.3",
+          "\u20ac890.36"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000120:complete",
+      "repeat": 2,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "*   **File Age:** 14 months (Within the \"thin file\" definition of under 24 months, but the score mitigates this)."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000155:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "43.7%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000155:complete",
+      "repeat": 0,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "While this is not \"under 24 months,\" the applicant is in the 18-24 age band, which often correlates with thinner files or shorter credit histories in underwriting considerations."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000155:complete",
+      "repeat": 1,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "*   **Credit File Age:** The credit file opened in April 2017 (119 months ago), which is not considered a \"thin file\" under policy."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000155:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "41.5%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000155:complete",
+      "repeat": 2,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "*   **Age Band:** The applicant is in the 18-24 age band, though the long employment history mitigates this somewhat."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000172:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "51.5%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000172:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "\u20ac503"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000172:complete",
+      "repeat": 1,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "Additionally, the applicant's age band (25-34) and credit file age (34 months) fall within the \"thin file\" consideration zone, though the score is above the 600 trigger."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000172:complete",
+      "repeat": 2,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "Additionally, the applicant\u2019s age band (25-34) and credit file age (34 months) fall within the \"thin file\" consideration zone, though no specific credit history flags (defaults or missed payments) were found."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000185:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "35.3%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000185:complete",
+      "repeat": 1,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "purpose"
+        ],
+        "sentences": [
+          "The underwriter must determine if the combination of a borderline bureau score (597) and recent delinquencies (2 in 24 months) warrants a reduced facility amount, a longer term to lower the monthly instalment, or if the applicant's strong employment history and the debt consolidation purpose justify an exception."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000323:complete",
+      "repeat": 0,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "*   **Age band:** The applicant is in the 65+ age band, which, while not an automatic decline, is a factor in the underwriter\u2019s assessment of repayment capacity near retirement."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000407:complete",
+      "repeat": 1,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "purpose"
+        ],
+        "sentences": [
+          "**Credit History:** While the score is acceptable, the underwriter will need to be satisfied that the single delinquency (15 months ago) is resolved and does not indicate a recurring risk, particularly given the debt consolidation purpose."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000407:complete",
+      "repeat": 2,
+      "check": "comparison_fidelity",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "false_comparisons": [
+          "625 < 600"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000448:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "37.1%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000448:complete",
+      "repeat": 0,
+      "check": "claim_consistency",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "contradictions": [
+          "claims above 40%, states 37.1%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000448:complete",
+      "repeat": 0,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "*   **File Age:** The credit file opened in May 2023 (46 months ago), which is not considered \"thin\" under the under 24-month rule, but the recent delinquency is a concern."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000448:complete",
+      "repeat": 1,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "*   **File Age:** The credit file is 46 months old, which is sufficient and not considered \"thin.\""
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000448:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "46.8%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000454:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "47.2%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000454:complete",
+      "repeat": 1,
+      "check": "comparison_fidelity",
+      "cause": "misread_threshold",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "false_comparisons": [
+          "624 < 600"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000454:complete",
+      "repeat": 2,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "Additionally, the applicant's credit file age of 58 months falls within the \"thin file\" category (under 24 months is considered thin, but 58 months is established, though the low score of 624 is the primary driver for review)."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000522:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "43.5%",
+          "\u20ac2,942",
+          "\u20ac1,177"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000522:complete",
+      "repeat": 0,
+      "check": "material_omission",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "missing": [
+          "dti_ratio"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000522:complete",
+      "repeat": 0,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "While employment stability is strong, age and self-employment status can be factors in underwriter assessment of repayment capacity near retirement."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000522:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "43.5%",
+          "\u20ac2,941",
+          "\u20ac1,176"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000522:complete",
+      "repeat": 1,
+      "check": "material_omission",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "missing": [
+          "dti_ratio"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000522:complete",
+      "repeat": 1,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "*   **Age Band:** The applicant is in the 65+ age band, which may be a factor in term suitability, though not an automatic decline."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000522:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "43.7%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000543:complete",
+      "repeat": 1,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "\u20ac18,900"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000543:complete",
+      "repeat": 2,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "The thin file status (given the applicant's age) may also be a factor."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000588:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "36.4%"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000588:complete",
+      "repeat": 2,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "\u20ac132"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000588:complete",
+      "repeat": 2,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "The underwriter should weigh the strong employment stability and clean payment history against the low bureau score and young file age."
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000678:complete",
+      "repeat": 0,
+      "check": "numeric_fidelity",
+      "cause": "miscalculated",
+      "lever": "context",
+      "owner": "bank",
+      "detail": {
+        "figures_not_in_file": [
+          "40.1%",
+          "\u20ac2,004"
+        ]
+      }
+    },
+    {
+      "item_id": "underwriter-de:case_review:APP000684:complete",
+      "repeat": 0,
+      "check": "decoy_citation",
+      "cause": "decoy_blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "detail": {
+        "decoys": [
+          "age_band"
+        ],
+        "sentences": [
+          "While not \"under 24 months,\" the score of 549 suggests a limited or troubled credit history despite the file age."
+        ]
+      }
+    }
+  ]
+}

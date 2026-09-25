@@ -1,0 +1,65 @@
+{
+  "panel": "panel-v2",
+  "panel_py_sha256": "09ad566292bb8106bcbe4d77a29ebbc93da116e5665cd1e6f9fc0fe6541ceb32",
+  "runtime": {
+    "node": "rtx-3se-06-04",
+    "sandbox": "evidence-judge",
+    "started_at": "2026-09-25T05:56:29Z",
+    "endpoint": "https://inference.local/v1",
+    "nemoclaw": "0.0.124",
+    "openshell": "0.0.116",
+    "agent_runtime": "OpenClaw v2026.7.1",
+    "inference_route": {
+      "provider": "vllm-local",
+      "model": "nemotron-3-super",
+      "timeout": "600s"
+    },
+    "network_policies": [
+      "clawhub",
+      "local_inference",
+      "managed_inference",
+      "npm_registry",
+      "nvidia",
+      "openclaw_api",
+      "openclaw_docs",
+      "openclaw_gateway_dialback"
+    ],
+    "policy_sha256": "5b582d0c399cdfb1aceab4d643f36a6cf63df99c23d43aef346e2d949470b361",
+    "kind": "nemoclaw",
+    "models": {
+      "reader": "nemotron-3-super",
+      "challenger": "nemotron-3-super",
+      "arbiter": "nemotron-3-super"
+    }
+  },
+  "started_at": "2026-09-25T05:56:14+00:00",
+  "finished_at": "2026-09-25T06:43:16+00:00",
+  "briefings": 60,
+  "errors": 0,
+  "planned": 60,
+  "complete": true,
+  "corpus": {
+    "jurisdiction": "EU",
+    "corpus_sha256": "4a7d4f6c5717220557107a6cb7760a41e9cd2b2431e89bf76625fef44064b523"
+  },
+  "passages_by_field": {
+    "intelligible": [
+      "ai-act-art-13#1",
+      "ai-act-art-13#2"
+    ],
+    "actionable": [
+      "ai-act-art-14#4",
+      "ai-act-art-13#1"
+    ],
+    "overridable": [
+      "ai-act-art-14#4",
+      "ai-act-art-14#2"
+    ]
+  },
+  "roles": {
+    "reader": "scores the briefing as the underwriter would, no case file",
+    "challenger": "checks it against the case file and the deterministic checks, with tools",
+    "arbiter": "final scores, citations and whether a person should review it"
+  },
+  "gated": false
+}
