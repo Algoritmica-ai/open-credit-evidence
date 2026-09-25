@@ -12,9 +12,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import subprocess
+import threading
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -133,12 +136,16 @@ def run_pack(
     should_stop: Callable[[], bool] | None = None,
     corpus: Corpus | str | None = "EU",
     panel: bool = False,
+    workers: int | None = None,
 ) -> dict[str, Any]:
     """Execute the pack. Returns the run manifest; writes transcripts and results.jsonl.
 
     ``panel`` says the three-agent panel will review these briefings: the single
     judge is then skipped (the panel's Reader, scoring each briefing alone, is the
     lone-judge view) and the manifest says so.
+
+    ``workers`` memos are written and judged at once (default ``EVIDENCE_WORKERS``, else
+    8); the checks are pure computation and take no time next to the model calls.
 
     ``corpus`` is the regulation corpus the judge retrieves from — a built
     :class:`Corpus`, a jurisdiction code, or None for a judge with no passages.
@@ -151,6 +158,7 @@ def run_pack(
     into the same directory resumes from the transcripts on disk.
     """
     judge = judge and not panel
+    workers = workers or int(os.environ.get("EVIDENCE_WORKERS", "8"))
     out.mkdir(parents=True, exist_ok=True)
     (out / "transcripts").mkdir(exist_ok=True)
     run_id = out.name
@@ -220,49 +228,78 @@ def run_pack(
         log(f"  corpus {corpus_obj.jurisdiction}: embedder reproduces the index "
             f"(cosine {embedder_check['cosine']} on {embedder_check['probe']})")
 
-    results: list[dict[str, Any]] = []
-    transcripts: list[Transcript] = []
-    judge_seen: dict[str, Any] | None = None
-    calls_made = 0
     total = len(items) * repeats
-    done = 0
-    cancelled = False
-    for item in items:
-        names = checks if checks is not None else item.deterministic_checks
-        want_judge = judge and ("readability" in item.judges or judge is True)
-        for rep in range(repeats):
-            if should_stop is not None and should_stop():
-                cancelled = True
-                break
+    jobs = [(item, rep) for item in items for rep in range(repeats)]
+
+    def wants_judge(item: BenchmarkItem) -> bool:
+        return bool(judge and ("readability" in item.judges or judge is True))
+
+    # Fingerprint each model once, before the calls fan out across threads.
+    if any(not transcript_path(out, it.item_id, rep).is_file() for it, rep in jobs):
+        fp_for("assistant")
+    if any(wants_judge(it) and (it.item_id, rep) not in prior_judge for it, rep in jobs):
+        fp_for("judge")
+        if corpus_obj is not None:
+            fp_for("embed")  # the retrieval query is embedded on the node
+
+    lock = threading.Lock()
+    progress = {"done": 0, "calls": 0, "failed": False}
+
+    def one(job: tuple[BenchmarkItem, int]) -> tuple[Transcript, list[dict[str, Any]]] | None:
+        """One memo: the assistant's call (or its transcript on disk), the checks, the judge."""
+        item, rep = job
+        if progress["failed"] or (should_stop is not None and should_stop()):
+            return None
+        try:
             path = transcript_path(out, item.item_id, rep)
+            called = False
             if path.is_file():
                 t = Transcript.model_validate_json(path.read_text(encoding="utf-8"))
             else:
                 t = call_assistant(item, run_id, rep, fp_for("assistant"))
                 path.write_text(t.model_dump_json(indent=2), encoding="utf-8")
-                calls_made += 1
-            transcripts.append(t)
-            for c in run_checks(names, output=t.output, item=item):
-                results.append(
-                    {"item_id": item.item_id, "repeat": rep, "check": c.name} | c.to_score()
-                )
-            if want_judge:
+                called = True
+            names = checks if checks is not None else item.deterministic_checks
+            rows = [{"item_id": item.item_id, "repeat": rep, "check": c.name} | c.to_score()
+                    for c in run_checks(names, output=t.output, item=item)]
+            if wants_judge(item):
                 rec = prior_judge.get((item.item_id, rep))
                 if rec is None:
                     rec = {"item_id": item.item_id, "repeat": rep, "check": "readability",
                            "model_fingerprint": fp_for("judge")}
-                    if corpus_obj is not None:
-                        fp_for("embed")  # the retrieval query is embedded on the node
                     rec |= judge_readability(output=t.output, item=item, corpus=corpus_obj)
-                results.append(rec)
-                judge_seen = judge_seen or {
-                    "model_id": rec["judge"].removeprefix("model:"),
-                    "endpoint": rec.get("endpoint"),
-                }
-            done += 1
-            log(
-                f"  {done}/{total}  {item.item_id.split(':')[2]} r{rep}  {t.latency_ms / 1000:.1f}s"
-            )
+                rows.append(rec)
+        except BaseException:
+            progress["failed"] = True  # the memos not yet started are not started
+            raise
+        with lock:
+            progress["done"] += 1
+            progress["calls"] += called
+            log(f"  {progress['done']}/{total}  {item.item_id.split(':')[2]} r{rep}  "
+                f"{t.latency_ms / 1000:.1f}s")
+        return t, rows
+
+    # Memos are independent: their model calls run side by side. The results keep the
+    # pack's order, so a run written in parallel is the same as one written in sequence.
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+        finished = list(pool.map(one, jobs))
+
+    results: list[dict[str, Any]] = []
+    transcripts: list[Transcript] = []
+    judge_seen: dict[str, Any] | None = None
+    cancelled = any(f is None for f in finished)
+    for f in finished:
+        if f is None:
+            continue
+        t, rows = f
+        transcripts.append(t)
+        results.extend(rows)
+        rec = next((r for r in rows if r["check"] == "readability"), None)
+        if rec is not None and judge_seen is None:
+            judge_seen = {"model_id": rec["judge"].removeprefix("model:"),
+                          "endpoint": rec.get("endpoint")}
+    done = len(transcripts)
+    calls_made = progress["calls"]
 
     with results_path.open("w", encoding="utf-8") as fh:
         for rec in results:

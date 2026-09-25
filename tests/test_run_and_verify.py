@@ -241,3 +241,65 @@ def test_run_records_the_embedder_check(stubbed, tmp_path):
     m = run_pack(stubbed, out, repeats=1, limit=1, corpus="EU", log=lambda s: None)
     ec = m["judge"]["corpus"]["embedder_check"]
     assert ec["ok"] and ec["cosine"] >= 0.999
+
+
+def test_a_parallel_run_writes_what_a_sequential_run_writes(monkeypatch, regulations_root,
+                                                             tmp_path):
+    import dataclasses
+    import hashlib
+    import threading
+    import time
+
+    pack = load_pack(PACK)
+    by_prompt = {i.documents_text(): i for i in pack.items}
+    def inner(*a, **kw):  # a fresh stub per call: its every-third-call switch never fires
+        return _stub_chat(lambda system, user: by_prompt[user])(*a, **kw)
+
+    at_once = {"now": 0, "most": 0}
+    lock = threading.Lock()
+
+    def chat(role, system, user, **kw):
+        with lock:
+            at_once["now"] += 1
+            at_once["most"] = max(at_once["most"], at_once["now"])
+        time.sleep(0.01)
+        try:
+            if role == "judge":
+                return inner(role, system, user, **kw)
+            # the answer depends on the memo, never on the order of the calls
+            r = inner(role, system, user, **kw)
+            if int(hashlib.sha256(user.encode()).hexdigest(), 16) % 3 == 0:
+                r = dataclasses.replace(r, text=BAD)
+            return r
+        finally:
+            with lock:
+                at_once["now"] -= 1
+
+    monkeypatch.setattr("evidence.runner.chat", chat)
+    monkeypatch.setattr("evidence.judge.chat", chat)
+    kw = {"repeats": 2, "limit": 6, "corpus": "EU", "log": lambda s: None}
+    a = run_pack(pack, tmp_path / "one", workers=1, **kw)
+    most_in_sequence = at_once["most"]
+    b = run_pack(pack, tmp_path / "eight", workers=8, **kw)
+    assert most_in_sequence == 1 and at_once["most"] > 1
+    assert a["transcripts"] == b["transcripts"] == 12 and not b["cancelled"]
+    strip = lambda rows: [{k: v for k, v in json.loads(r).items() if k != "latency_ms"}  # noqa: E731
+                          for r in rows.splitlines()]
+    assert strip((tmp_path / "one" / "results.jsonl").read_text()) == strip(
+        (tmp_path / "eight" / "results.jsonl").read_text())
+    write_evidence(tmp_path / "eight", pack.obligations)
+    assert verify_run(tmp_path / "eight", pack, recompute=True).ok
+
+
+def test_a_failed_call_stops_new_memos_from_starting(stubbed, monkeypatch, tmp_path):
+    started = {"n": 0}
+
+    def broken(role, system, user, **kw):
+        started["n"] += 1
+        raise ConnectionError("assistant unreachable")
+
+    monkeypatch.setattr("evidence.runner.chat", broken)
+    with pytest.raises(ConnectionError):
+        run_pack(stubbed, tmp_path / "run", repeats=3, workers=2, judge=False,
+                 log=lambda s: None)
+    assert started["n"] <= 2 + 2  # the ones in flight when the first failed, not all 60

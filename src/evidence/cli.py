@@ -47,6 +47,7 @@ def _cmd_run(a: argparse.Namespace) -> int:
         limit=a.limit,
         corpus=None if a.corpus == "none" else a.corpus,
         panel=bool(a.panel),
+        workers=a.workers,
     )
     print(f"sut      {manifest['sut']['model_id']}  {manifest['sut']['endpoint']}")
     res = write_evidence(out, pack.obligations)
@@ -346,6 +347,8 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--panel-workers", type=int, default=4,
                    help="briefings the panel reviews at once")
     r.add_argument("--limit", type=int, help="only the first N items")
+    r.add_argument("--workers", type=int,
+                   help="memos written and judged at once (default EVIDENCE_WORKERS, else 8)")
     r.add_argument(
         "--corpus",
         default="EU",

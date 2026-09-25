@@ -47,6 +47,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import threading
 import unicodedata
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -299,6 +300,7 @@ class Corpus:
         self._db = base / "passages.db"
         self._embedder = embedder or embed
         self._client = None
+        self._lock = threading.Lock()  # memos are judged side by side; the index is shared
         self.backend = (
             "milvus-lite"
             if self._db.exists() and self.manifest.get("index_backend", "milvus-lite") != "cosine"
@@ -356,7 +358,9 @@ class Corpus:
 
     def retrieve(self, query: str, k: int = 2) -> list[tuple[Passage, float]]:
         vector = self._embedder([query], "query")[0]
-        return [(self.passages[pid], score) for pid, score in self._search(vector, k)]
+        with self._lock:
+            hits = self._search(vector, k)
+        return [(self.passages[pid], score) for pid, score in hits]
 
     def close(self) -> None:
         if self._client is not None:
