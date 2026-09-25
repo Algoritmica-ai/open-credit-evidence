@@ -38,12 +38,11 @@ reported, not gated.
 result traceable to a transcript and every file covered by a checksum. Anyone
 with the pack and the run can re-derive every number.
 
-**Human oversight is the feedback loop.** People test the evidence on review cards;
-seeded memos with known errors measure what the checks, the panel and the reviewers miss;
-disputes flow back into the checks and the assistant. The engine measures whether
-oversight works — catch rate, automation bias, what a fast review lane would miss, time per
-memo — and does not run the lender's review operations. Design:
-[`docs/oversight-evaluation.md`](docs/oversight-evaluation.md).
+**Evaluate, review, improve.** The cases are generated from the lender's credit policy, so
+no production loan data is ever used. The evaluated memos go to a review queue; reviewers'
+verdicts, checked against the known answers, become a sealed feedback pack for improving
+the assistant (and the evaluator); the improved assistant is re-evaluated on a fresh pack it
+has never seen. Every step is sealed. Design: [`docs/feedback-loop.md`](docs/feedback-loop.md).
 
 ```
 Synthetic Data Designer ──▶ scorecard ──▶ pack (documents + sealed marking key)
