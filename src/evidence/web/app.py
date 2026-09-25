@@ -497,6 +497,7 @@ def _job_worker(job_id: str, pack: Pack, out: Path, opts: dict[str, Any]) -> Non
             repeats=opts["repeats"],
             judge=opts["judge"],
             limit=opts["limit"],
+            panel=opts["panel"],
             log=log,
             should_stop=lambda: job.get("cancel", False),
         )

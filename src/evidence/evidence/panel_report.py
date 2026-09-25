@@ -1,10 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2026 Algoritmica GmbH
-"""What the judge panel found, set against the deterministic checks and the single judge.
+"""What the judge panel found, set against the deterministic checks and a lone judge.
 
 Built from ``panel/records.jsonl``, ``panel/manifest.json`` and ``results.jsonl``
 into ``evidence/panel.json`` and ``evidence/panel.md``. The panel is an opinion:
 nothing here changes a pass, a fail or the decision.
+
+The lone judge is the single readability judge when the run has one. A run made for
+the panel skips it, and the panel's Reader, which scores each briefing alone without
+the case file, stands in (``lone_judge: "reader"``; the ``judge_*`` figures are then
+the Reader's).
 """
 
 from __future__ import annotations
@@ -19,6 +24,14 @@ FIELDS = ("intelligible", "actionable", "overridable")
 
 def _share(n: int, d: int) -> float | None:
     return round(n / d, 3) if d else None
+
+
+def _reader_value(r: dict[str, Any]) -> float | None:
+    """The Reader's scores on the panel's 0–1 scale, as the Arbiter's become ``value``."""
+    from evidence.panel import MAX_PER_FIELD
+
+    s = r.get("reader_scores") or {}
+    return round(sum(s.values()) / (MAX_PER_FIELD * len(s)), 3) if s else None
 
 
 def summarise(run: Path) -> dict[str, Any] | None:
@@ -40,6 +53,9 @@ def summarise(run: Path) -> dict[str, Any] | None:
             failing.setdefault(key, set()).add(r["check"])
     ok = [r for r in records if not r.get("error") and r.get("value") is not None]
     keyed = {(r["item_id"], r["repeat"]): r for r in ok}
+    lone_is_reader = not judge
+    if lone_is_reader:  # no single judge ran: the Reader's own scores are the lone view
+        judge = {k: _reader_value(r) for k, r in keyed.items()}
     bad = [k for k in keyed if failing.get(k)]
     clean = [k for k in keyed if not failing.get(k)]
     flagged = [k for k, r in keyed.items() if r.get("flag_for_review")]
@@ -69,6 +85,7 @@ def summarise(run: Path) -> dict[str, Any] | None:
     judge_vals = [judge[k] for k in keyed if judge.get(k) is not None]
     return {
         "panel": manifest.get("panel"),
+        **({"lone_judge": "reader"} if lone_is_reader else {}),
         # older panels recorded neither; their summaries stay as they were
         **({"complete": manifest["complete"], "planned": manifest.get("planned")}
            if "complete" in manifest else {}),
@@ -119,11 +136,17 @@ def lines(s: dict[str, Any]) -> list[str]:
              if rt.get("kind") == "nemoclaw" else f"in the engine, against `{rt.get('endpoint')}`")
     models = rt.get("models") or {}
     w, c, ch = s["with_failing_checks"], s["without_failing_checks"], s["challenger"]
+    reader = s.get("lone_judge") == "reader"
+    lone, short = ("the Reader alone", "Reader") if reader else ("the single judge",
+                                                                 "single judge")
     L = ["# Judge panel", "",
          "Three agents reviewed each briefing: a **Reader** scored it as the underwriter would, "
          "a **Challenger** checked it against the case file and the deterministic checks with "
          "tools, and an **Arbiter** gave the final scores and said whether a person should "
          "review it. An opinion, reported and never used to pass or fail.", "",
+         *(["No single judge ran on this run: the Reader, scoring each briefing alone as a "
+            "lone AI judge would, stands in for one in the comparisons below.", ""]
+           if reader else []),
          f"- Ran {where}. Models: reader `{models.get('reader')}`, challenger "
          f"`{models.get('challenger')}`, arbiter `{models.get('arbiter')}`.",
          *([f"- **Incomplete:** {s['briefings']} of {s.get('planned')} briefings reviewed so "
@@ -131,15 +154,15 @@ def lines(s: dict[str, Any]) -> list[str]:
            else []),
          f"- {s['answered']}/{s['briefings']} briefings answered"
          + (f"; {s['errors']} failed and are left out" if s["errors"] else "") + ".",
-         f"- Mean score {s['mean_value']} on 0–1 (the single judge: {s['judge_mean_value']}). "
+         f"- Mean score {s['mean_value']} on 0–1 ({lone}: {s['judge_mean_value']}). "
          f"Flagged for review: {s['flagged']}.", "",
          "## Against the deterministic checks", "",
-         "| | briefings | panel flagged | single judge full marks | panel full marks |",
+         f"| | briefings | panel flagged | {short} full marks | panel full marks |",
          "|---|---|---|---|---|",
          f"| failing at least one check | {w['briefings']} | {w['flagged']} | "
          f"{w['judge_full_marks']} | {w['panel_full_marks']} |",
          f"| failing none | {c['briefings']} | {c['flagged']} | — | — |", "",
-         f"Of the briefings the single judge gave full marks despite a failing check, the panel "
+         f"Of the briefings {lone} gave full marks despite a failing check, the panel "
          f"flagged {w['judge_full_marks_panel_flagged']}.", "",
          f"The Challenger made {ch['findings']} findings ({ch['material_findings']} material), "
          f"with {ch['mean_tool_calls']} tool calls per briefing on average, and confirmed "
@@ -162,7 +185,7 @@ def lines(s: dict[str, Any]) -> list[str]:
           f"Every citation was a passage the panel was given in "
           f"{s['citations_all_given']['ok']}/{s['citations_all_given']['records']} records."]
     if s["examples"]:
-        L += ["", "## Examples: full marks from the single judge, flagged by the panel", ""]
+        L += ["", f"## Examples: full marks from {lone}, flagged by the panel", ""]
         for e in s["examples"]:
             f = e.get("finding") or {}
             L.append(f"- `{e['item_id'].split(':')[2]}` r{e['repeat']} (failing: "

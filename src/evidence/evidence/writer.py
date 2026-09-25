@@ -132,6 +132,10 @@ def _report_lines(
     )
     L.append("")
     judge_line = "No judge."
+    if not judge and manifest.get("single_judge"):
+        judge_line = ("No single judge: the three-agent judge panel reviews every briefing, and "
+                      "its Reader, scoring each one alone, gives the lone-judge view "
+                      "(`evidence/panel.md`).")
     if judge:
         judge_line = (
             f"Judge: `{judge['model_id']}` ({'on-prem' if judge['on_prem'] else 'cloud'}), "

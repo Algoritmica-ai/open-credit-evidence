@@ -205,7 +205,7 @@ async function viewNew() {
       <p class="small muted">Each case is given to the assistant three times, to check it answers the same way each time.</p></fieldset>
     <label class="choice-card"><input type="checkbox" id="panel" checked>
       <span class="stack tight"><span class="t">Also get a second opinion from three AI reviewers</span>
-      <span class="small muted">One reads each memo, one challenges it against the case file, one decides. Adds time, and helps sort what a person should check first.</span></span></label>
+      <span class="small muted">One reads each memo, one challenges it against the case file, one decides. It replaces the single AI judge. Adds time, and helps sort what a person should check first.</span></span></label>
     <div class="note-box"><span style="color:var(--green);display:flex">${ICON.lock}</span>
       <p class="small"><strong>No customer data.</strong> The cases are generated from your credit policy. Nothing from your loan book is used or seen.</p></div>
     <div class="row"><button class="btn primary large" id="start">Start test</button><a class="btn large" href="#/">Cancel</a><span id="msg" class="error"></span></div>
@@ -307,9 +307,13 @@ async function viewResult(id) {
   const lead = h.memos_with_error
     ? `In ${h.memos_with_error} of ${h.memos} memos, the assistant made a mistake an underwriter could act on.`
     : `The assistant made no mistakes the checks could find in ${h.memos} memos.`;
-  const support = p && p.with_failing_checks
-    ? `A single AI reviewer gave these memos ${Math.round(100 * p.judge_mean_value)}% on average. Our panel of three AI reviewers caught ${p.with_failing_checks.flagged} of the ${p.with_failing_checks.briefings} memos with a mistake. This is why a person should check the flagged memos before anyone relies on them.`
-    : "Each memo was checked against rules with a known right answer. A person should check the flagged memos before anyone relies on them.";
+  const caught = p && p.with_failing_checks ? `caught ${p.with_failing_checks.flagged} of the ${p.with_failing_checks.briefings} memos with a mistake` : "";
+  const why = "This is why a person should check the flagged memos before anyone relies on them.";
+  const support = !caught || p.judge_mean_value == null
+    ? `Each memo was checked against rules with a known right answer. ${why}`
+    : p.lone_judge === "reader"
+      ? `Reading each memo on its own, as a lone AI judge would, the first of our three AI reviewers gave them ${Math.round(100 * p.judge_mean_value)}% on average. Once the second checked them against the case file, the panel ${caught}. ${why}`
+      : `A single AI reviewer gave these memos ${Math.round(100 * p.judge_mean_value)}% on average. Our panel of three AI reviewers ${caught}. ${why}`;
   const reports = (d.readers || []).filter((r) => r.available && r.name !== "business");
   $view.innerHTML = `<div class="stack" style="gap:28px">
     <div class="row wrap"><a class="link" href="#/">${ICON.back}Home</a>

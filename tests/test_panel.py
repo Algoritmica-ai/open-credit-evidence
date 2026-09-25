@@ -201,6 +201,51 @@ def test_panel_over_run_records_seals_and_resumes(stubbed, tmp_path, monkeypatch
     assert not stopped["ok"] and "sandbox unreachable" in stopped["message"]
     assert verify_run(run, stubbed, recompute=True).ok  # still sealed, with a partial panel
 
+
+def test_a_run_made_for_the_panel_uses_the_reader_as_the_lone_judge(stubbed, tmp_path,  # noqa: F811
+                                                                     monkeypatch):
+    from evidence import panel_run
+    from evidence.evidence import verify_run, write_evidence
+    from evidence.evidence.panel_report import _reader_value
+    from evidence.runner import run_pack
+
+    run = tmp_path / "run"
+    m = run_pack(stubbed, run, repeats=1, limit=2, corpus="EU", panel=True, log=lambda s: None)
+    assert m["judge"] is None and m["single_judge"].startswith("skipped")
+    rows = [json.loads(x) for x in (run / "results.jsonl").read_text().splitlines()]
+    assert rows and not any(r["check"] == "readability" for r in rows)
+    write_evidence(run, stubbed.obligations)
+    call, _ = scripted()
+    monkeypatch.setattr(panel, "chat", lambda base_url, api_key=None, **kw: call(**kw))
+    assert panel_run.panel_over_run(run, stubbed, corpus="EU", log=lambda s: None)["ok"]
+    s = json.loads((run / "evidence" / "panel.json").read_text())
+    recs = [json.loads(x) for x in (run / "panel" / "records.jsonl").read_text().splitlines()]
+    reader = [_reader_value(r) for r in recs]
+    assert s["lone_judge"] == "reader"
+    assert s["judge_mean_value"] == round(sum(reader) / len(reader), 3)
+    md = (run / "evidence" / "panel.md").read_text()
+    assert "the Reader alone" in md and "the single judge" not in md
+    assert "No single judge" in (run / "evidence" / "report.md").read_text()
+    assert verify_run(run, stubbed, recompute=True).ok
+
+
+def test_a_run_with_a_single_judge_keeps_it_as_the_lone_judge(stubbed, tmp_path,  # noqa: F811
+                                                              monkeypatch):
+    from evidence import panel_run
+    from evidence.evidence import write_evidence
+    from evidence.runner import run_pack
+
+    run = tmp_path / "run"
+    m = run_pack(stubbed, run, repeats=1, limit=2, corpus="EU", log=lambda s: None)
+    assert m["judge"] and "single_judge" not in m
+    write_evidence(run, stubbed.obligations)
+    call, _ = scripted()
+    monkeypatch.setattr(panel, "chat", lambda base_url, api_key=None, **kw: call(**kw))
+    assert panel_run.panel_over_run(run, stubbed, corpus="EU", log=lambda s: None)["ok"]
+    s = json.loads((run / "evidence" / "panel.json").read_text())
+    assert "lone_judge" not in s
+    assert "the single judge" in (run / "evidence" / "panel.md").read_text()
+
 def test_panel_module_runs_on_the_standard_library_alone():
     import ast
     from pathlib import Path

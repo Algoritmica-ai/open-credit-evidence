@@ -132,8 +132,13 @@ def run_pack(
     log: Callable[[str], None] = print,
     should_stop: Callable[[], bool] | None = None,
     corpus: Corpus | str | None = "EU",
+    panel: bool = False,
 ) -> dict[str, Any]:
     """Execute the pack. Returns the run manifest; writes transcripts and results.jsonl.
+
+    ``panel`` says the three-agent panel will review these briefings: the single
+    judge is then skipped (the panel's Reader, scoring each briefing alone, is the
+    lone-judge view) and the manifest says so.
 
     ``corpus`` is the regulation corpus the judge retrieves from — a built
     :class:`Corpus`, a jurisdiction code, or None for a judge with no passages.
@@ -145,6 +150,7 @@ def run_pack(
     records ``cancelled: true`` and the real transcript count, and a later run
     into the same directory resumes from the transcripts on disk.
     """
+    judge = judge and not panel
     out.mkdir(parents=True, exist_ok=True)
     (out / "transcripts").mkdir(exist_ok=True)
     run_id = out.name
@@ -354,6 +360,8 @@ def run_pack(
         },
         "sut": sut_block,
         "judge": judge_block,
+        **({"single_judge": "skipped: the three-agent panel reviews these briefings"}
+           if panel else {}),
         "checks": checks if checks is not None else pack.checks_declared(),
         "repeats": repeats,
         "transcripts": done,
