@@ -116,7 +116,7 @@ def test_split_drops_the_file_note_and_refuses_unheaded_or_overrunning_text():
 
 
 def test_passages_carry_no_file_note_or_structural_heading():
-    for j in ("EU", "IT", "US"):
+    for j in ("EU", "IT", "US", "DE"):
         base, spec = load_corpus_spec(j)
         for s in spec["sources"]:
             for p in split_passages(s, (base / s["file"]).read_text(encoding="utf-8")):
@@ -160,7 +160,7 @@ def test_verify_sources_finds_passages_and_says_where_one_diverges(regulations_r
     assert p0.passage_id in source_check_status("EU", edited, regulations_root)["unchecked"]
 
 
-@pytest.mark.parametrize("jurisdiction", ["EU", "IT", "US"])
+@pytest.mark.parametrize("jurisdiction", ["EU", "IT", "US", "DE"])
 def test_repository_corpus_is_built_from_its_sources_and_checked(jurisdiction):
     from evidence.corpus import list_corpora
 
@@ -240,3 +240,16 @@ def test_judge_retrieves_per_question_and_checks_each_citation(regulations_root,
     assert per["actionable"]["citation"].count(",") == 1  # two given passages both count
     assert per["overridable"] == {"citation": "ai-act-art-99#1", "in_passages": False}
     assert rec["evidence"][0]["citation_in_passages"] is False
+
+
+def test_german_corpus_holds_current_and_new_law():
+    ids = {json.loads(x)["passage_id"] for x in (ROOT / "regulations" / "DE" / "index" /
+                                                 "passages.jsonl").read_text().splitlines()}
+    # in force today, and the CCD2 transposition from 20 November 2026
+    assert {"bgb-505a#1", "bgb-505b#1", "kwg-18a#1", "bdsg-31#1"} <= ids
+    assert {"bdsg-30-neu#6", "bdsg-37a-neu#2", "kwg-18a-neu#1", "inkrafttreten#1"} <= ids
+    text = (ROOT / "regulations" / "DE" / "index" / "passages.jsonl").read_text()
+    assert "(+++" not in text  # editorial notes of the publisher are not law
+    rules = json.loads((ROOT / "regulations" / "DE" / "ruleset.json").read_text())["rules"]
+    cited = {p for r in rules for p in r.get("corpus_passages", [])}
+    assert cited and cited <= ids

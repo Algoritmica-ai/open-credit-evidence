@@ -1,0 +1,129 @@
+{
+  "jurisdiction": "DE",
+  "title": "Kreditw\u00fcrdigkeitspr\u00fcfung, Auskunfteien und Scoring (BGB, KWG, BDSG) \u2014 geltend und ab 20.11.2026",
+  "verified": "2026-09-25",
+  "chunking": "markdown-h2-paragraph-v2",
+  "index_backend": "milvus-lite",
+  "embed_model": "nvidia/nemotron-3-embed-1b",
+  "embedder": {
+    "model": "nvidia/nemotron-3-embed-1b",
+    "endpoint": "http://10.130.232.21:8202/v1",
+    "fingerprint": "ed2942bb7c71b8fbe8bb7fdf3946e96c714c475c1f7e8535afaca6d0645cc042",
+    "level": "weights"
+  },
+  "dimension": 2048,
+  "passages": 65,
+  "passages_sha256": "14a07e25780cd8f16db5807fd51ff888abc22f420e5d450a7741279766fad43b",
+  "vectors_sha256": "4542c9990899eb8d6a5c1b5790f3410d4db418554b387e9a20e28d812181c8d9",
+  "sources": [
+    {
+      "id": "bgb-505a",
+      "file": "sources/bgb-505a.md",
+      "citation": "BGB \u00a7 505a",
+      "title": "Pflicht zur Kreditw\u00fcrdigkeitspr\u00fcfung bei Verbraucherdarlehensvertr\u00e4gen",
+      "url": "https://www.gesetze-im-internet.de/bgb/__505a.html",
+      "sha256": "7c448ec5a810f8c8e9db78cf782e7e3e058f68123e5f01d7f7c134881fa41a27",
+      "passages": 3
+    },
+    {
+      "id": "bgb-505b",
+      "file": "sources/bgb-505b.md",
+      "citation": "BGB \u00a7 505b",
+      "title": "Grundlage der Kreditw\u00fcrdigkeitspr\u00fcfung bei Verbraucherdarlehensvertr\u00e4gen",
+      "url": "https://www.gesetze-im-internet.de/bgb/__505b.html",
+      "sha256": "45b6dbe794a8d4c7c54f9334318dcb14f79e617ce3c43b980b51143f9497e5b6",
+      "passages": 5
+    },
+    {
+      "id": "bgb-505c",
+      "file": "sources/bgb-505c.md",
+      "citation": "BGB \u00a7 505c",
+      "title": "Weitere Pflichten bei grundpfandrechtlich oder durch Reallast besicherten Immobiliar-Verbraucherdarlehensvertr\u00e4gen",
+      "url": "https://www.gesetze-im-internet.de/bgb/__505c.html",
+      "sha256": "ad47591703aa75c3a4e1a132db2efb8e62ce79fcd063035500fd9c16ab466dd0",
+      "passages": 1
+    },
+    {
+      "id": "bgb-505d",
+      "file": "sources/bgb-505d.md",
+      "citation": "BGB \u00a7 505d",
+      "title": "Versto\u00df gegen die Pflicht zur Kreditw\u00fcrdigkeitspr\u00fcfung",
+      "url": "https://www.gesetze-im-internet.de/bgb/__505d.html",
+      "sha256": "79eb3b95c9c054deb293f6f798d63f7f9ffb83aa5e7c8cb9dc58cc90e22c4210",
+      "passages": 3
+    },
+    {
+      "id": "kwg-18a",
+      "file": "sources/kwg-18a.md",
+      "citation": "KWG \u00a7 18a",
+      "title": "Verbraucherdarlehen und entgeltliche Finanzierungshilfen; Verordnungserm\u00e4chtigung",
+      "url": "https://www.gesetze-im-internet.de/kredwg/__18a.html",
+      "sha256": "a19eda3051dc52a8ea1ec2f1a98a38d733a70b012bbb12d612203e6373ac306a",
+      "passages": 15
+    },
+    {
+      "id": "bdsg-31",
+      "file": "sources/bdsg-31.md",
+      "citation": "BDSG \u00a7 31",
+      "title": "Schutz des Wirtschaftsverkehrs bei Scoring und Bonit\u00e4tsausk\u00fcnften",
+      "url": "https://www.gesetze-im-internet.de/bdsg_2018/__31.html",
+      "sha256": "44fa61848e457412aba2f23b8d1f7026ecff07af8ae5e1b5dc5c5ca5546a6ccd",
+      "passages": 2
+    },
+    {
+      "id": "kwg-18a-neu",
+      "file": "sources/kwg-18a-neu.md",
+      "citation": "KWG \u00a7 18a n.F.",
+      "title": "Verbraucherdarlehen und Finanzierungshilfen; Verordnungserm\u00e4chtigung",
+      "url": "https://www.recht.bund.de/eli/bund/bgbl-1/2026/139",
+      "sha256": "a431657b2d9c2e118318732ecf1a7830fddd8a69475208cc75d2c9c1e1d96dcb",
+      "passages": 19
+    },
+    {
+      "id": "bgb-505b-neu",
+      "file": "sources/bgb-505b-neu.md",
+      "citation": "BGB \u00a7 505b n.F.",
+      "title": "Grundlage der Kreditw\u00fcrdigkeitspr\u00fcfung (Abs. 1 und 2 neu)",
+      "url": "https://www.recht.bund.de/eli/bund/bgbl-1/2026/139",
+      "sha256": "427b6a76e684231da9ef117e03f2621878aaceaa3ace553aae2da40d48750bee",
+      "passages": 2
+    },
+    {
+      "id": "bgb-505a-neu",
+      "file": "sources/bgb-505a-neu.md",
+      "citation": "BGB \u00a7 505a Abs. 1 Satz 3 n.F.",
+      "title": "Mitteilung der Ablehnung (neuer Satz)",
+      "url": "https://www.recht.bund.de/eli/bund/bgbl-1/2026/139",
+      "sha256": "b01c11f591fbb746fea7ee327c2a4ce1bcc98fc2232bb7676b399e65b5fe62fe",
+      "passages": 1
+    },
+    {
+      "id": "bdsg-30-neu",
+      "file": "sources/bdsg-30-neu.md",
+      "citation": "BDSG \u00a7 30 n.F.",
+      "title": "Auskunfteien, Datenbanken, Eingreifen einer Person (Abs. 2 bis 9 neu)",
+      "url": "https://www.recht.bund.de/eli/bund/bgbl-1/2026/139",
+      "sha256": "971273d7b69d94be40568b28757e00064375ace4a8fb87a46294b3a1b1119ad9",
+      "passages": 8
+    },
+    {
+      "id": "bdsg-37a-neu",
+      "file": "sources/bdsg-37a-neu.md",
+      "citation": "BDSG \u00a7 37a",
+      "title": "Scoring",
+      "url": "https://www.recht.bund.de/eli/bund/bgbl-1/2026/139",
+      "sha256": "5fc4625168ed0b479a4072614259471ffa67d83e022c670ef336aeef643d613d",
+      "passages": 5
+    },
+    {
+      "id": "inkrafttreten",
+      "file": "sources/inkrafttreten.md",
+      "citation": "Gesetz zur Umsetzung der Richtlinie (EU) 2023/2225, Art. 16",
+      "title": "Inkrafttreten",
+      "url": "https://www.recht.bund.de/eli/bund/bgbl-1/2026/139",
+      "sha256": "40ebb6f48be04a49948cbcacd843458dd8f351a24974c0deb6f37f437e27ee30",
+      "passages": 1
+    }
+  ],
+  "corpus_sha256": "9ac29803a64977c41eb084a1c66e6d489d86e4feaf2370b177000a4b3430759a"
+}

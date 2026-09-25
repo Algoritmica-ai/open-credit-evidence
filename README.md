@@ -179,7 +179,7 @@ which endpoint produced it. See [`docs/models.md`](docs/models.md) and
 | `packs/underwriter-sample/` | The sample pack: 20 items, three documents each, marking keys, obligations map, regulatory context |
 | `specs/credit_underwriting.yaml` | The Synthetic Data Designer recipe the pack was generated from |
 | `src/evidence/` | Contracts, checks, runner, judge, evidence pack writer and verifier, CLI, web UI |
-| `regulations/` | Jurisdiction rule packs and obligation registries (Italy), and regulation corpora: EU (AI Act Art 9, 13–15, 26, Annex III 5; CCD2 Art 18–19), IT (TUB creditworthiness and credit-database articles, D.Lgs. 212/2025 transition), US (SR 26-2). Built with `evidence corpus build` and checked word for word against the official text with `evidence corpus verify-sources` (result in `source_check.json`) |
+| `regulations/` | Jurisdiction rule packs and obligation registries (Italy), and regulation corpora: EU (AI Act Art 9, 13–15, 26, Annex III 5; CCD2 Art 18–19), IT (TUB creditworthiness and credit-database articles, D.Lgs. 212/2025 transition), DE (BGB §§ 505a–505d, KWG § 18a, BDSG § 31 in force today, and the CCD2 transposition from 20 Nov 2026: new KWG § 18a, BDSG § 30 and § 37a), US (SR 26-2); rule packs for IT and DE. Built with `evidence corpus build` and checked word for word against the official text with `evidence corpus verify-sources` (result in `source_check.json`) |
 | `scripts/` | Pack builder, the no-model demo, cluster serving scripts, LoRA fine-tuning |
 | `notebooks/` | Executed notebooks: the three models on one case; the on-prem setup |
 | `runs/` | A committed evidence pack from a real run |

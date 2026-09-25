@@ -18,16 +18,16 @@
 
 | Field | Value |
 |---|---|
-| Gross annual income | £{{ "{:,.0f}".format(gross_annual) }} |
+| Gross annual income | {{ cur }}{{ "{:,.0f}".format(gross_annual) }} |
 | Income verified | {{ income_verified }} |
-| Existing monthly credit commitments | £{{ "{:,.0f}".format(existing_credit_monthly) }} |
+| Existing monthly credit commitments | {{ cur }}{{ "{:,.0f}".format(existing_credit_monthly) }} |
 | Dependants | {{ dependants }} |
 
 ## Facility requested
 
 | Field | Value |
 |---|---|
-| Amount | £{{ "{:,.0f}".format(amount) }} |
+| Amount | {{ cur }}{{ "{:,.0f}".format(amount) }} |
 | Term | {{ term_months }} months |
 | Stated purpose | {{ purpose | replace("_", " ") }} |
-| Indicative monthly instalment | £{{ "{:,.0f}".format(instalment) }} |
+| Indicative monthly instalment | {{ cur }}{{ "{:,.0f}".format(instalment) }} |

@@ -1,0 +1,384 @@
+{
+  "jurisdiction": "DE",
+  "checked_at": "2026-09-25T01:55:09+00:00",
+  "official": {
+    "id": "BGB \u00a7 505a (gesetze-im-internet.de) + BGB \u00a7 505b + BGB \u00a7 505c + BGB \u00a7 505d + KWG \u00a7 18a + BDSG \u00a7 31 + BGBl. 2026 I Nr. 139",
+    "documents": [
+      {
+        "id": "BGB \u00a7 505a (gesetze-im-internet.de)",
+        "url": "https://www.gesetze-im-internet.de/bgb/__505a.html",
+        "file": "bgb-__505a.utf8.html",
+        "file_sha256": "daf03f248afa556b1bb70119cc13b38dc08b44400523b11ef5e64f1d85639da1"
+      },
+      {
+        "id": "BGB \u00a7 505b",
+        "url": "https://www.gesetze-im-internet.de/bgb/__505b.html",
+        "file": "bgb-__505b.utf8.html",
+        "file_sha256": "651e485fca8ff8f925b94ac0b7d104a10634e59fcf6b385e5eb5a2882c1f7a98"
+      },
+      {
+        "id": "BGB \u00a7 505c",
+        "url": "https://www.gesetze-im-internet.de/bgb/__505c.html",
+        "file": "bgb-__505c.utf8.html",
+        "file_sha256": "fb20ac872d912e049ba8472cee4b62d5bb445a7b4336f53e09c553a8449a047a"
+      },
+      {
+        "id": "BGB \u00a7 505d",
+        "url": "https://www.gesetze-im-internet.de/bgb/__505d.html",
+        "file": "bgb-__505d.utf8.html",
+        "file_sha256": "066a9af2449348863075384f302427e56cb1ac2b70e5715db97c027c5727c9eb"
+      },
+      {
+        "id": "KWG \u00a7 18a",
+        "url": "https://www.gesetze-im-internet.de/kredwg/__18a.html",
+        "file": "kredwg-__18a.utf8.html",
+        "file_sha256": "9af2bd78f56ee28725bae98715484cca2f0d342f2258e551ab16a78a518897a2"
+      },
+      {
+        "id": "BDSG \u00a7 31",
+        "url": "https://www.gesetze-im-internet.de/bdsg_2018/__31.html",
+        "file": "bdsg_2018-__31.utf8.html",
+        "file_sha256": "0f84c9dba5489aa5cbed8487331eeab782e205a57121180aae9794443e11ffd0"
+      },
+      {
+        "id": "BGBl. 2026 I Nr. 139",
+        "url": "https://www.recht.bund.de/eli/bund/bgbl-1/2026/139",
+        "file": "bgbl-clean.txt",
+        "file_sha256": "8871a023b16cc101a2f8b16bf7aac7ce4232cdef6041e30712dffc07eaa753d4"
+      }
+    ],
+    "obtained": "gesetze-im-internet.de norm pages fetched 25.09.2026 (HTML, ISO-8859-1 converted to UTF-8); BGBl. 2026 I Nr. 139 regelungstext.pdf (sha256 498ddd09c3dbaf9d91824601b61ab5e8a91167a5d5e58322a94f5858c4eab36b) read with pdftotext -layout, page footers removed, words broken across lines rejoined",
+    "text_sha256": "01c44cd3fe5062b7b6904266a788db9c62cee09fe10e55b1be043fbb3957e60e",
+    "chars": 202302
+  },
+  "method": "passage text normalised (NFKC, quotes, dashes, whitespace) and searched for verbatim in the normalised official text",
+  "passages": 65,
+  "found": 65,
+  "results": [
+    {
+      "passage_id": "bgb-505a#1",
+      "text_sha256": "8d57b2abdacf74b91d6449fffc2c2a648918e7dead35543b257520e7d7ecc743",
+      "found": true
+    },
+    {
+      "passage_id": "bgb-505a#2",
+      "text_sha256": "4367446d92779072f3a572f62117cabd36e7f0fb2ff52f39bfb1ba43bbafa98a",
+      "found": true
+    },
+    {
+      "passage_id": "bgb-505a#3",
+      "text_sha256": "6163cb4833cab50ac15507311a71991e2c0f691037c87075b0f3369f6ccdeeb7",
+      "found": true
+    },
+    {
+      "passage_id": "bgb-505b#1",
+      "text_sha256": "8c18857234a5e6923915779070e34f3833a8a8262d2fe18794fc106eaeaf3ef1",
+      "found": true
+    },
+    {
+      "passage_id": "bgb-505b#2",
+      "text_sha256": "5afad63e277b504b80857e11e7849a76f8faf5bae339640928e3285b7b23c811",
+      "found": true
+    },
+    {
+      "passage_id": "bgb-505b#3",
+      "text_sha256": "8edf1d2ca683bae4ef20fe4abbeee3fbd4fdaac7041ba215f8f24afb74d37b6d",
+      "found": true
+    },
+    {
+      "passage_id": "bgb-505b#4",
+      "text_sha256": "9e571c390cf44a106835719d7c9f39a8c005061351bc893d5e6b119be8a58677",
+      "found": true
+    },
+    {
+      "passage_id": "bgb-505b#5",
+      "text_sha256": "8cd77ef0a8eced50563fa12216e7b7ecaaff75c1675a4519df6ac8acc021c319",
+      "found": true
+    },
+    {
+      "passage_id": "bgb-505c#1",
+      "text_sha256": "119776ec93008a439063c4eb781381c7682d2d9fbaf3f69e0ba682a431a4e6c8",
+      "found": true
+    },
+    {
+      "passage_id": "bgb-505d#1",
+      "text_sha256": "eb53a3ada5bbfecd11678c8ce3fbaf97b4de0012e7cf63b292a84def5a26160c",
+      "found": true
+    },
+    {
+      "passage_id": "bgb-505d#2",
+      "text_sha256": "c31497e73e84bf23be30d9863678753b52d1794d73aaa9ae5e62ba3ce5a50597",
+      "found": true
+    },
+    {
+      "passage_id": "bgb-505d#3",
+      "text_sha256": "54e04fc237ed06b9dcce99dbc26ba25b6b8c13ff969133a3662375f96f030ec6",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a#1",
+      "text_sha256": "622de4ccd75f59651b87b026e9a5191159f07c7b0284dc6512f486bb598e3d3c",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a#2",
+      "text_sha256": "4367446d92779072f3a572f62117cabd36e7f0fb2ff52f39bfb1ba43bbafa98a",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a#2a",
+      "text_sha256": "12ee2c3023978e236542e9dc37d7b812e13556b802953486bc8c0be781825d5b",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a#3",
+      "text_sha256": "a0dd86ce910d03a4dedbca291b057ebc60bfa8f314251d568cf089a3bc136885",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a#4",
+      "text_sha256": "a9d878c07572320cb703068a58511c5a31684014c48299016b4ee5fa0892b785",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a#5",
+      "text_sha256": "fdd0702d48c58120483cdc24ccd5344f528547fcb7667fb053f79a1d9b534502",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a#6",
+      "text_sha256": "7d1806f97b31843b277070827b49456ff4e5c78bd89b1d53f5a13308a930243f",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a#7",
+      "text_sha256": "53d4877937a1f40e5081e19d46b5dfff580ae695fb3830b1a3d9a3688d28072c",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a#8",
+      "text_sha256": "49b71b3f3a2c1907e19a8693cf79e75fd0473ceb006f8c0bee2e11aa52d1d2b0",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a#8a",
+      "text_sha256": "691495bb73e20265aca3c1e6921d5aa6630901c25744ceb66744e40fce7eb8e8",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a#8b",
+      "text_sha256": "91b85e45bbf03bbdb5b4d3825c28a10e22995603b645f03a33984a13647b00c2",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a#9",
+      "text_sha256": "8cd77ef0a8eced50563fa12216e7b7ecaaff75c1675a4519df6ac8acc021c319",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a#10",
+      "text_sha256": "202626f8f2d4f28589cb4ce1525c9cf8cda7c30db109ddd32ecd2c6deacbdd44",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a#10a",
+      "text_sha256": "e59ef0b0529cd37edf87cfa8ae800cb09bad0132d7e3ec84a302aa37e362948a",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a#11",
+      "text_sha256": "6c0b61e6319fca01397f6f524ff7374eb6049c99c7f17aaef0df0173c59de9b7",
+      "found": true
+    },
+    {
+      "passage_id": "bdsg-31#1",
+      "text_sha256": "b72fbb7b44b4e8badbe790b0cd96206549df9030e16689f199a64f2795da9eb2",
+      "found": true
+    },
+    {
+      "passage_id": "bdsg-31#2",
+      "text_sha256": "ab0b85fe34ab067b60e97fdfbce0dcd90092a55646db157892c1fa07ea8fa9c6",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#1",
+      "text_sha256": "9b1ccf96be1cea2319ddb8c6ef01dcca1747dfd80a09fe1691ac97febecea36b",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#1a",
+      "text_sha256": "e32fb7928380202fede220b9d6e51ee2954179ea8c943d180bb3366f44a35b73",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#1b",
+      "text_sha256": "fc06619bf393170aec300ba1ffbf122af8d6d0e5bca65555b5b724d93dbb8689",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#2",
+      "text_sha256": "a116e34bb22de23d026cdb9d8777afcad6df478b0892555ecd191d74e9294520",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#2a",
+      "text_sha256": "12ee2c3023978e236542e9dc37d7b812e13556b802953486bc8c0be781825d5b",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#2b",
+      "text_sha256": "275c7a83e255463e0e79e576ddf2a110abdaab5a6a07a36ee525c9010444cede",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#3",
+      "text_sha256": "4a619c9601206cc8c85d6b7588acc07fea825afa9fa2dab16d7d878b2b2ede66",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#4",
+      "text_sha256": "57b6b7defefa31b31d9a5c48b724ab4100de4cf576587597ea6269f6dfab67be",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#5",
+      "text_sha256": "2196f0f8452fd569f1b3d61685ce6f5a1311d7437354a945615a0fffb8678de4",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#6",
+      "text_sha256": "d6d1eae3b8039e0b7f9583b81966ce549b3e327b63ee38dbf064616e307c7afd",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#7",
+      "text_sha256": "53d4877937a1f40e5081e19d46b5dfff580ae695fb3830b1a3d9a3688d28072c",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#8",
+      "text_sha256": "bcb65f7ed07d7417cb3a564132729eb5cfa30077f94250e3f019b589c6df53f3",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#8a",
+      "text_sha256": "52946d0dfe8dee4f00640a965327420e986417031ca057c0ab6d27fd61c91476",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#8b",
+      "text_sha256": "22d664da06ee5e977158748f4a18e9e08d08a5a50fa9c8d6dd54ff32acbed57f",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#8c",
+      "text_sha256": "49ed2b1b9b606b7bf749669a13fb82ae46cda3d5b654426611b6c4092b366bab",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#9",
+      "text_sha256": "8cd77ef0a8eced50563fa12216e7b7ecaaff75c1675a4519df6ac8acc021c319",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#10",
+      "text_sha256": "b2b538cfcf3aff7b94a894768a6cf6398c2c639574dc2f48f1272fe38e5b8f35",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#10a",
+      "text_sha256": "d116918a36b2e57cc5cf4c7b50e32acb183ad95e0d90753000a97f0ba68a875d",
+      "found": true
+    },
+    {
+      "passage_id": "kwg-18a-neu#11",
+      "text_sha256": "6c0b61e6319fca01397f6f524ff7374eb6049c99c7f17aaef0df0173c59de9b7",
+      "found": true
+    },
+    {
+      "passage_id": "bgb-505b-neu#1",
+      "text_sha256": "ebdcffee22daf7c3ee7974073cdd267ccfc66cf67e3fa46ba43bc44c9dc4e144",
+      "found": true
+    },
+    {
+      "passage_id": "bgb-505b-neu#2",
+      "text_sha256": "8bbcc6a477c8826375695f2a1078ebf7223da265ee8df5a77d5cf21e316d68bc",
+      "found": true
+    },
+    {
+      "passage_id": "bgb-505a-neu#1",
+      "text_sha256": "6863ce8b026b258a88f69128d41cbde8019c7943f332f69546edbc6ab7efa17f",
+      "found": true
+    },
+    {
+      "passage_id": "bdsg-30-neu#2",
+      "text_sha256": "6f32d79d44bef913cd6b0252fc3a952324d481ce5ebccbdc4d125d5a4649cc28",
+      "found": true
+    },
+    {
+      "passage_id": "bdsg-30-neu#3",
+      "text_sha256": "f907ef0696caa97f100827fb383ca6a1beabe7bf828e92fd674fb8026d61747d",
+      "found": true
+    },
+    {
+      "passage_id": "bdsg-30-neu#4",
+      "text_sha256": "7ef8f30326475681d08b0b452346577fe1a7ffd7555bc4c4c233fff16e6cc4db",
+      "found": true
+    },
+    {
+      "passage_id": "bdsg-30-neu#5",
+      "text_sha256": "ab2686596fddfe115d5f2be26a2b577b06275438e29d4986d211b14c782023f5",
+      "found": true
+    },
+    {
+      "passage_id": "bdsg-30-neu#6",
+      "text_sha256": "f2d76c782b961b5099c1e6c27311d1cd29284279a362caa4d483a2fe098c4048",
+      "found": true
+    },
+    {
+      "passage_id": "bdsg-30-neu#7",
+      "text_sha256": "38f83462be298e77ba35b01c3ed3365a5fd86fe1efb88127ec354773f4aa95a1",
+      "found": true
+    },
+    {
+      "passage_id": "bdsg-30-neu#8",
+      "text_sha256": "4b30e25eff9ec5b27d006e658a52f06e66e6fbb0c27e9cbce529e193d40d105e",
+      "found": true
+    },
+    {
+      "passage_id": "bdsg-30-neu#9",
+      "text_sha256": "771479fcf3e55fcb59af960f14b0e8d5a66239d54f31b73106a36938fcd454bd",
+      "found": true
+    },
+    {
+      "passage_id": "bdsg-37a-neu#1",
+      "text_sha256": "45fd88a3ca7f2146e1ff6cc3190086609cfdb79b32c8ecbed11aedf7fefede00",
+      "found": true
+    },
+    {
+      "passage_id": "bdsg-37a-neu#2",
+      "text_sha256": "adf6625e7fde0dd8c268ee99315f004fcca9b95ed4f40a301e11fa99ece5a377",
+      "found": true
+    },
+    {
+      "passage_id": "bdsg-37a-neu#3",
+      "text_sha256": "83c155ce5dacf9d734f5a70700ef8b3d8120ba2cba4f85cb4db77640ff5784ba",
+      "found": true
+    },
+    {
+      "passage_id": "bdsg-37a-neu#4",
+      "text_sha256": "9add220e1b6437f2c63c12160cf99b7df8ab8f885125e47f6362f1a03d2c5178",
+      "found": true
+    },
+    {
+      "passage_id": "bdsg-37a-neu#5",
+      "text_sha256": "8fe439bc79b9c97674fdeceac1ca68be569d9ee9dfb815ded1747c4b34fe9ea9",
+      "found": true
+    },
+    {
+      "passage_id": "inkrafttreten#1",
+      "text_sha256": "7ab753b4afad7c9ad9cf41c51e55b192c12744930a97481bb158a84eef40c417",
+      "found": true
+    }
+  ]
+}

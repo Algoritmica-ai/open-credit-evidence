@@ -1,0 +1,31 @@
+{
+  "jurisdiction": "DE",
+  "product_type": "consumer_credit",
+  "customer_type": "consumer",
+  "lender_type": "bank",
+  "decision_mode": "assisted",
+  "uses_personal_data": true,
+  "uses_credit_database": true,
+  "uses_private_credit_bureau": true,
+  "uses_central_credit_register": false,
+  "adverse_decision": false,
+  "remote_onboarding": true,
+  "evidence": {
+    "creditworthiness_assessment": "artifact://case/assessment.json",
+    "decision_rationale": "artifact://case/decision-rationale.json",
+    "information_sources": "artifact://case/source-manifest.json",
+    "information_verification": "artifact://case/verification.json",
+    "scoring_method_validation": "model-risk://scorecards/consumer/validation-2026.pdf",
+    "scoring_data_inventory": "model-risk://scorecards/consumer/features.json",
+    "address_data_notice": "artifact://case/notices/address-data.pdf",
+    "special_category_exclusion": "model-risk://scorecards/consumer/features.json#excluded",
+    "human_intervention_route": "workflow://customer-rights/human-review",
+    "assessment_explanation": "artifact://case/explanation.pdf",
+    "automated_processing_rights_notice": "artifact://case/notices/automated-processing-rights.pdf",
+    "rejection_notice": "artifact://case/notices/rejection.pdf",
+    "debt_advice_referral": "artifact://case/notices/debt-advice.pdf",
+    "database_disclosure": "artifact://case/notices/database-disclosure.pdf",
+    "contest_route": "workflow://customer-rights/contest",
+    "scoring_disclosure_route": "workflow://customer-rights/score-disclosure"
+  }
+}

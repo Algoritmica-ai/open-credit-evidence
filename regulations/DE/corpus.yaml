@@ -1,0 +1,97 @@
+# The regulation corpus for Germany: the rules on the creditworthiness assessment for
+# consumer credit (BGB, KWG) and on scoring and credit reports (BDSG), in German, as
+# published. Two layers: the text in force today (gesetze-im-internet.de), and the new
+# provisions of the CCD2 transposition act (BGBl. 2026 I Nr. 139), in force from
+# 20 November 2026 - quoted where the act gives whole new text; single-word amendments
+# are not consolidated. Built with `evidence corpus build DE`; checked with
+# `evidence corpus verify-sources DE`. The official publications remain the canonical text.
+jurisdiction: DE
+title: Kreditwürdigkeitsprüfung, Auskunfteien und Scoring (BGB, KWG, BDSG) — geltend
+  und ab 20.11.2026
+verified: '2026-09-25'
+sources:
+- id: bgb-505a
+  file: sources/bgb-505a.md
+  citation: BGB § 505a
+  paragraph_citation: '{citation} Abs. {para}'
+  title: Pflicht zur Kreditwürdigkeitsprüfung bei Verbraucherdarlehensverträgen
+  in_force: geltend
+  url: https://www.gesetze-im-internet.de/bgb/__505a.html
+- id: bgb-505b
+  file: sources/bgb-505b.md
+  citation: BGB § 505b
+  paragraph_citation: '{citation} Abs. {para}'
+  title: Grundlage der Kreditwürdigkeitsprüfung bei Verbraucherdarlehensverträgen
+  in_force: geltend
+  url: https://www.gesetze-im-internet.de/bgb/__505b.html
+- id: bgb-505c
+  file: sources/bgb-505c.md
+  citation: BGB § 505c
+  paragraph_citation: '{citation} Abs. {para}'
+  title: Weitere Pflichten bei grundpfandrechtlich oder durch Reallast besicherten
+    Immobiliar-Verbraucherdarlehensverträgen
+  in_force: geltend
+  url: https://www.gesetze-im-internet.de/bgb/__505c.html
+- id: bgb-505d
+  file: sources/bgb-505d.md
+  citation: BGB § 505d
+  paragraph_citation: '{citation} Abs. {para}'
+  title: Verstoß gegen die Pflicht zur Kreditwürdigkeitsprüfung
+  in_force: geltend
+  url: https://www.gesetze-im-internet.de/bgb/__505d.html
+- id: kwg-18a
+  file: sources/kwg-18a.md
+  citation: KWG § 18a
+  paragraph_citation: '{citation} Abs. {para}'
+  title: Verbraucherdarlehen und entgeltliche Finanzierungshilfen; Verordnungsermächtigung
+  in_force: geltend
+  url: https://www.gesetze-im-internet.de/kredwg/__18a.html
+- id: bdsg-31
+  file: sources/bdsg-31.md
+  citation: BDSG § 31
+  paragraph_citation: '{citation} Abs. {para}'
+  title: Schutz des Wirtschaftsverkehrs bei Scoring und Bonitätsauskünften
+  in_force: bis 19.11.2026
+  url: https://www.gesetze-im-internet.de/bdsg_2018/__31.html
+- id: kwg-18a-neu
+  file: sources/kwg-18a-neu.md
+  citation: KWG § 18a n.F.
+  paragraph_citation: '{citation} Abs. {para}'
+  title: Verbraucherdarlehen und Finanzierungshilfen; Verordnungsermächtigung
+  in_force: ab 20.11.2026
+  url: https://www.recht.bund.de/eli/bund/bgbl-1/2026/139
+- id: bgb-505b-neu
+  file: sources/bgb-505b-neu.md
+  citation: BGB § 505b n.F.
+  paragraph_citation: '{citation} Abs. {para}'
+  title: Grundlage der Kreditwürdigkeitsprüfung (Abs. 1 und 2 neu)
+  in_force: ab 20.11.2026
+  url: https://www.recht.bund.de/eli/bund/bgbl-1/2026/139
+- id: bgb-505a-neu
+  file: sources/bgb-505a-neu.md
+  citation: BGB § 505a Abs. 1 Satz 3 n.F.
+  paragraph_citation: '{citation}'
+  title: Mitteilung der Ablehnung (neuer Satz)
+  in_force: ab 20.11.2026
+  url: https://www.recht.bund.de/eli/bund/bgbl-1/2026/139
+- id: bdsg-30-neu
+  file: sources/bdsg-30-neu.md
+  citation: BDSG § 30 n.F.
+  paragraph_citation: '{citation} Abs. {para}'
+  title: Auskunfteien, Datenbanken, Eingreifen einer Person (Abs. 2 bis 9 neu)
+  in_force: ab 20.11.2026
+  url: https://www.recht.bund.de/eli/bund/bgbl-1/2026/139
+- id: bdsg-37a-neu
+  file: sources/bdsg-37a-neu.md
+  citation: BDSG § 37a
+  paragraph_citation: '{citation} Abs. {para}'
+  title: Scoring
+  in_force: ab 20.11.2026
+  url: https://www.recht.bund.de/eli/bund/bgbl-1/2026/139
+- id: inkrafttreten
+  file: sources/inkrafttreten.md
+  citation: Gesetz zur Umsetzung der Richtlinie (EU) 2023/2225, Art. 16
+  paragraph_citation: '{citation} Abs. {para}'
+  title: Inkrafttreten
+  in_force: ab 20.11.2026
+  url: https://www.recht.bund.de/eli/bund/bgbl-1/2026/139

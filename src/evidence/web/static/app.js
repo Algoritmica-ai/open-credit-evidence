@@ -255,7 +255,7 @@ $("case-to-run").addEventListener("click", () => show("run"));
 
 /* ------------------------------------------------- mark by hand (control) */
 
-function num(doc, label) { const m = doc.match(new RegExp(label + "\\s*\\|\\s*£?([\\d,]+)")); return m ? m[1].replace(/,/g, "") : null; }
+function num(doc, label) { const m = doc.match(new RegExp(label + "\\s*\\|\\s*[£€]?([\\d,]+)")); return m ? m[1].replace(/,/g, "") : null; }
 function fillGate(kind) {
   const d = state.caseData; if (!d) return;
   const app = d.documents.find((x) => x.renderer === "application_form")?.content || "";
@@ -263,9 +263,10 @@ function fillGate(kind) {
   const inst = +num(app, "Indicative monthly instalment"), comm = +num(app, "Existing monthly credit commitments"), inc = +num(app, "Gross annual income");
   const score = (bureau.match(/\*\*(\d{3})\*\*/) || [])[1] || "?";
   const mi = inc / 12, ds = inst + comm, ratio = ((ds / mi) * 100).toFixed(1);
+  const cur = /€/.test(app) ? "€" : "£";  // the case file's currency
   $("gate-text").value = kind === "good"
-    ? `Referred because total monthly debt service exceeds the 40% policy limit. Debt service is £${ds} (£${comm} existing commitments plus the £${inst} instalment) against gross monthly income of £${Math.round(mi).toLocaleString()}, a ratio of ${ratio}%. Bureau score ${score}, no missed payments in 24 months. Additional verified income, or a smaller amount over a longer term, would bring the ratio under 40%.`
-    : `The applicant has an excellent bureau score of ${score} and a clean payment record. Income is £${inc.toLocaleString()} a year. The level of existing credit is on the high side and worth a look, and the ${d.decoys.includes("age_band") ? "age band and " : ""}number of dependants may be a concern. Recommend review.`;
+    ? `Referred because total monthly debt service exceeds the 40% policy limit. Debt service is ${cur}${ds} (${cur}${comm} existing commitments plus the ${cur}${inst} instalment) against gross monthly income of ${cur}${Math.round(mi).toLocaleString()}, a ratio of ${ratio}%. Bureau score ${score}, no missed payments in 24 months. Additional verified income, or a smaller amount over a longer term, would bring the ratio under 40%.`
+    : `The applicant has an excellent bureau score of ${score} and a clean payment record. Income is ${cur}${inc.toLocaleString()} a year. The level of existing credit is on the high side and worth a look, and the ${d.decoys.includes("age_band") ? "age band and " : ""}number of dependants may be a concern. Recommend review.`;
 }
 $("gate-fill-good").addEventListener("click", () => fillGate("good"));
 $("gate-fill-bad").addEventListener("click", () => fillGate("bad"));
