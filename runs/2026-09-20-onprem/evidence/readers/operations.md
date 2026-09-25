@@ -24,13 +24,13 @@ The assistant compared a figure with a policy threshold and got the direction wr
 
 **What to do:** When a briefing says a figure is above or below a limit, compare the two numbers yourself.
 
-## Irrelevant field blamed — 14 of 60 briefings
+## Irrelevant field blamed — 9 of 60 briefings
 
 The assistant blamed a field that has no bearing on the outcome.
 
-> Specifically, the applicant’s debt-to-income ratio exceeds the policy threshold of 40%, and the applicant falls within the "thin file" category due to the age of their credit file.
+> Although 44 months exceeds the "thin file" limit of 24 months, the young age combined with the "self_employed" employment type may be contributing factors.
 
-— case APP000028, repeat 1
+— case APP000028, repeat 2
 
 **What to do:** Disregard reasoning that rests on age band, dependants, loan purpose. The lending policy does not use them.
 

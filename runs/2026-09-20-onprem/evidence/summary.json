@@ -45,21 +45,18 @@
     "decoy_citation": {
       "results": 60,
       "items": 20,
-      "passed": 46,
-      "failed": 14,
-      "needs_audit": 25,
-      "mean_value": 0.953,
+      "passed": 51,
+      "failed": 9,
+      "needs_audit": 17,
+      "mean_value": 0.972,
       "failing_items": [
         "underwriter-sample:case_review:APP000028:complete",
         "underwriter-sample:case_review:APP000037:complete",
         "underwriter-sample:case_review:APP000044:complete",
-        "underwriter-sample:case_review:APP000107:complete",
         "underwriter-sample:case_review:APP000155:complete",
         "underwriter-sample:case_review:APP000172:complete",
         "underwriter-sample:case_review:APP000185:complete",
-        "underwriter-sample:case_review:APP000522:complete",
-        "underwriter-sample:case_review:APP000543:complete",
-        "underwriter-sample:case_review:APP000684:complete"
+        "underwriter-sample:case_review:APP000543:complete"
       ],
       "gated": true
     },
@@ -158,18 +155,16 @@
     },
     "decoy_citation": {
       "items": 20,
-      "stable": 11,
-      "agreement": 0.55,
+      "stable": 13,
+      "agreement": 0.65,
       "flipping_items": [
+        "underwriter-sample:case_review:APP000028:complete",
         "underwriter-sample:case_review:APP000037:complete",
         "underwriter-sample:case_review:APP000044:complete",
-        "underwriter-sample:case_review:APP000107:complete",
         "underwriter-sample:case_review:APP000155:complete",
         "underwriter-sample:case_review:APP000172:complete",
         "underwriter-sample:case_review:APP000185:complete",
-        "underwriter-sample:case_review:APP000522:complete",
-        "underwriter-sample:case_review:APP000543:complete",
-        "underwriter-sample:case_review:APP000684:complete"
+        "underwriter-sample:case_review:APP000543:complete"
       ]
     },
     "flip_accuracy": {
@@ -286,7 +281,7 @@
     {
       "item_id": "underwriter-sample:case_review:APP000028:complete",
       "check": "decoy_citation",
-      "repeats_failed": 3,
+      "repeats_failed": 2,
       "detail": "cited 1 decoy field(s) as a factor: ['age_band']"
     },
     {
@@ -299,19 +294,13 @@
       "item_id": "underwriter-sample:case_review:APP000044:complete",
       "check": "decoy_citation",
       "repeats_failed": 1,
-      "detail": "cited 2 decoy field(s) as a factor: ['age_band', 'purpose']"
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000107:complete",
-      "check": "decoy_citation",
-      "repeats_failed": 2,
-      "detail": "cited 1 decoy field(s) as a factor: ['age_band']"
+      "detail": "cited 1 decoy field(s) as a factor: ['purpose']"
     },
     {
       "item_id": "underwriter-sample:case_review:APP000155:complete",
       "check": "decoy_citation",
       "repeats_failed": 1,
-      "detail": "cited 2 decoy field(s) as a factor: ['age_band', 'dependants']"
+      "detail": "cited 1 decoy field(s) as a factor: ['dependants']"
     },
     {
       "item_id": "underwriter-sample:case_review:APP000172:complete",
@@ -326,19 +315,7 @@
       "detail": "cited 2 decoy field(s) as a factor: ['age_band', 'purpose']"
     },
     {
-      "item_id": "underwriter-sample:case_review:APP000522:complete",
-      "check": "decoy_citation",
-      "repeats_failed": 1,
-      "detail": "cited 1 decoy field(s) as a factor: ['age_band']"
-    },
-    {
       "item_id": "underwriter-sample:case_review:APP000543:complete",
-      "check": "decoy_citation",
-      "repeats_failed": 1,
-      "detail": "cited 1 decoy field(s) as a factor: ['age_band']"
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000684:complete",
       "check": "decoy_citation",
       "repeats_failed": 1,
       "detail": "cited 1 decoy field(s) as a factor: ['age_band']"
@@ -534,21 +511,18 @@
           "result": {
             "results": 60,
             "items": 20,
-            "passed": 46,
-            "failed": 14,
-            "needs_audit": 25,
-            "mean_value": 0.953,
+            "passed": 51,
+            "failed": 9,
+            "needs_audit": 17,
+            "mean_value": 0.972,
             "failing_items": [
               "underwriter-sample:case_review:APP000028:complete",
               "underwriter-sample:case_review:APP000037:complete",
               "underwriter-sample:case_review:APP000044:complete",
-              "underwriter-sample:case_review:APP000107:complete",
               "underwriter-sample:case_review:APP000155:complete",
               "underwriter-sample:case_review:APP000172:complete",
               "underwriter-sample:case_review:APP000185:complete",
-              "underwriter-sample:case_review:APP000522:complete",
-              "underwriter-sample:case_review:APP000543:complete",
-              "underwriter-sample:case_review:APP000684:complete"
+              "underwriter-sample:case_review:APP000543:complete"
             ],
             "gated": true
           }

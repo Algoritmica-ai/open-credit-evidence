@@ -1,5 +1,5 @@
 {
-  "failures": 64,
+  "failures": 53,
   "causes": [
     {
       "cause": "miscalculated",
@@ -21,9 +21,9 @@
       "lever": "instructions",
       "owner": "bank",
       "why": "The assistant blamed a field that has no bearing on the outcome.",
-      "briefings": 25,
-      "results": 25,
-      "items": 16,
+      "briefings": 14,
+      "results": 14,
+      "items": 10,
       "checks": [
         "decoy_citation"
       ]
@@ -85,22 +85,6 @@
     },
     {
       "item_id": "underwriter-de:case_review:APP000028:complete",
-      "repeat": 0,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "Specifically, the applicant\u2019s total monthly debt service exceeds the 40% affordability threshold, and the applicant falls within the \"thin file\" category due to a credit file age of 44 months (under 24 months is the policy limit, though this file is older, the score and history rules still apply)."
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-de:case_review:APP000028:complete",
       "repeat": 1,
       "check": "numeric_fidelity",
       "cause": "miscalculated",
@@ -126,7 +110,7 @@
           "age_band"
         ],
         "sentences": [
-          "Additionally, the applicant falls within the \"thin file\" category due to a credit file age of 44 months (under 24 months is the policy limit, though this file is older, the score and income verification status are the primary drivers for review)."
+          "*   **Age Band:** The applicant is in the 18-24 age band, which, combined with the thin file criteria and self-employment, presents a higher risk profile."
         ]
       }
     },
@@ -155,7 +139,7 @@
           "age_band"
         ],
         "sentences": [
-          "Specifically, the applicant\u2019s total monthly debt service exceeds the 40% affordability threshold, and the applicant falls within the \"thin file\" category due to a credit file age of 44 months (under 24 months is the policy limit, though this file is older, the initial risk assessment requires manual intervention due to the affordability breach)."
+          "*   **Stable Employment:** The applicant has been with their current employer, Kessler Handel GmbH, for 137 months (over 11 years), demonstrating significant stability despite the young age."
         ]
       }
     },
@@ -172,22 +156,6 @@
           "\u20ac888",
           "\u20ac2,229",
           "\u20ac228"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-de:case_review:APP000039:complete",
-      "repeat": 0,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "**File Age:** The credit file would need to be older than 24 months to be considered a \"thick file.\""
         ]
       }
     },
@@ -292,22 +260,6 @@
       }
     },
     {
-      "item_id": "underwriter-de:case_review:APP000044:complete",
-      "repeat": 2,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "While not \"thin\" by the policy's under-24-month definition, the relatively low number of accounts (5) and the age of the file may be relevant to the underwriter's assessment of stability."
-        ]
-      }
-    },
-    {
       "item_id": "underwriter-de:case_review:APP000045:complete",
       "repeat": 1,
       "check": "numeric_fidelity",
@@ -399,22 +351,6 @@
     },
     {
       "item_id": "underwriter-de:case_review:APP000107:complete",
-      "repeat": 1,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "**File Age:** The credit file would need to age beyond 24 months to no longer be considered \"thin.\""
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-de:case_review:APP000107:complete",
       "repeat": 2,
       "check": "comparison_fidelity",
       "cause": "misread_threshold",
@@ -470,22 +406,6 @@
       }
     },
     {
-      "item_id": "underwriter-de:case_review:APP000120:complete",
-      "repeat": 2,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "*   **File Age:** 14 months (Within the \"thin file\" definition of under 24 months, but the score mitigates this)."
-        ]
-      }
-    },
-    {
       "item_id": "underwriter-de:case_review:APP000155:complete",
       "repeat": 0,
       "check": "numeric_fidelity",
@@ -511,22 +431,6 @@
         ],
         "sentences": [
           "While this is not \"under 24 months,\" the applicant is in the 18-24 age band, which often correlates with thinner files or shorter credit histories in underwriting considerations."
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-de:case_review:APP000155:complete",
-      "repeat": 1,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "*   **Credit File Age:** The credit file opened in April 2017 (119 months ago), which is not considered a \"thin file\" under policy."
         ]
       }
     },
@@ -719,38 +623,6 @@
     },
     {
       "item_id": "underwriter-de:case_review:APP000448:complete",
-      "repeat": 0,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "*   **File Age:** The credit file opened in May 2023 (46 months ago), which is not considered \"thin\" under the under 24-month rule, but the recent delinquency is a concern."
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-de:case_review:APP000448:complete",
-      "repeat": 1,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "*   **File Age:** The credit file is 46 months old, which is sufficient and not considered \"thin.\""
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-de:case_review:APP000448:complete",
       "repeat": 2,
       "check": "numeric_fidelity",
       "cause": "miscalculated",
@@ -785,22 +657,6 @@
       "detail": {
         "false_comparisons": [
           "624 < 600"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-de:case_review:APP000454:complete",
-      "repeat": 2,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "Additionally, the applicant's credit file age of 58 months falls within the \"thin file\" category (under 24 months is considered thin, but 58 months is established, though the low score of 624 is the primary driver for review)."
         ]
       }
     },
@@ -961,22 +817,6 @@
       }
     },
     {
-      "item_id": "underwriter-de:case_review:APP000588:complete",
-      "repeat": 2,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "The underwriter should weigh the strong employment stability and clean payment history against the low bureau score and young file age."
-        ]
-      }
-    },
-    {
       "item_id": "underwriter-de:case_review:APP000678:complete",
       "repeat": 0,
       "check": "numeric_fidelity",
@@ -987,22 +827,6 @@
         "figures_not_in_file": [
           "40.1%",
           "\u20ac2,004"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-de:case_review:APP000684:complete",
-      "repeat": 0,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "While not \"under 24 months,\" the score of 549 suggests a limited or troubled credit history despite the file age."
         ]
       }
     }

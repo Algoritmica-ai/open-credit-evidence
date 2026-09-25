@@ -13,7 +13,7 @@ Assistant `nvidia/nemotron-3.5-lightning-30b-a3b` (cloud) · 60 briefings: 20 re
 - **Hand the assistant the figures your systems already computed** — 26 briefings. The bank will first pass in the figures the rules engine already computed — the debt-to-income ratio and the limit it breaches — instead of relying on the model's arithmetic. If wrong figures persist once the correct ones are in front of it, that is the vendor's to fix.
 - **Hand the assistant the rules the case breached** — 10 briefings. The bank will first pass in the list of policy rules the case breached, as the rules engine decided them, so the assistant reports them instead of comparing figures with thresholds itself. If it still states a comparison the wrong way round, that is the vendor's to fix.
 
-## Every failing result (64)
+## Every failing result (63)
 
 | case | repeat | check | detail | transcript |
 |---|---|---|---|---|
@@ -30,7 +30,6 @@ Assistant `nvidia/nemotron-3.5-lightning-30b-a3b` (cloud) · 60 briefings: 20 re
 | APP000448 | 3 | `comparison_fidelity` | 1/3 stated comparison(s) false: ['670 below 600'] | `transcripts/underwriter-sample_case_review_APP000448_complete-r2.json` |
 | APP000028 | 2 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-sample_case_review_APP000028_complete-r1.json` |
 | APP000028 | 3 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-sample_case_review_APP000028_complete-r2.json` |
-| APP000039 | 1 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-sample_case_review_APP000039_complete-r0.json` |
 | APP000044 | 1 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['dependants'] | `transcripts/underwriter-sample_case_review_APP000044_complete-r0.json` |
 | APP000044 | 3 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-sample_case_review_APP000044_complete-r2.json` |
 | APP000107 | 1 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['dependants'] | `transcripts/underwriter-sample_case_review_APP000107_complete-r0.json` |
@@ -88,7 +87,7 @@ Each case ran 3 times with the same prompt, temperature 0.0 and seed 7. Cases wh
 
 - `material_omission`: 5 of 20 cases — APP000028, APP000120, APP000407, APP000454, APP000522
 - `numeric_fidelity`: 13 of 20 cases — APP000039, APP000044, APP000059, APP000120, APP000155, APP000172, APP000323, APP000407, APP000448, APP000454, APP000543, APP000588, APP000678
-- `decoy_citation`: 9 of 20 cases — APP000028, APP000039, APP000044, APP000107, APP000155, APP000185, APP000323, APP000522, APP000543
+- `decoy_citation`: 8 of 20 cases — APP000028, APP000044, APP000107, APP000155, APP000185, APP000323, APP000522, APP000543
 - `flip_accuracy`: 7 of 20 cases — APP000037, APP000059, APP000120, APP000454, APP000522, APP000588, APP000684
 - `comparison_fidelity`: 1 of 20 cases — APP000448
 - `claim_consistency`: 4 of 20 cases — APP000028, APP000107, APP000454, APP000588

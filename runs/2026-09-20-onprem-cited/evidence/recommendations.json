@@ -57,16 +57,16 @@
     "why": "The assistant blamed a field that has no bearing on the outcome.",
     "action": "Add to the assistant's instructions: \"Do not cite age band, dependants, purpose as reasons; under the policy they have no bearing on the outcome.\"",
     "addresses": {
-      "briefings": 14,
-      "results": 14,
-      "items": 10,
+      "briefings": 9,
+      "results": 9,
+      "items": 7,
       "checks": [
         "decoy_citation"
       ]
     },
     "example": {
       "item_id": "underwriter-sample:case_review:APP000028:complete",
-      "repeat": 0
+      "repeat": 1
     },
     "prove_it": "Run the pack again with the change, then compare the two runs (Compare step, or `evidence compare <before> <after>`). Accept it only if it helps and nothing else gets worse."
   },

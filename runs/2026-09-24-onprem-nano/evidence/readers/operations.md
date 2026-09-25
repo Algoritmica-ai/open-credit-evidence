@@ -24,7 +24,7 @@ The assistant compared a figure with a policy threshold and got the direction wr
 
 **What to do:** When a briefing says a figure is above or below a limit, compare the two numbers yourself.
 
-## Irrelevant field blamed — 12 of 60 briefings
+## Irrelevant field blamed — 10 of 60 briefings
 
 The assistant blamed a field that has no bearing on the outcome.
 

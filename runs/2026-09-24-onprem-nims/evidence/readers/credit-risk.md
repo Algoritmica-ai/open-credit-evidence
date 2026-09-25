@@ -46,7 +46,7 @@ Pass rate over briefings, with a 95% interval computed over cases: repeats of on
 |---|---|---|---|---|---|
 | `material_omission` | 59/60 | 98% | 95% – 100% | 95% | GO |
 | `numeric_fidelity` | 32/60 | 53% | 36% – 71% | 98% | NO-GO |
-| `decoy_citation` | 48/60 | 80% | 67% – 93% | 95% | NO-GO |
+| `decoy_citation` | 52/60 | 87% | 75% – 99% | 95% | CONDITIONAL |
 | `flip_accuracy` | 56/60 | 93% | 86% – 100% | 90% | GO |
 | `comparison_fidelity` | 54/60 | 90% | 83% – 97% | 98% | CONDITIONAL |
 | `claim_consistency` | 50/60 | 83% | 72% – 94% | 98% | NO-GO |
@@ -56,7 +56,8 @@ Judge `readability` (`nano-judge`): mean 0.981 on 0–1 over 60 briefings; cited
 Conditions:
 
 - numeric_fidelity: the same case got different verdicts across repeats for 45% of cases (limit 10%).
-- decoy_citation: the same case got different verdicts across repeats for 35% of cases (limit 10%).
+- decoy_citation: pass rate 87% is below the GO threshold of 95%.
+- decoy_citation: the same case got different verdicts across repeats for 20% of cases (limit 10%).
 - flip_accuracy: the same case got different verdicts across repeats for 15% of cases (limit 10%).
 - comparison_fidelity: pass rate 90% is below the GO threshold of 98%.
 - comparison_fidelity: the same case got different verdicts across repeats for 30% of cases (limit 10%).
@@ -70,7 +71,7 @@ The share of cases whose verdict was the same in all 3 repeats. A check a case p
 |---|---|---|
 | `material_omission` | 19/20 | APP000454 |
 | `numeric_fidelity` | 11/20 | APP000037, APP000045, APP000059, APP000107, APP000120, APP000155, APP000172, APP000185, APP000678 |
-| `decoy_citation` | 13/20 | APP000044, APP000059, APP000107, APP000407, APP000448, APP000543, APP000588 |
+| `decoy_citation` | 16/20 | APP000044, APP000448, APP000543, APP000588 |
 | `flip_accuracy` | 17/20 | APP000039, APP000588, APP000684 |
 | `comparison_fidelity` | 14/20 | APP000028, APP000172, APP000407, APP000454, APP000543, APP000588 |
 | `claim_consistency` | 13/20 | APP000028, APP000039, APP000059, APP000107, APP000155, APP000185, APP000588 |
@@ -83,7 +84,7 @@ A cause for every failing result, by fixed rules — no model. One cause on one 
 |---|---|---|---|---|---|
 | Figure worked out wrongly | 28 | 28 | 14 | context | bank |
 | Threshold stated the wrong way round | 14 | 16 | 11 | context | bank |
-| Irrelevant field blamed | 12 | 12 | 8 | instructions | bank |
+| Irrelevant field blamed | 8 | 8 | 5 | instructions | bank |
 | Wrong or no way to change the outcome | 4 | 4 | 3 | template | bank |
 | Fact in front of it, left out | 1 | 1 | 1 | instructions | bank |
 

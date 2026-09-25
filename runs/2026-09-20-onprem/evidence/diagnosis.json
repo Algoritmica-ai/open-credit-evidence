@@ -1,5 +1,5 @@
 {
-  "failures": 69,
+  "failures": 64,
   "causes": [
     {
       "cause": "miscalculated",
@@ -35,9 +35,9 @@
       "lever": "instructions",
       "owner": "bank",
       "why": "The assistant blamed a field that has no bearing on the outcome.",
-      "briefings": 14,
-      "results": 14,
-      "items": 10,
+      "briefings": 9,
+      "results": 9,
+      "items": 7,
       "checks": [
         "decoy_citation"
       ]
@@ -57,22 +57,6 @@
     }
   ],
   "records": [
-    {
-      "item_id": "underwriter-sample:case_review:APP000028:complete",
-      "repeat": 0,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "Specifically, the applicant\u2019s debt-to-income ratio exceeds the policy threshold of 40%, and the applicant falls within the \"thin file\" category due to the age of their credit file."
-        ]
-      }
-    },
     {
       "item_id": "underwriter-sample:case_review:APP000028:complete",
       "repeat": 1,
@@ -280,11 +264,9 @@
       "owner": "bank",
       "detail": {
         "decoys": [
-          "age_band",
           "purpose"
         ],
         "sentences": [
-          "While this is not \"thin\" (under 24 months), the age of the file combined with the affordability breach contributes to the need for manual review.",
           "*   **Clear Purpose:** The stated purpose is debt consolidation, which typically aims to improve financial stability."
         ]
       }
@@ -372,38 +354,6 @@
     },
     {
       "item_id": "underwriter-sample:case_review:APP000107:complete",
-      "repeat": 0,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "While this is *below* the 40% threshold, the system flagged the file for review likely due to the combination of the thin file age and delinquencies."
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000107:complete",
-      "repeat": 1,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "**File Age:** The credit file would need to be established for at least 24 months to be considered a \"thick file.\""
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000107:complete",
       "repeat": 2,
       "check": "claim_consistency",
       "cause": "misread_threshold",
@@ -476,11 +426,9 @@
       "owner": "bank",
       "detail": {
         "decoys": [
-          "age_band",
           "dependants"
         ],
         "sentences": [
-          "While this exceeds the \"thin file\" threshold of 24 months, the age of the file combined with the delinquency may be considered.",
           "*   **Low Dependants:** The applicant has no dependants, which supports affordability."
         ]
       }
@@ -769,22 +717,6 @@
       }
     },
     {
-      "item_id": "underwriter-sample:case_review:APP000522:complete",
-      "repeat": 2,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "**Credit History:** The applicant would need to demonstrate a period of clean payment behaviour (no missed payments) for at least 12 months to satisfy the \"missed payment within last 12 months\" review requirement, though the underwriter may use discretion given the age of the file and other positive factors."
-        ]
-      }
-    },
-    {
       "item_id": "underwriter-sample:case_review:APP000543:complete",
       "repeat": 0,
       "check": "numeric_fidelity",
@@ -998,22 +930,6 @@
       "detail": {
         "figures_not_in_file": [
           "3.72%"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000684:complete",
-      "repeat": 2,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "*   **File Age:** The credit file is mature (88 months), which is positive despite the low score."
         ]
       }
     },

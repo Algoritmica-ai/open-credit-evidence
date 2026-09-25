@@ -38,21 +38,21 @@
   "judge_mean_value": 0.981,
   "flagged": 46,
   "with_failing_checks": {
-    "briefings": 46,
-    "flagged": 44,
-    "judge_full_marks": 42,
-    "panel_full_marks": 4,
-    "judge_full_marks_panel_flagged": 40
+    "briefings": 45,
+    "flagged": 43,
+    "judge_full_marks": 41,
+    "panel_full_marks": 3,
+    "judge_full_marks_panel_flagged": 39
   },
   "without_failing_checks": {
-    "briefings": 14,
-    "flagged": 2
+    "briefings": 15,
+    "flagged": 3
   },
   "challenger": {
     "findings": 83,
     "material_findings": 70,
     "failing_checks_confirmed": 0,
-    "failing_checks": 61,
+    "failing_checks": 57,
     "checks_disputed": {
       "claim_consistency": 2
     },

@@ -13,6 +13,11 @@ carries a reasoning cue ("against", "risk", "concern", "because", "given",
 "factor", "supports", "weighs", …). A bare mention without a cue is recorded
 as a mention and sets ``needs_audit`` so a reviewer can see it, but does not
 fail the check. The check passes only when no decoy is cited.
+
+An alias does not count where it names the age of a record rather than of a
+person: "file age", "the age of the credit file", "account age", "the file
+would need to age beyond 24 months". How long a file or account has existed is
+a policy driver in its own right (a thin file), not the applicant's age band.
 """
 
 from __future__ import annotations
@@ -32,6 +37,19 @@ _CUES = re.compile(
     re.I,
 )
 
+# The age of a record, not of a person. Blanked out before aliases are matched.
+_RECORD = r"(?:credit\s+|bureau\s+)?(?:file|account|history|record|trade\s*line)s?"
+_RECORD_AGE = re.compile(
+    rf"\b{_RECORD}\s+age\b"  # file age, credit file age, account age
+    rf"|\bage\s+of\s+(?:[\w'’-]+\s+){{0,3}}?{_RECORD}\b"  # the age of the (credit) file
+    r"|\bto\s+age\s+(?:beyond|past)\b",  # the file would need to age beyond 24 months
+    re.I,
+)
+
+
+def _mask_record_age(sentence: str) -> str:
+    return _RECORD_AGE.sub(lambda m: " " * len(m.group()), sentence)
+
 
 def _sentences(text: str) -> list[str]:
     parts = re.split(r"(?<=[.!?])\s+|\n+", text)
@@ -48,16 +66,16 @@ def decoy_citation(*, output: str, item: BenchmarkItem, **_: Any) -> CheckResult
             name="decoy_citation", passed=True, score=1.0, detail="no decoys declared"
         )
 
-    sentences = _sentences(output)
+    sentences = [(s, _mask_record_age(s).lower()) for s in _sentences(output)]
     evidence: list[dict[str, Any]] = []
     cited: list[str] = []
     mentioned: list[str] = []
     for ref, aliases in decoys.items():
         hits = [
             (alias, s)
-            for s in sentences
+            for s, masked in sentences
             for alias in aliases
-            if re.search(rf"\b{re.escape(alias.lower())}\b", s.lower())
+            if re.search(rf"\b{re.escape(alias.lower())}\b", masked)
         ]
         if not hits:
             evidence.append({"ref": ref, "cited": False, "mentioned": False})

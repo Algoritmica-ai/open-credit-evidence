@@ -14,16 +14,6 @@ The assistant worked a figure out itself and got it wrong.
 
 **What to do:** Check any ratio or amount the briefing works out against the application form before relying on it. The briefing's own arithmetic is where it is most often wrong.
 
-## Irrelevant field blamed — 11 of 60 briefings
-
-The assistant blamed a field that has no bearing on the outcome.
-
-> Specifically, the applicant’s total monthly debt service exceeds the 40% affordability threshold, and the applicant falls within the "thin file" category due to a credit file age of 44 months (just over the 24-month limit, but the automated system has flagged the profile for review).
-
-— case APP000028, repeat 2
-
-**What to do:** Disregard reasoning that rests on age band, dependants. The lending policy does not use them.
-
 ## Threshold stated the wrong way round — 10 of 60 briefings
 
 The assistant compared a figure with a policy threshold and got the direction wrong, or said a limit was breached when its own figure says it was not.
@@ -33,6 +23,16 @@ The assistant compared a figure with a policy threshold and got the direction wr
 — case APP000107, repeat 1
 
 **What to do:** When a briefing says a figure is above or below a limit, compare the two numbers yourself.
+
+## Irrelevant field blamed — 10 of 60 briefings
+
+The assistant blamed a field that has no bearing on the outcome.
+
+> *   The applicant has been in their current role (Northgate Retail) for 137 months (over 11 years), indicating stability despite the young age.
+
+— case APP000028, repeat 2
+
+**What to do:** Disregard reasoning that rests on age band, dependants. The lending policy does not use them.
 
 ## Wrong or no way to change the outcome — 9 of 60 briefings
 

@@ -1,5 +1,5 @@
 {
-  "failures": 64,
+  "failures": 63,
   "causes": [
     {
       "cause": "miscalculated",
@@ -16,19 +16,6 @@
       ]
     },
     {
-      "cause": "decoy_blamed",
-      "label": "Irrelevant field blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "why": "The assistant blamed a field that has no bearing on the outcome.",
-      "briefings": 11,
-      "results": 11,
-      "items": 9,
-      "checks": [
-        "decoy_citation"
-      ]
-    },
-    {
       "cause": "misread_threshold",
       "label": "Threshold stated the wrong way round",
       "lever": "context",
@@ -40,6 +27,19 @@
       "checks": [
         "claim_consistency",
         "comparison_fidelity"
+      ]
+    },
+    {
+      "cause": "decoy_blamed",
+      "label": "Irrelevant field blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "why": "The assistant blamed a field that has no bearing on the outcome.",
+      "briefings": 10,
+      "results": 10,
+      "items": 8,
+      "checks": [
+        "decoy_citation"
       ]
     },
     {
@@ -108,7 +108,7 @@
           "age_band"
         ],
         "sentences": [
-          "Specifically, the applicant\u2019s total monthly debt service exceeds the 40% affordability threshold, and the applicant falls within the \"thin file\" category due to a credit file age of 44 months (just over the 24-month limit, but the automated system has flagged the profile for review)."
+          "*   The applicant has been in their current role (Northgate Retail) for 137 months (over 11 years), indicating stability despite the young age."
         ]
       }
     },
@@ -154,22 +154,6 @@
       "detail": {
         "figures_not_in_file": [
           "13.5"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000039:complete",
-      "repeat": 0,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "*   **Credit File Age:** 18 months (Considered a \"thin file\" as it is under 24 months)."
         ]
       }
     },
@@ -399,7 +383,7 @@
           "age_band"
         ],
         "sentences": [
-          "Additionally, the applicant's bureau score of 688, while above the 600 trigger point, falls within a zone requiring closer inspection given the age of the credit file and the presence of a delinquency."
+          "While this is not \"under 24 months,\" the single delinquency on a file of this age is a relevant factor for the underwriter."
         ]
       }
     },

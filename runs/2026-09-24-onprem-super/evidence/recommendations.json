@@ -56,9 +56,9 @@
     "why": "The assistant blamed a field that has no bearing on the outcome.",
     "action": "Add to the assistant's instructions: \"Do not cite age band, dependants, purpose as reasons; under the policy they have no bearing on the outcome.\"",
     "addresses": {
-      "briefings": 12,
-      "results": 12,
-      "items": 8,
+      "briefings": 8,
+      "results": 8,
+      "items": 5,
       "checks": [
         "decoy_citation"
       ]

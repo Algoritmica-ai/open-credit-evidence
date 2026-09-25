@@ -45,7 +45,7 @@ Pass rate over briefings, with a 95% interval computed over cases: repeats of on
 |---|---|---|---|---|---|
 | `material_omission` | 60/60 | 100% | 100% – 100% | 95% | GO |
 | `numeric_fidelity` | 30/60 | 50% | 37% – 63% | 98% | NO-GO |
-| `decoy_citation` | 49/60 | 82% | 71% – 93% | 95% | NO-GO |
+| `decoy_citation` | 52/60 | 87% | 77% – 97% | 95% | CONDITIONAL |
 | `flip_accuracy` | 58/60 | 97% | 90% – 100% | 90% | GO |
 | `comparison_fidelity` | 59/60 | 98% | 95% – 100% | 98% | GO |
 | `claim_consistency` | 45/60 | 75% | 63% – 87% | — | no threshold |
@@ -55,7 +55,8 @@ Judge `readability` (`nano-judge`): mean 0.983 on 0–1 over 60 briefings; cited
 Conditions:
 
 - numeric_fidelity: the same case got different verdicts across repeats for 75% of cases (limit 10%).
-- decoy_citation: the same case got different verdicts across repeats for 40% of cases (limit 10%).
+- decoy_citation: pass rate 87% is below the GO threshold of 95%.
+- decoy_citation: the same case got different verdicts across repeats for 30% of cases (limit 10%).
 - claim_consistency ran but has no threshold in thresholds.yaml, so it does not enter this decision.
 
 ## 4. Stability
@@ -66,7 +67,7 @@ The share of cases whose verdict was the same in all 3 repeats. A check a case p
 |---|---|---|
 | `material_omission` | 20/20 | — |
 | `numeric_fidelity` | 5/20 | APP000028, APP000037, APP000044, APP000059, APP000120, APP000155, APP000172, APP000185, APP000323, APP000407, APP000448, APP000454, APP000522, APP000543, APP000588 |
-| `decoy_citation` | 12/20 | APP000028, APP000037, APP000044, APP000045, APP000059, APP000107, APP000407, APP000522 |
+| `decoy_citation` | 14/20 | APP000028, APP000037, APP000044, APP000059, APP000407, APP000522 |
 | `flip_accuracy` | 19/20 | APP000684 |
 | `comparison_fidelity` | 19/20 | APP000543 |
 | `claim_consistency` | 10/20 | APP000039, APP000044, APP000059, APP000107, APP000155, APP000172, APP000407, APP000448, APP000588, APP000684 |
@@ -79,7 +80,7 @@ A cause for every failing result, by fixed rules — no model. One cause on one 
 |---|---|---|---|---|---|
 | Figure worked out wrongly | 30 | 30 | 17 | context | bank |
 | Threshold stated the wrong way round | 16 | 16 | 12 | context | bank |
-| Irrelevant field blamed | 11 | 11 | 8 | instructions | bank |
+| Irrelevant field blamed | 8 | 8 | 6 | instructions | bank |
 | Wrong or no way to change the outcome | 2 | 2 | 1 | template | bank |
 
 1. **Hand the assistant the figures your systems already computed** (context). Pass in the figures the rules engine already computed — the debt-to-income ratio and the limit it breaches — instead of relying on the model's arithmetic. If wrong figures persist once the correct ones are in front of it, that is the vendor's to fix.

@@ -10,12 +10,12 @@ Three agents reviewed each briefing: a **Reader** scored it as the underwriter w
 
 | | briefings | panel flagged | single judge full marks | panel full marks |
 |---|---|---|---|---|
-| failing at least one check | 46 | 45 | 44 | 4 |
-| failing none | 14 | 2 | — | — |
+| failing at least one check | 45 | 44 | 44 | 4 |
+| failing none | 15 | 3 | — | — |
 
 Of the briefings the single judge gave full marks despite a failing check, the panel flagged 43.
 
-The Challenger made 93 findings (80 material), with 8.3 tool calls per briefing on average, and confirmed 45 of the 61 failing check results from what it saw itself.
+The Challenger made 93 findings (80 material), with 8.3 tool calls per briefing on average, and confirmed 43 of the 57 failing check results from what it saw itself.
 It disputed checks it thought wrong — worth an auditor's look: `comparison_fidelity` 1×, `decoy_citation` 2×, `flip_accuracy` 1×, `material_omission` 1×, `numeric_fidelity` 3×.
 It confirmed or disputed a check without reading its evidence 83 times; those verdicts are not counted.
 

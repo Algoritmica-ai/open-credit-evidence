@@ -40,21 +40,21 @@
   "judge_mean_value": 0.992,
   "flagged": 46,
   "with_failing_checks": {
-    "briefings": 44,
-    "flagged": 40,
-    "judge_full_marks": 42,
-    "panel_full_marks": 8,
-    "judge_full_marks_panel_flagged": 38
+    "briefings": 38,
+    "flagged": 35,
+    "judge_full_marks": 36,
+    "panel_full_marks": 7,
+    "judge_full_marks_panel_flagged": 33
   },
   "without_failing_checks": {
-    "briefings": 16,
-    "flagged": 6
+    "briefings": 22,
+    "flagged": 11
   },
   "challenger": {
     "findings": 109,
     "material_findings": 82,
-    "failing_checks_confirmed": 46,
-    "failing_checks": 64,
+    "failing_checks_confirmed": 39,
+    "failing_checks": 53,
     "checks_disputed": {
       "claim_consistency": 4,
       "decoy_citation": 2,
@@ -78,7 +78,6 @@
       "item_id": "underwriter-de:case_review:APP000028:complete",
       "repeat": 0,
       "failing_checks": [
-        "decoy_citation",
         "material_omission"
       ],
       "panel_value": 0.333,
