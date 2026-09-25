@@ -26,12 +26,12 @@
     {
       "check": "decoy_citation",
       "status": "no_go",
-      "pass_rate": 0.8167,
-      "passed": 49,
-      "failed": 11,
+      "pass_rate": 0.8333,
+      "passed": 50,
+      "failed": 10,
       "go": 0.95,
       "conditional": 0.85,
-      "repeat_agreement": 0.55,
+      "repeat_agreement": 0.6,
       "meaning": "The briefing blamed a field with no bearing on the outcome, pointing the underwriter at noise."
     },
     {
@@ -61,7 +61,7 @@
     "material_omission: pass rate 88% is below the GO threshold of 95%.",
     "material_omission: the same case got different verdicts across repeats for 25% of cases (limit 10%).",
     "numeric_fidelity: the same case got different verdicts across repeats for 65% of cases (limit 10%).",
-    "decoy_citation: the same case got different verdicts across repeats for 45% of cases (limit 10%).",
+    "decoy_citation: the same case got different verdicts across repeats for 40% of cases (limit 10%).",
     "flip_accuracy: pass rate 85% is below the GO threshold of 90%.",
     "flip_accuracy: the same case got different verdicts across repeats for 35% of cases (limit 10%).",
     "claim_consistency ran but has no threshold in thresholds.yaml, so it does not enter this decision."
@@ -82,19 +82,6 @@
       ]
     },
     {
-      "cause": "decoy_blamed",
-      "label": "Irrelevant field blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "why": "The assistant blamed a field that has no bearing on the outcome.",
-      "briefings": 11,
-      "results": 11,
-      "items": 9,
-      "checks": [
-        "decoy_citation"
-      ]
-    },
-    {
       "cause": "misread_threshold",
       "label": "Threshold stated the wrong way round",
       "lever": "context",
@@ -106,6 +93,19 @@
       "checks": [
         "claim_consistency",
         "comparison_fidelity"
+      ]
+    },
+    {
+      "cause": "decoy_blamed",
+      "label": "Irrelevant field blamed",
+      "lever": "instructions",
+      "owner": "bank",
+      "why": "The assistant blamed a field that has no bearing on the outcome.",
+      "briefings": 10,
+      "results": 10,
+      "items": 8,
+      "checks": [
+        "decoy_citation"
       ]
     }
   ],

@@ -26,9 +26,9 @@
     {
       "check": "decoy_citation",
       "status": "no_go",
-      "pass_rate": 0.8,
-      "passed": 48,
-      "failed": 12,
+      "pass_rate": 0.8333,
+      "passed": 50,
+      "failed": 10,
       "go": 0.95,
       "conditional": 0.85,
       "repeat_agreement": 0.65,
@@ -102,8 +102,8 @@
       "lever": "instructions",
       "owner": "bank",
       "why": "The assistant blamed a field that has no bearing on the outcome.",
-      "briefings": 12,
-      "results": 12,
+      "briefings": 10,
+      "results": 10,
       "items": 7,
       "checks": [
         "decoy_citation"

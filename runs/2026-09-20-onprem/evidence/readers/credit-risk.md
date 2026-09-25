@@ -44,7 +44,7 @@ Pass rate over briefings, with a 95% interval computed over cases: repeats of on
 |---|---|---|---|---|---|
 | `material_omission` | 59/60 | 98% | 95% – 100% | 95% | GO |
 | `numeric_fidelity` | 27/60 | 45% | 34% – 56% | 98% | NO-GO |
-| `decoy_citation` | 46/60 | 77% | 64% – 89% | 95% | NO-GO |
+| `decoy_citation` | 51/60 | 85% | 75% – 95% | 95% | CONDITIONAL |
 | `flip_accuracy` | 54/60 | 90% | 80% – 100% | 90% | GO |
 | `comparison_fidelity` | 54/60 | 90% | 80% – 100% | 98% | CONDITIONAL |
 | `claim_consistency` | 51/60 | 85% | 76% – 94% | — | no threshold |
@@ -54,7 +54,8 @@ Judge `readability` (`nvidia/nemotron-3-ultra-550b-a55b`): mean 0.967 on 0–1 o
 Conditions:
 
 - numeric_fidelity: the same case got different verdicts across repeats for 85% of cases (limit 10%).
-- decoy_citation: the same case got different verdicts across repeats for 45% of cases (limit 10%).
+- decoy_citation: pass rate 85% is below the GO threshold of 95%.
+- decoy_citation: the same case got different verdicts across repeats for 35% of cases (limit 10%).
 - flip_accuracy: the same case got different verdicts across repeats for 20% of cases (limit 10%).
 - comparison_fidelity: pass rate 90% is below the GO threshold of 98%.
 - comparison_fidelity: the same case got different verdicts across repeats for 20% of cases (limit 10%).
@@ -68,7 +69,7 @@ The share of cases whose verdict was the same in all 3 repeats. A check a case p
 |---|---|---|
 | `material_omission` | 19/20 | APP000543 |
 | `numeric_fidelity` | 3/20 | APP000028, APP000037, APP000039, APP000044, APP000045, APP000059, APP000120, APP000155, APP000185, APP000323, APP000407, APP000448, APP000454, APP000522, APP000543, APP000588, APP000684 |
-| `decoy_citation` | 11/20 | APP000037, APP000044, APP000107, APP000155, APP000172, APP000185, APP000522, APP000543, APP000684 |
+| `decoy_citation` | 13/20 | APP000028, APP000037, APP000044, APP000155, APP000172, APP000185, APP000543 |
 | `flip_accuracy` | 16/20 | APP000039, APP000059, APP000588, APP000684 |
 | `comparison_fidelity` | 16/20 | APP000044, APP000407, APP000454, APP000678 |
 | `claim_consistency` | 12/20 | APP000028, APP000039, APP000059, APP000107, APP000407, APP000588, APP000678, APP000684 |
@@ -81,7 +82,7 @@ A cause for every failing result, by fixed rules — no model. One cause on one 
 |---|---|---|---|---|---|
 | Figure worked out wrongly | 33 | 34 | 19 | context | bank |
 | Threshold stated the wrong way round | 15 | 15 | 10 | context | bank |
-| Irrelevant field blamed | 14 | 14 | 10 | instructions | bank |
+| Irrelevant field blamed | 9 | 9 | 7 | instructions | bank |
 | Wrong or no way to change the outcome | 6 | 6 | 4 | template | bank |
 
 1. **Hand the assistant the figures your systems already computed** (context). Pass in the figures the rules engine already computed — the debt-to-income ratio and the limit it breaches — instead of relying on the model's arithmetic. If wrong figures persist once the correct ones are in front of it, that is the vendor's to fix.

@@ -11,8 +11,8 @@ The assistant is not ready to brief underwriters on cases like these without cha
 | In how many briefings the assistant … | briefings | share | allowed for GO |
 |---|---|---|---|
 | stated a figure that is not in, or worked out from, the case file | 28 of 60 | 47% | at most 2% |
-| gave a field with no bearing on the outcome as a reason | 12 of 60 | 20% | at most 5% |
 | said a limit was breached when its own figure says it was not | 10 of 60 | 17% | at most 2% |
+| gave a field with no bearing on the outcome as a reason | 8 of 60 | 13% | at most 5% |
 | compared a figure with a threshold the wrong way round | 6 of 60 | 10% | at most 2% |
 | did not say correctly what would change the outcome | 4 of 60 | 7% | at most 10% |
 | left out a fact the decision turned on | 1 of 60 | 2% | at most 5% |
@@ -21,7 +21,7 @@ The assistant is not ready to brief underwriters on cases like these without cha
 
 1. **Hand the assistant the figures your systems already computed** — the bank, then the vendor if it persists. Addresses 28 of 60 briefings.
 2. **Hand the assistant the rules the case breached** — the bank, then the vendor if it persists. Addresses 14 of 60 briefings.
-3. **Tell the assistant which fields must not be used as reasons** — the bank. Addresses 12 of 60 briefings.
+3. **Tell the assistant which fields must not be used as reasons** — the bank. Addresses 8 of 60 briefings.
 
 Make one change, run the pack again, and compare the two runs: a change is accepted only if it helps and nothing else gets worse.
 

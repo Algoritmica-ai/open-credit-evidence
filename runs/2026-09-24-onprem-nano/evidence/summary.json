@@ -48,10 +48,10 @@
     "decoy_citation": {
       "results": 60,
       "items": 20,
-      "passed": 48,
-      "failed": 12,
-      "needs_audit": 20,
-      "mean_value": 0.964,
+      "passed": 50,
+      "failed": 10,
+      "needs_audit": 11,
+      "mean_value": 0.969,
       "failing_items": [
         "underwriter-sample:case_review:APP000028:complete",
         "underwriter-sample:case_review:APP000037:complete",
@@ -284,13 +284,13 @@
     {
       "item_id": "underwriter-sample:case_review:APP000588:complete",
       "check": "decoy_citation",
-      "repeats_failed": 2,
+      "repeats_failed": 1,
       "detail": "cited 1 decoy field(s) as a factor: ['dependants']"
     },
     {
       "item_id": "underwriter-sample:case_review:APP000678:complete",
       "check": "decoy_citation",
-      "repeats_failed": 2,
+      "repeats_failed": 1,
       "detail": "cited 1 decoy field(s) as a factor: ['purpose']"
     },
     {
@@ -500,10 +500,10 @@
           "result": {
             "results": 60,
             "items": 20,
-            "passed": 48,
-            "failed": 12,
-            "needs_audit": 20,
-            "mean_value": 0.964,
+            "passed": 50,
+            "failed": 10,
+            "needs_audit": 11,
+            "mean_value": 0.969,
             "failing_items": [
               "underwriter-sample:case_review:APP000028:complete",
               "underwriter-sample:case_review:APP000037:complete",

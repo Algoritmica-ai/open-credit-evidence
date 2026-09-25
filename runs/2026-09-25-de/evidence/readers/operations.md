@@ -14,13 +14,13 @@ The assistant worked a figure out itself and got it wrong.
 
 **What to do:** Check any ratio or amount the briefing works out against the application form before relying on it. The briefing's own arithmetic is where it is most often wrong.
 
-## Irrelevant field blamed — 25 of 60 briefings
+## Irrelevant field blamed — 14 of 60 briefings
 
 The assistant blamed a field that has no bearing on the outcome.
 
-> Specifically, the applicant’s total monthly debt service exceeds the 40% affordability threshold, and the applicant falls within the "thin file" category due to a credit file age of 44 months (under 24 months is the policy limit, though this file is older, the score and history rules still apply).
+> *   **Age Band:** The applicant is in the 18-24 age band, which, combined with the thin file criteria and self-employment, presents a higher risk profile.
 
-— case APP000028, repeat 1
+— case APP000028, repeat 2
 
 **What to do:** Disregard reasoning that rests on age band, loan purpose. The lending policy does not use them.
 

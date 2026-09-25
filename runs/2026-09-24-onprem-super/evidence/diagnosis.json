@@ -1,5 +1,5 @@
 {
-  "failures": 61,
+  "failures": 57,
   "causes": [
     {
       "cause": "miscalculated",
@@ -34,9 +34,9 @@
       "lever": "instructions",
       "owner": "bank",
       "why": "The assistant blamed a field that has no bearing on the outcome.",
-      "briefings": 12,
-      "results": 12,
-      "items": 8,
+      "briefings": 8,
+      "results": 8,
+      "items": 5,
       "checks": [
         "decoy_citation"
       ]
@@ -110,7 +110,7 @@
           "age_band"
         ],
         "sentences": [
-          "Specifically, the applicant\u2019s total monthly debt service exceeds the 40% affordability threshold, and the applicant falls within the \"thin file\" category due to a credit file age of 44 months (under 24 months is the policy limit, though this file is older; however, the score of 608 sits just above the 600 underwriter review trigger, but the affordability breach is the primary driver for referral)."
+          "*   **Employment:** The applicant has been in their current role (Northgate Retail) for 137 months (over 11 years), indicating stability despite the young age band (18-24)."
         ]
       }
     },
@@ -333,22 +333,6 @@
     },
     {
       "item_id": "underwriter-sample:case_review:APP000059:complete",
-      "repeat": 1,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "*   **File Age:** The credit file is 70 months old, which is not considered \"thin,\" but the recent delinquency and low score suggest potential credit stress."
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000059:complete",
       "repeat": 2,
       "check": "claim_consistency",
       "cause": "misread_threshold",
@@ -357,22 +341,6 @@
       "detail": {
         "contradictions": [
           "claims above 40%, states 34.8%"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000059:complete",
-      "repeat": 2,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "*   **File Age:** The credit file is 70 months old (opened May 2021), which is satisfactory and not considered \"thin.\""
         ]
       }
     },
@@ -399,22 +367,6 @@
       "detail": {
         "contradictions": [
           "claims above 40%, states 33.2%"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000107:complete",
-      "repeat": 1,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "*   **File Age:** The credit file is 6 months old, which is considered a \"thin file\" (under 24 months)."
         ]
       }
     },
@@ -577,22 +529,6 @@
         "figures_not_in_file": [
           "51.5%",
           "\u00a3825"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000407:complete",
-      "repeat": 0,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "Given the age of the file and the single delinquancy, a manual review is required to assess the context of the payment history."
         ]
       }
     },

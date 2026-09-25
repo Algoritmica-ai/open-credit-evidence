@@ -56,9 +56,9 @@
     "why": "The assistant blamed a field that has no bearing on the outcome.",
     "action": "Add to the assistant's instructions: \"Do not cite age band, postcode district as reasons; under the policy they have no bearing on the outcome.\"",
     "addresses": {
-      "briefings": 11,
-      "results": 11,
-      "items": 8,
+      "briefings": 8,
+      "results": 8,
+      "items": 6,
       "checks": [
         "decoy_citation"
       ]

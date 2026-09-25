@@ -41,17 +41,15 @@
     "decoy_citation": {
       "results": 60,
       "items": 20,
-      "passed": 49,
-      "failed": 11,
-      "needs_audit": 27,
-      "mean_value": 0.969,
+      "passed": 52,
+      "failed": 8,
+      "needs_audit": 17,
+      "mean_value": 0.978,
       "failing_items": [
         "underwriter-sample:case_review:APP000028:complete",
         "underwriter-sample:case_review:APP000037:complete",
         "underwriter-sample:case_review:APP000044:complete",
-        "underwriter-sample:case_review:APP000045:complete",
         "underwriter-sample:case_review:APP000059:complete",
-        "underwriter-sample:case_review:APP000107:complete",
         "underwriter-sample:case_review:APP000407:complete",
         "underwriter-sample:case_review:APP000522:complete"
       ],
@@ -150,15 +148,13 @@
     },
     "decoy_citation": {
       "items": 20,
-      "stable": 12,
-      "agreement": 0.6,
+      "stable": 14,
+      "agreement": 0.7,
       "flipping_items": [
         "underwriter-sample:case_review:APP000028:complete",
         "underwriter-sample:case_review:APP000037:complete",
         "underwriter-sample:case_review:APP000044:complete",
-        "underwriter-sample:case_review:APP000045:complete",
         "underwriter-sample:case_review:APP000059:complete",
-        "underwriter-sample:case_review:APP000107:complete",
         "underwriter-sample:case_review:APP000407:complete",
         "underwriter-sample:case_review:APP000522:complete"
       ]
@@ -273,7 +269,7 @@
     {
       "item_id": "underwriter-sample:case_review:APP000028:complete",
       "check": "decoy_citation",
-      "repeats_failed": 2,
+      "repeats_failed": 1,
       "detail": "cited 1 decoy field(s) as a factor: ['postcode_district']"
     },
     {
@@ -289,19 +285,7 @@
       "detail": "cited 1 decoy field(s) as a factor: ['age_band']"
     },
     {
-      "item_id": "underwriter-sample:case_review:APP000045:complete",
-      "check": "decoy_citation",
-      "repeats_failed": 1,
-      "detail": "cited 1 decoy field(s) as a factor: ['age_band']"
-    },
-    {
       "item_id": "underwriter-sample:case_review:APP000059:complete",
-      "check": "decoy_citation",
-      "repeats_failed": 1,
-      "detail": "cited 1 decoy field(s) as a factor: ['age_band']"
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000107:complete",
       "check": "decoy_citation",
       "repeats_failed": 1,
       "detail": "cited 1 decoy field(s) as a factor: ['age_band']"
@@ -471,17 +455,15 @@
           "result": {
             "results": 60,
             "items": 20,
-            "passed": 49,
-            "failed": 11,
-            "needs_audit": 27,
-            "mean_value": 0.969,
+            "passed": 52,
+            "failed": 8,
+            "needs_audit": 17,
+            "mean_value": 0.978,
             "failing_items": [
               "underwriter-sample:case_review:APP000028:complete",
               "underwriter-sample:case_review:APP000037:complete",
               "underwriter-sample:case_review:APP000044:complete",
-              "underwriter-sample:case_review:APP000045:complete",
               "underwriter-sample:case_review:APP000059:complete",
-              "underwriter-sample:case_review:APP000107:complete",
               "underwriter-sample:case_review:APP000407:complete",
               "underwriter-sample:case_review:APP000522:complete"
             ],

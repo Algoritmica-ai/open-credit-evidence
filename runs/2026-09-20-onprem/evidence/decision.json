@@ -25,13 +25,13 @@
     },
     {
       "check": "decoy_citation",
-      "status": "no_go",
-      "pass_rate": 0.7667,
-      "passed": 46,
-      "failed": 14,
+      "status": "conditional",
+      "pass_rate": 0.85,
+      "passed": 51,
+      "failed": 9,
       "go": 0.95,
       "conditional": 0.85,
-      "repeat_agreement": 0.55,
+      "repeat_agreement": 0.65,
       "meaning": "The briefing blamed a field with no bearing on the outcome, pointing the underwriter at noise."
     },
     {
@@ -59,7 +59,8 @@
   ],
   "conditions": [
     "numeric_fidelity: the same case got different verdicts across repeats for 85% of cases (limit 10%).",
-    "decoy_citation: the same case got different verdicts across repeats for 45% of cases (limit 10%).",
+    "decoy_citation: pass rate 85% is below the GO threshold of 95%.",
+    "decoy_citation: the same case got different verdicts across repeats for 35% of cases (limit 10%).",
     "flip_accuracy: the same case got different verdicts across repeats for 20% of cases (limit 10%).",
     "comparison_fidelity: pass rate 90% is below the GO threshold of 98%.",
     "comparison_fidelity: the same case got different verdicts across repeats for 20% of cases (limit 10%).",
@@ -100,9 +101,9 @@
       "lever": "instructions",
       "owner": "bank",
       "why": "The assistant blamed a field that has no bearing on the outcome.",
-      "briefings": 14,
-      "results": 14,
-      "items": 10,
+      "briefings": 9,
+      "results": 9,
+      "items": 7,
       "checks": [
         "decoy_citation"
       ]

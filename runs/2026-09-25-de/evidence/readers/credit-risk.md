@@ -46,7 +46,7 @@ Pass rate over briefings, with a 95% interval computed over cases: repeats of on
 |---|---|---|---|---|---|
 | `material_omission` | 57/60 | 95% | 88% – 100% | 95% | GO |
 | `numeric_fidelity` | 32/60 | 53% | 41% – 65% | 98% | NO-GO |
-| `decoy_citation` | 35/60 | 58% | 45% – 72% | 95% | NO-GO |
+| `decoy_citation` | 46/60 | 77% | 65% – 88% | 95% | NO-GO |
 | `flip_accuracy` | 57/60 | 95% | 88% – 100% | 90% | GO |
 | `comparison_fidelity` | 57/60 | 95% | 90% – 100% | 98% | CONDITIONAL |
 | `claim_consistency` | 58/60 | 97% | 92% – 100% | 98% | CONDITIONAL |
@@ -56,7 +56,7 @@ Judge `readability` (`nemotron-3-super`): mean 0.992 on 0–1 over 60 briefings;
 Conditions:
 
 - numeric_fidelity: the same case got different verdicts across repeats for 80% of cases (limit 10%).
-- decoy_citation: the same case got different verdicts across repeats for 70% of cases (limit 10%).
+- decoy_citation: the same case got different verdicts across repeats for 50% of cases (limit 10%).
 - comparison_fidelity: pass rate 95% is below the GO threshold of 98%.
 - comparison_fidelity: the same case got different verdicts across repeats for 15% of cases (limit 10%).
 - claim_consistency: pass rate 97% is below the GO threshold of 98%.
@@ -69,7 +69,7 @@ The share of cases whose verdict was the same in all 3 repeats. A check a case p
 |---|---|---|
 | `material_omission` | 18/20 | APP000028, APP000522 |
 | `numeric_fidelity` | 4/20 | APP000028, APP000037, APP000039, APP000044, APP000045, APP000059, APP000107, APP000120, APP000155, APP000172, APP000185, APP000448, APP000454, APP000543, APP000588, APP000678 |
-| `decoy_citation` | 6/20 | APP000039, APP000044, APP000107, APP000120, APP000172, APP000185, APP000323, APP000407, APP000448, APP000454, APP000522, APP000543, APP000588, APP000684 |
+| `decoy_citation` | 10/20 | APP000028, APP000039, APP000107, APP000155, APP000172, APP000185, APP000323, APP000407, APP000522, APP000543 |
 | `flip_accuracy` | 18/20 | APP000039, APP000059 |
 | `comparison_fidelity` | 17/20 | APP000107, APP000407, APP000454 |
 | `claim_consistency` | 18/20 | APP000028, APP000448 |
@@ -81,7 +81,7 @@ A cause for every failing result, by fixed rules — no model. One cause on one 
 | cause | briefings | failing results | cases | lever | who acts |
 |---|---|---|---|---|---|
 | Figure worked out wrongly | 28 | 30 | 17 | context | bank |
-| Irrelevant field blamed | 25 | 25 | 16 | instructions | bank |
+| Irrelevant field blamed | 14 | 14 | 10 | instructions | bank |
 | Threshold stated the wrong way round | 5 | 5 | 5 | context | bank |
 | Wrong or no way to change the outcome | 3 | 3 | 2 | template | bank |
 | Fact in front of it, left out | 1 | 1 | 1 | instructions | bank |

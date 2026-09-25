@@ -1,5 +1,5 @@
 {
-  "failures": 59,
+  "failures": 56,
   "causes": [
     {
       "cause": "miscalculated",
@@ -34,9 +34,9 @@
       "lever": "instructions",
       "owner": "bank",
       "why": "The assistant blamed a field that has no bearing on the outcome.",
-      "briefings": 11,
-      "results": 11,
-      "items": 8,
+      "briefings": 8,
+      "results": 8,
+      "items": 6,
       "checks": [
         "decoy_citation"
       ]
@@ -108,22 +108,6 @@
       "detail": {
         "contradictions": [
           "claims above 40%, states 36.6%"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000028:complete",
-      "repeat": 1,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "Specifically, the applicant\u2019s total monthly debt service exceeds the 40% affordability threshold, and the applicant falls within the \"thin file\" category due to a credit file age of 44 months (just over the 24-month limit)."
         ]
       }
     },
@@ -270,22 +254,6 @@
     },
     {
       "item_id": "underwriter-sample:case_review:APP000045:complete",
-      "repeat": 0,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "Although this is above the 24-month minimum for a \"thin file\" classification, the age of the file is a factor in the overall assessment."
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000045:complete",
       "repeat": 1,
       "check": "numeric_fidelity",
       "cause": "miscalculated",
@@ -382,22 +350,6 @@
       "detail": {
         "contradictions": [
           "claims above 40%, states 33.2%"
-        ]
-      }
-    },
-    {
-      "item_id": "underwriter-sample:case_review:APP000107:complete",
-      "repeat": 1,
-      "check": "decoy_citation",
-      "cause": "decoy_blamed",
-      "lever": "instructions",
-      "owner": "bank",
-      "detail": {
-        "decoys": [
-          "age_band"
-        ],
-        "sentences": [
-          "*   **Credit File Age:** The credit file has been open for 6 months, which is considered a \"thin file\" (under 24 months) per policy."
         ]
       }
     },

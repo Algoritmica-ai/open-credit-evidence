@@ -44,7 +44,7 @@ Pass rate over briefings, with a 95% interval computed over cases: repeats of on
 |---|---|---|---|---|---|
 | `material_omission` | 55/60 | 92% | 85% – 98% | 95% | CONDITIONAL |
 | `numeric_fidelity` | 26/60 | 43% | 30% – 57% | 98% | NO-GO |
-| `decoy_citation` | 48/60 | 80% | 67% – 93% | 95% | NO-GO |
+| `decoy_citation` | 50/60 | 83% | 72% – 94% | 95% | NO-GO |
 | `flip_accuracy` | 56/60 | 93% | 86% – 100% | 90% | GO |
 | `comparison_fidelity` | 55/60 | 92% | 81% – 100% | 98% | CONDITIONAL |
 | `claim_consistency` | 51/60 | 85% | 73% – 97% | — | no threshold |
@@ -82,7 +82,7 @@ A cause for every failing result, by fixed rules — no model. One cause on one 
 |---|---|---|---|---|---|
 | Figure worked out wrongly | 34 | 40 | 18 | context | bank |
 | Threshold stated the wrong way round | 12 | 14 | 7 | context | bank |
-| Irrelevant field blamed | 12 | 12 | 7 | instructions | bank |
+| Irrelevant field blamed | 10 | 10 | 7 | instructions | bank |
 | Wrong or no way to change the outcome | 3 | 3 | 2 | template | bank |
 
 1. **Hand the assistant the figures your systems already computed** (context). Pass in the figures the rules engine already computed — the debt-to-income ratio and the limit it breaches — instead of relying on the model's arithmetic. If wrong figures persist once the correct ones are in front of it, that is the vendor's to fix.
