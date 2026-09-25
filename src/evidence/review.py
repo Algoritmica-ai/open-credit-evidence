@@ -62,6 +62,11 @@ def _clean(s: Any) -> str:
     return re.sub(r"\s+", " ", str(s or "")).strip().strip("*").strip()
 
 
+def _wording(s: Any) -> str:
+    """A reviewer's correction, kept as written: it replaces memo text, markdown and all."""
+    return str(s or "").strip()
+
+
 _IGNORE = r"[\s*_`]*"  # spacing and markdown emphasis, which checks and agents drop when quoting
 
 
@@ -99,6 +104,23 @@ def locate(text: str, quote: str) -> tuple[int, int] | None:
     return (m.start(), m.end()) if m else None
 
 
+_BREAK = re.compile(r"\n|(?<=[.!?])\s")  # a line break, or a full stop and a space
+_END = re.compile(r"[.!?](?=\s|$)|\n")
+
+
+def sentence_span(text: str, start: int, end: int) -> tuple[int, int]:
+    """Widen a located quote to the whole sentence, or list line, it sits in. Findings on
+    the same sentence then quote it the same way, and one correction covers them all."""
+    left = 0
+    for m in _BREAK.finditer(text, 0, start):
+        left = m.end()
+    m = _END.search(text, max(start, end - 1))
+    right = (m.end() if m.group() != "\n" else m.start()) if m else len(text)
+    while left < start and text[left].isspace():
+        left += 1
+    return left, max(right, end)
+
+
 def _field(ref: Any) -> str:
     return str(ref or "").replace("_", " ")
 
@@ -111,6 +133,7 @@ def _check_cards(r: dict[str, Any], labels: dict[str, str]) -> list[dict[str, An
             out.append({"problem": f"{e.get('value')} is not in the case file and does not follow "
                                    "from it",
                         "sentence": _clean(e.get("context")),
+                        "anchor": str(e.get("value") or ""),  # the figure: its sentence is quoted
                         "evidence": "Checked against every figure in the case file and the "
                                     "calculations that follow from them."})
         elif name == "claim_consistency" and e.get("holds") is False:
@@ -184,8 +207,13 @@ def queue(run: Path, items: dict[str, Any]) -> list[dict[str, Any]]:
             c["card_id"] = _card_id(memo, c["source"], n)
             c["kind"] = KIND.get(c["source"], c["source"])
             span = locate(t.output, c["sentence"]) if c["sentence"] else None
+            anchor = c.pop("anchor", "")
+            if span and anchor:  # a window around a figure: take the figure's own sentence
+                at = t.output.find(anchor, span[0], span[1])
+                span = (at, at + len(anchor)) if at >= 0 else span
+            span = sentence_span(t.output, *span) if span else None
             c["span"] = list(span) if span else None
-            if span:  # quote the memo exactly, so it can be highlighted and corrected
+            if span:  # quote the memo's sentence exactly, so it can be highlighted and corrected
                 c["sentence"] = t.output[span[0]:span[1]]
         flagged = bool((p or {}).get("flag_for_review"))
         if failing and (flagged or p is None):
@@ -245,13 +273,13 @@ def submit(run: Path, memo: str, reviewer: str, verdicts: list[dict[str, Any]],
         if v["action"] == "dispute" and v.get("reason") not in REASONS:
             raise ValueError(f"a dispute needs a reason: one of {REASONS}")
         clean.append({"card_id": v["card_id"], "action": v["action"],
-                      "reason": v.get("reason"), "correction": _clean(v.get("correction"))})
+                      "reason": v.get("reason"), "correction": _wording(v.get("correction"))})
     rec = {"memo": memo, "item_id": qi["item_id"], "repeat": qi["repeat"],
            "reviewer": _clean(reviewer) or "reviewer", "submitted_at": _now(),
            "seconds": round(float(seconds), 1) if seconds is not None else None,
            "lane": qi["lane"], "verdicts": clean,
            "raised": [{"sentence": _clean(r.get("sentence")), "problem": _clean(r.get("problem")),
-                       "correction": _clean(r.get("correction"))}
+                       "correction": _wording(r.get("correction"))}
                       for r in raised or [] if _clean(r.get("problem"))],
            "signed_off": not any(v["action"] == "confirm" for v in clean) and not raised}
     (run / "review").mkdir(exist_ok=True)
@@ -396,20 +424,38 @@ def build_feedback(run: Path, queue_items: list[dict[str, Any]]) -> dict[str, An
         errors = [x for x in mine if _is_error(x)]
         for x in errors:
             failures[x["card"]["kind"]] = failures.get(x["card"]["kind"], 0) + 1
-        corrections = [(x["card"].get("sentence", ""), x["verdict"].get("correction", ""))
-                       for x in errors if x["verdict"].get("correction")]
+        # One correction per sentence: findings on the same sentence share it. An error
+        # with no sentence (something left out) is corrected by an addition.
+        by_sentence: dict[str, str] = {}
+        additions: list[str] = []
+        for x in errors:
+            sentence, fix = x["card"].get("sentence") or "", x["verdict"].get("correction") or ""
+            if sentence and fix:
+                by_sentence.setdefault(sentence, fix)
+            elif fix:
+                additions.append(fix)
+        # a quote that sits inside a longer corrected quote is corrected by it
+        by_sentence = {k: v for k, v in by_sentence.items()
+                       if not any(k != o and k in o for o in by_sentence)}
+        missing = any(not x["verdict"].get("correction") and
+                      (not x["card"].get("sentence")
+                       or not any(x["card"]["sentence"] in k for k in by_sentence))
+                      for x in errors)
         # a memo becomes a training target only when every error in it was corrected
-        if errors and len(corrections) < len(errors):
+        if errors and missing:
             uncorrected.append(memo)
-        if errors and len(corrections) == len(errors):
-            text, applied = _corrected(t.output, corrections)
-            if applied == len(corrections):
+        elif errors:
+            fixes_here = list(by_sentence.items()) + [("", a) for a in additions]
+            text, applied = _corrected(t.output, fixes_here)
+            if applied == len(fixes_here):
                 prompt = [{"role": "system", "content": t.system_prompt},
                           {"role": "user", "content": t.user_prompt}]
                 sft.append({"messages": prompt + [{"role": "assistant", "content": text}],
                             "provenance": provenance})
                 prefs.append({"prompt": prompt, "chosen": text, "rejected": t.output,
                               "provenance": provenance})
+            else:  # the corrections overlap in a way that cannot be applied: a person rewords
+                uncorrected.append(memo)
         for x in mine:
             if x["card"]["source"] == "reviewer":
                 continue  # raised findings have no judge counterpart to label

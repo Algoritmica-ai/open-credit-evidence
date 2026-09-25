@@ -106,3 +106,51 @@ def test_a_signed_off_memo_with_a_known_error_is_automation_bias(run, q):
                                           "reason": "not_material"} for c in m["cards"]],
                   queue_items=q)
     assert review.summary(run, q)["automation_bias_memos"] == 1
+
+
+def test_a_quote_is_widened_to_its_sentence():
+    text = ("Reason: the ratio is 36.5%, below the 40% limit. Income is €24,951 a year.\n"
+            "*   **Affordability:** €760 is 30.5% of €2,087.50 of income.\nNext line.")
+    q = text.index("30.5%")
+    s, e = review.sentence_span(text, q, q + 5)
+    assert text[s:e] == "*   **Affordability:** €760 is 30.5% of €2,087.50 of income."
+    q = text.index("below the 40%")
+    s, e = review.sentence_span(text, q, q + 13)
+    # the point in 36.5 does not end the sentence
+    assert text[s:e] == "Reason: the ratio is 36.5%, below the 40% limit."
+
+
+def test_one_correction_covers_every_finding_on_its_sentence(run, q):
+    # memos where two findings sit on the same sentence
+    shared = [m for m in q if len({c["sentence"] for c in m["cards"] if c["span"]})
+              < len([c for c in m["cards"] if c["span"]])]
+    assert shared, "the Super run has memos where a check and the panel quote one sentence"
+    m = next(x for x in shared if all(c["span"] for c in x["cards"]))
+    seen: set[str] = set()
+    verdicts = []
+    for c in m["cards"]:  # correct each sentence once, confirm the rest without wording
+        fix = None if c["sentence"] in seen else c["sentence"] + " [corrected]"
+        seen.add(c["sentence"])
+        verdicts.append({"card_id": c["card_id"], "action": "confirm", "correction": fix})
+    review.submit(run, m["memo"], "r1", verdicts, seconds=60, queue_items=q)
+    fb = review.build_feedback(run, q)
+    assert fb["counts"]["sft.jsonl"] == 1 and m["memo"] not in fb["memos_awaiting_correction"]
+    text = json.loads((run / "feedback" / "sft.jsonl").read_text())["messages"][-1]["content"]
+    assert text.count("[corrected]") == len(seen)
+
+
+def test_a_correction_of_a_longer_quote_covers_the_shorter_one_inside_it():
+    text = "Debt service is €760. This is 30.6% of income (~€2,470). The rest."
+    short = "This is 30.6% of income (~€2,470)."
+    long_ = "Debt service is €760. " + short
+    fixed, n = review._corrected(text, [(long_, "Debt service is €760. It is 36.6% of income.")])
+    assert n == 1 and "30.6%" not in fixed and short in text
+
+
+def test_a_correction_keeps_the_memo_formatting(run, q):
+    m = next(x for x in q if any(c["sentence"].startswith("*") for c in x["cards"] if c["span"]))
+    c = next(c for c in m["cards"] if c["span"] and c["sentence"].startswith("*"))
+    fix = c["sentence"].replace("**", "__") + "\n    *   A second line."
+    rec = review.submit(run, m["memo"], "r1", [{"card_id": c["card_id"], "action": "confirm",
+                                                "correction": "  " + fix + "  "}], queue_items=q)
+    assert rec["verdicts"][0]["correction"] == fix  # trimmed, nothing else changed

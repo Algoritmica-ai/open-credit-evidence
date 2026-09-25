@@ -420,10 +420,20 @@ async function viewQueue(id) {
 // ----------------------------------------------------------------- review: one memo
 
 function highlight(text, cards) {
+  // Findings on the same sentence share one highlight that carries all their numbers.
   let html = esc(text);
+  const marks = [];
   cards.forEach((c, i) => {
     const s = c.sentence && esc(c.sentence);
-    if (s && html.includes(s)) html = html.replace(s, `<mark id="m-${c.card_id}"><sup>${i + 1}</sup>${s}</mark>`);
+    if (!s) return;
+    const same = marks.find((m) => m.s === s);
+    if (same) { same.cards.push([c.card_id, i + 1]); return; }
+    if (!html.includes(s)) return;
+    marks.push({ s, cards: [[c.card_id, i + 1]] });
+    html = html.replace(s, `\u0000${marks.length - 1}\u0000`);
+  });
+  marks.forEach((m, k) => {
+    html = html.replace(`\u0000${k}\u0000`, `<mark data-cards="${m.cards.map((x) => x[0]).join(" ")}"><sup>${m.cards.map((x) => x[1]).join(",")}</sup>${m.s}</mark>`);
   });
   return html.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/^\s*[*-]\s{1,4}/gm, "• ").replace(/^#{1,4}\s*(.+)$/gm, "<b>$1</b>");
 }
@@ -483,7 +493,7 @@ async function viewMemo(id, memo) {
         <p style="font-weight:700;margin-top:4px">Is the memo wrong here?</p>
         <div class="answers">${btn("confirm", "Yes, it’s wrong")}${btn("dispute", "No, the memo is right")}${btn("needs_more", "Not sure")}</div>
         ${st.action === "confirm" ? `<p class="note-box small">Noted. This mistake goes into the feedback pack.</p>
-          <label class="small" for="fix-${c.card_id}"><b>${c.sentence ? "How should this sentence read?" : "What should the memo say?"}</b> <span class="muted">Optional: with it, the model team gets a corrected memo.</span></label>
+          <label class="small" for="fix-${c.card_id}"><b>${c.sentence ? "How should this sentence read?" : "What should the memo say?"}</b> <span class="muted">Optional: with it, the model team gets a corrected memo. One correction covers every finding on the same sentence.</span></label>
           ${c.sentence ? `<p class="tiny muted" style="border-left:3px solid var(--line);padding-left:10px">Now: “${esc(c.sentence)}”</p>` : ""}
           <textarea id="fix-${c.card_id}" data-fix placeholder="Write the corrected wording">${esc(st.correction || "")}</textarea>` : ""}
         ${st.action === "dispute" ? `<p class="small" style="font-weight:600">Why is the memo right?</p>
@@ -516,8 +526,9 @@ async function viewMemo(id, memo) {
       el.querySelectorAll("[data-r]").forEach((b) => (b.onclick = () => { state[cid].reason = b.dataset.r; draw(); }));
       const fix = el.querySelector("[data-fix]");
       if (fix) fix.oninput = () => (state[cid].correction = fix.value);
-      el.onmouseenter = () => { const mk = document.getElementById("m-" + cid); if (mk) mk.classList.add("on"); };
-      el.onmouseleave = () => { const mk = document.getElementById("m-" + cid); if (mk) mk.classList.remove("on"); };
+      const mk = () => document.querySelector(`mark[data-cards~="${cid}"]`);
+      el.onmouseenter = () => { const m = mk(); if (m) m.classList.add("on"); };
+      el.onmouseleave = () => { const m = mk(); if (m) m.classList.remove("on"); };
     });
     const on = (sel, fn) => { const el = side.querySelector(sel); if (el) el.onclick = fn; };
     on("#ok", () => { signOff = true; showRaise = false; draw(); });
