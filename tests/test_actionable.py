@@ -189,7 +189,8 @@ def test_identical_runs_have_no_effect(tmp_path):
 @pytest.mark.parametrize("name", sorted(p.name for p in RUNS.iterdir() if p.is_dir())
                          if RUNS.is_dir() else [])
 def test_committed_runs_verify_and_rederive(name):
-    v = verify_run(RUNS / name, load_pack(PACK), recompute=True)
+    pack_id = json.loads((RUNS / name / "manifest.json").read_text())["pack"]["pack_id"]
+    v = verify_run(RUNS / name, load_pack(ROOT / "packs" / pack_id), recompute=True)
     assert v.ok, v.message
     assert "evidence files rebuilt from the results and match" in v.message
 
