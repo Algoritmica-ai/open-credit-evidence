@@ -40,6 +40,7 @@ p { margin: 0; }
 .row { display: flex; align-items: center; gap: 16px; }
 .row.wrap { flex-wrap: wrap; }
 .grow { flex: 1; min-width: 0; }
+.row.wrap > .grow { flex: 1 1 260px; }  /* wraps under its neighbour instead of shrinking to a word */
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ------------------------------------------------------------ header */
@@ -175,4 +176,8 @@ textarea { min-height: 88px; resize: vertical; }
   .top { padding: 8px 16px; }
   .card { padding: 20px; }
   .hide-sm { display: none; }
+}
+@media (max-width: 420px) {
+  .steps { flex-wrap: wrap; overflow: visible; }
+  h1 { font-size: 26px; }
 }
