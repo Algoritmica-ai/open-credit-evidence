@@ -340,3 +340,29 @@ def test_a_failed_panel_leaves_the_test_standing(client, monkeypatch):
         time.sleep(0.05)
     assert j["status"] == "done" and "judge unreachable" in j["panel_error"]
     assert client.post(f"/api/runs/{job['run_id']}/verify", json={}).json()["ok"]
+
+
+def test_a_test_can_be_stopped_during_the_panel(client, monkeypatch):
+    def slow_panel(run, pack, **kw):
+        for _ in range(400):
+            if kw["should_stop"]():
+                return {"ok": True, "stopped": True, "message": "panel stopped", "briefings": 0,
+                        "planned": 2}
+            time.sleep(0.01)
+        return {"ok": True, "message": "never stopped", "briefings": 2, "planned": 2}
+
+    monkeypatch.setattr("evidence.panel_run.panel_over_run", slow_panel)
+    job = client.post("/api/run", json={"pack": "underwriter-sample", "repeats": 1, "limit": 2,
+                                        "panel": True}).json()
+    for _ in range(200):
+        if client.get(f"/api/run/{job['job_id']}").json()["phase"] == "panel":
+            break
+        time.sleep(0.02)
+    client.post(f"/api/run/{job['job_id']}/cancel")
+    for _ in range(200):
+        j = client.get(f"/api/run/{job['job_id']}").json()
+        if j["status"] != "running":
+            break
+        time.sleep(0.02)
+    assert j["status"] == "cancelled" and j["transcripts"] == 2 and "panel_error" not in j
+    assert client.post(f"/api/runs/{job['run_id']}/verify", json={}).json()["ok"]

@@ -9,6 +9,9 @@
 #
 #   panel_in_sandbox.sh <job dir> [model] [workers]
 #
+# A STOP file in the job directory (the home directory is shared with the login
+# host) stops the panel: before it starts, or at its next turn once it runs.
+#
 # Inside the sandbox every connection goes through OpenShell's proxy, which allows
 # only what the sandbox's network policy names (runtime.json records the entry
 # names and a hash of the policy). The panel's one destination is
@@ -27,6 +30,8 @@ clean() { sed -u "s/\x1b\[[0-9;]*m//g" | { grep --line-buffered -v "Active gatew
 NAME=$(basename "$DIR")
 BOX=/sandbox/$NAME   # the sandbox workspace: files can be copied in and out only here
 
+if [[ -f "$DIR/STOP" ]]; then echo "  stopped before the panel started"; exit 0; fi
+
 started=$(date -u +%FT%TZ)
 # a retried job may find its records in the sandbox already; keep them (panel.py resumes)
 if nemoclaw "$SANDBOX" exec --no-tty -- test -f "$BOX/records.jsonl" >/dev/null 2>&1; then
@@ -41,7 +46,19 @@ nemoclaw "$SANDBOX" exec --no-tty -- python3 -u "$BOX/panel.py" --in "$BOX/bundl
   --out "$BOX/records.jsonl" --base-url https://inference.local/v1 --model "$MODEL" \
   --workers "$WORKERS" --use-env-proxy 2>&1 | clean &
 PANEL=$!
-while kill -0 "$PANEL" 2>/dev/null; do sleep 30; fetch; done
+pushed=0
+while kill -0 "$PANEL" 2>/dev/null; do
+  for _ in 1 2 3 4 5 6; do
+    kill -0 "$PANEL" 2>/dev/null || break
+    sleep 5
+    # panel.py stops at its next turn. openshell, not nemoclaw: the nemoclaw exec running
+    # the panel holds nemoclaw's host lock until it ends.
+    if [[ -f "$DIR/STOP" && $pushed -eq 0 ]]; then
+      openshell sandbox upload "$SANDBOX" "$DIR/STOP" "$BOX/" >/dev/null 2>&1 && pushed=1
+    fi
+  done
+  fetch
+done
 wait "$PANEL"
 fetch
 nemoclaw "$SANDBOX" exec --no-tty -- rm -rf "$BOX" >/dev/null 2>&1 || true

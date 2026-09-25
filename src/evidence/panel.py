@@ -243,6 +243,10 @@ def chat(base_url: str, model: str, messages: list[dict[str, Any]],
 
 Chat = Callable[..., dict[str, Any]]
 
+
+class Stopped(Exception):
+    """Someone stopped the panel: the briefing in progress is dropped at its next turn."""
+
 _OPEN = re.compile(r"\{")
 
 
@@ -423,21 +427,37 @@ def run_panel(bundle: dict[str, Any], *, call: Chat, models: dict[str, str]) -> 
 def run_many(bundles: list[dict[str, Any]], *, call: Chat, models: dict[str, str],
              workers: int = 4, done: set[tuple[str, int]] | None = None,
              write: Callable[[dict[str, Any]], None] = lambda r: None,
-             log: Callable[[str], None] = print) -> list[dict[str, Any]]:
+             log: Callable[[str], None] = print,
+             should_stop: Callable[[], bool] | None = None) -> list[dict[str, Any]]:
     """The panel on every bundle not already done, a few at a time; each record written as
-    it finishes, so an interrupted run resumes."""
+    it finishes, so an interrupted run resumes. Once ``should_stop`` says so, no briefing
+    starts and those in progress are dropped at their next turn; what finished is kept."""
     todo = [b for b in bundles if (b["item_id"], b["repeat"]) not in (done or set())]
     out: list[dict[str, Any]] = []
+    stop = should_stop or (lambda: False)
 
-    def one(b: dict[str, Any]) -> dict[str, Any]:
+    def guarded(**kw: Any) -> dict[str, Any]:
+        if stop():
+            raise Stopped()
+        return call(**kw)
+
+    def one(b: dict[str, Any]) -> dict[str, Any] | None:
+        if stop():
+            return None
         try:
-            return run_panel(b, call=call, models=models)
+            return run_panel(b, call=guarded, models=models)
+        except Stopped:
+            return None
         except (urllib.error.URLError, OSError, ValueError) as e:
             return {"item_id": b["item_id"], "repeat": b["repeat"], "panel": PANEL_VERSION,
                     "value": None, "error": f"{type(e).__name__}: {e}"}
 
+    i = 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
-        for i, rec in enumerate(pool.map(one, todo), 1):
+        for rec in pool.map(one, todo):
+            if rec is None:
+                continue
+            i += 1
             write(rec)
             out.append(rec)
             flag = {True: "flag", False: "ok", None: "—"}[rec.get("flag_for_review")]
@@ -462,7 +482,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--use-env-proxy", action="store_true",
                     help="connect through the proxy in the environment (inside a sandbox)")
+    ap.add_argument("--stop-file", help="stop when this file appears (default: STOP next to "
+                    "--out)")
     a = ap.parse_args(argv)
+    stop_file = a.stop_file or os.path.join(os.path.dirname(os.path.abspath(a.out)), "STOP")
     models = {r: getattr(a, f"{r}_model") or a.model for r in ("reader", "challenger",
                                                               "arbiter")}
     key = os.environ.get(a.api_key_env) if a.api_key_env else None
@@ -484,7 +507,8 @@ def main(argv: list[str] | None = None) -> int:
             fh.flush()
 
         run_many(bundles, call=call, models=models, workers=a.workers, done=done, write=write,
-                 log=lambda s: print(s, file=sys.stderr, flush=True))
+                 log=lambda s: print(s, file=sys.stderr, flush=True),
+                 should_stop=lambda: os.path.exists(stop_file))
     return 0
 
 
