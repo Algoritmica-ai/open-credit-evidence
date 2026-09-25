@@ -1,0 +1,28 @@
+{
+  "item_id": "underwriter-sample:case_review:APP000522:complete",
+  "run_id": "2026-09-24-onprem-nims",
+  "repeat": 1,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "http://10.130.232.21:8200/v1",
+    "fingerprint": "1869632eafca897436984f33787f7a00bdb65e00462c86c6abb7ba9d15ee7e15"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000522\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mr |\n| Age band | 65+ |\n| Employment type | self_employed |\n| Employer | Meridian Health |\n| Time in current role | 167 months |\n| Postcode district | LS6 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | £35,041 |\n| Income verified | Yes |\n| Existing monthly credit commitments | £217 |\n| Dependants | 3 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | £31,550 |\n| Term | 36 months |\n| Stated purpose | debt consolidation |\n| Indicative monthly instalment | £1,062 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000522\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**679** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | January 2022 (50 months) |\n| Accounts on file | 4 |\n| Searches, last 6 months | 2 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 1 |\n| Most recent delinquency | 7 months ago |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, £2,000 to £40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application has been referred for underwriter review because it exceeds the automated affordability threshold. The total monthly debt service (existing commitments plus the proposed instalment) exceeds 40% of the applicant's gross monthly income. Additionally, the applicant has a delinquency on their file within the last 12 months, which triggers a mandatory underwriter review per credit history rules.\n\n**What the File Shows:**\n\n*   **Against the Applicant (Affordability):**\n    *   Gross annual income: £35,041 (approx. £2,920 per month).\n    *   Proposed monthly instalment: £1,062.\n    *   Existing monthly credit commitments: £217.\n    *   **Total monthly debt service: £1,279.**\n    *   This represents **43.7%** of gross monthly income, exceeding the 40% policy threshold by 3.7 percentage points.\n\n*   **Against the Applicant (Credit History):**\n    *   Credit file opened: January 2022 (50 months old).\n    *   Bureau score: 679 (above the 600 trigger, but still reviewed).\n    *   **Delinquencies:** 1 delinquency recorded in the last 24 months, occurring 7 months ago. This triggers the \"missed payment within the last 12 months\" rule requiring underwriter review.\n\n*   **In Favour of the Applicant:**\n    *   Age band: 65+ (meets typical age criteria).\n    *   Employment: Self-employed at Meridian Health.\n    *   Time in current role: 167 months (over 14 years), demonstrating stability.\n    *   Income verification: Confirmed as \"Yes\".\n    *   No defaults or CCJs recorded on file.\n\n**What Would Need to Change for a Different Outcome:**\n\nFor this application to fall within policy without underwriter intervention, the following would need to change:\n\n1.  **Affordability:** The total monthly debt service must be reduced to 40% of gross income (approx. £1,168). This could be achieved by reducing the loan amount, extending the term to lower the monthly instalment, or proving additional verified income.\n2.  **Credit History:** The applicant would need to demonstrate a period of clean payment history moving forward, though the existing delinquency from 7 months ago remains a factor for the underwriter to assess in the context of the overall file.",
+  "latency_ms": 2520,
+  "tokens_in": 691,
+  "tokens_out": 548,
+  "provider_id": "chatcmpl-b33c93b4ca71d6f3",
+  "started_at": "2026-09-24T09:34:13+00:00",
+  "sha256": "f6fdb9356ed3b3fefffe4aee7a886881eab4e187bb035eb9e6289567c6e766d7"
+}
