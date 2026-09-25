@@ -36,7 +36,8 @@ def _cmd_run(a: argparse.Namespace) -> int:
     checks = a.checks.split(",") if a.checks else None
     print(f"pack     {pack.pack_id} v{pack.version}  {len(pack.items)} items")
     print(f"checks   {', '.join(checks or pack.checks_declared())}")
-    print(f"repeats  {a.repeats}   judge {'on' if not a.no_judge else 'off'}   out {out}")
+    judge = "off" if a.no_judge else "the panel's Reader" if a.panel else "on"
+    print(f"repeats  {a.repeats}   judge {judge}   out {out}")
     manifest = run_pack(
         pack,
         out,
@@ -45,6 +46,7 @@ def _cmd_run(a: argparse.Namespace) -> int:
         judge=not a.no_judge,
         limit=a.limit,
         corpus=None if a.corpus == "none" else a.corpus,
+        panel=bool(a.panel),
     )
     print(f"sut      {manifest['sut']['model_id']}  {manifest['sut']['endpoint']}")
     res = write_evidence(out, pack.obligations)
@@ -52,6 +54,19 @@ def _cmd_run(a: argparse.Namespace) -> int:
     _print_summary(res["summary"], manifest["repeats"])
     _print_decision(out)
     print(f"report   {out / 'evidence' / 'report.md'}")
+    if a.panel and not manifest["cancelled"]:
+        from evidence import panel_run
+
+        try:
+            p = panel_run.panel_over_run(out, pack, corpus=a.corpus, runtime=a.panel,
+                                         workers=a.panel_workers)
+        except panel_run.EmbedderMismatch as exc:
+            print(exc, file=sys.stderr)
+            return 1
+        print(p["message"], file=sys.stdout if p["ok"] else sys.stderr)
+        if not p["ok"]:
+            return 1
+        print(f"panel    {p['report']}")
     return 0
 
 
@@ -325,6 +340,11 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--repeats", type=int, default=1)
     r.add_argument("--checks", help="comma-separated; default: what each item declares")
     r.add_argument("--no-judge", action="store_true", help="skip the readability judge")
+    r.add_argument("--panel", choices=["direct", "nemoclaw"],
+                   help="then run the three-agent panel here or in the NemoClaw sandbox; its "
+                        "Reader replaces the single judge")
+    r.add_argument("--panel-workers", type=int, default=4,
+                   help="briefings the panel reviews at once")
     r.add_argument("--limit", type=int, help="only the first N items")
     r.add_argument(
         "--corpus",

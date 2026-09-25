@@ -321,6 +321,8 @@ def test_a_test_started_from_the_browser_can_run_the_panel(client, monkeypatch):
         time.sleep(0.05)
     assert j["status"] == "done" and j["phase"] == "done" and j["panel"], j
     assert calls == [(job["run_id"], "direct")] and "panel_error" not in j
+    d = client.get(f"/api/runs/{job['run_id']}").json()
+    assert d["manifest"]["judge"] is None and d["manifest"]["single_judge"]  # the Reader stands in
     assert client.get("/api/jobs").json() == []
 
 
