@@ -9,6 +9,15 @@ decides from. A briefing can read well, state the right conclusion, and still be
 dangerous — because of what it leaves out, or because a number in it is wrong.
 This engine catches both, by name, without asking another model to judge.
 
+**Who it is for: public-sector lenders and their supervisors.** Europe's public banks —
+in Germany alone about 365 to 370 lenders, 339 of them Sparkassen — take an estimated
+60,000 to 120,000 loan applications a day across the EU, of which 10,000 to 30,000 need
+real human review (planning estimates, see [`docs/market/public-sector.md`](docs/market/public-sector.md)).
+An assistant that drafts the credit memo for those reviews is high-risk under the EU AI
+Act. This engine is the evidence layer for it: the institution's model risk and audit
+functions, and its supervisors, can check the assistant against known answers and
+re-derive every result without trusting the bank or the vendor.
+
 ## How
 
 **Ground truth by construction.** The loan applications are generated, not
