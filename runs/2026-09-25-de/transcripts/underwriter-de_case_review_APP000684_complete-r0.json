@@ -1,0 +1,28 @@
+{
+  "item_id": "underwriter-de:case_review:APP000684:complete",
+  "run_id": "2026-09-25-de",
+  "repeat": 0,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "http://10.130.232.21:8200/v1",
+    "fingerprint": "1869632eafca897436984f33787f7a00bdb65e00462c86c6abb7ba9d15ee7e15"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000684\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mrs |\n| Age band | 35-44 |\n| Employment type | permanent |\n| Employer | Harrow Estates |\n| Time in current role | 52 months |\n| Postcode district | B15 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | €25,925 |\n| Income verified | Yes |\n| Existing monthly credit commitments | €426 |\n| Dependants | 2 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | €15,815 |\n| Term | 36 months |\n| Stated purpose | home improvement |\n| Indicative monthly instalment | €532 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000684\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**549** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | November 2019 (88 months) |\n| Accounts on file | 5 |\n| Searches, last 6 months | 1 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 0 |\n| Most recent delinquency | None |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, €2,000 to €40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application has been referred for underwriter review because the applicant’s **Total Monthly Debt Service (TMDS) exceeds the 40% affordability threshold** defined in the Personal Loan Lending Policy. The automated rules could not settle the case due to this exceedance.\n\n**What the File Shows:**\n\n*   **Against the Applicant (Affordability):**\n    *   **Gross Annual Income:** €25,925 (verified).\n    *   **Gross Monthly Income:** ~€2,160.\n    *   **Existing Monthly Commitments:** €426.\n    *   **Proposed Monthly Instalment:** €532.\n    *   **Total Monthly Debt Service:** €958 (€426 + €532).\n    *   **TMDS Ratio:** **44.4%** (exceeds the 40% policy threshold by 4.4 percentage points).\n\n*   **In Favor of the Applicant (Credit History):**\n    *   **Bureau Score:** 549 (below the 600 trigger, which also requires review, but the file is otherwise clean).\n    *   **Payment History:** No delinquencies in the last 24 months; no defaults or CCJs.\n    *   **Credit File Age:** 88 months (well above the 24-month \"thin file\" minimum).\n    *   **Employment:** Permanent role at Harrow Estates for 52 months.\n\n**What Would Need to Change for a Favorable Outcome:**\nFor the application to fall within policy without underwriter discretion, the **TMDS ratio must be reduced to 40% or below**.\n\nTo achieve this, one or more of the following adjustments would be required:\n1.  **Reduce the loan amount** (and consequently the monthly instalment).\n2.  **Extend the loan term** to lower the monthly instalment.\n3.  **Provide additional verified income** to increase the gross monthly income baseline.\n4.  **Reduce existing monthly commitments** (e.g., by clearing other debts).",
+  "latency_ms": 1938,
+  "tokens_in": 686,
+  "tokens_out": 459,
+  "provider_id": "chatcmpl-a36bc4a08873a7a6",
+  "started_at": "2026-09-25T02:44:14+00:00",
+  "sha256": "c1553a2e9dcbd8b9f634efc2d21efc9b8955ee3ec0f9c1290d1c154470df63a5"
+}
