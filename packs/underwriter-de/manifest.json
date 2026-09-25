@@ -1,6 +1,6 @@
 {
   "pack_id": "underwriter-de",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "market": "de",
   "currency": "\u20ac",
   "domain": "credit_underwriting",
@@ -23,10 +23,10 @@
   },
   "items": 20,
   "cases": 20,
-  "items_sha256": "f5a04a502d89ad875cfa82aa760eca7b914ec25878e2dca970d846756d471826",
+  "items_sha256": "76912232c9c22ec3e73ee330d62a4cca19d0b3ab17aaa4f543c17bf00f94d3f7",
   "tasks": [
     "case_review"
   ],
   "obligations_file": "obligations.yaml",
-  "built_at": "2026-09-25T01:58:00+00:00"
+  "built_at": "2026-09-25T04:54:01+00:00"
 }

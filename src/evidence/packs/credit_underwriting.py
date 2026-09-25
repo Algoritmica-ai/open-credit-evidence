@@ -352,17 +352,70 @@ MARKETS: dict[str, dict[str, str]] = {
     "sample": {"currency": "£", "jurisdiction": "IT", "version": "0.5.0"},
     # a German public lender (Sparkasse, Landesbank, development bank): euro figures,
     # German rule pack
-    "de": {"currency": "€", "jurisdiction": "DE", "version": "0.6.0"},
+    "de": {"currency": "€", "jurisdiction": "DE", "version": "0.7.0"},
+}
+
+# How the case file reads in each market. The recipe draws British decoy values
+# (postcode districts, employer names); a German case file must not carry them, or a
+# reviewer is looking at a British file with euro signs. Decoys have no path to the
+# outcome, so swapping their values changes no score, decision or marking key.
+LOCALES: dict[str, dict[str, Any]] = {
+    "sample": {
+        "postcode_label": "Postcode district",
+        "bureau": "Northgate Credit Reference",
+        "searches_label": "Searches, last 6 months",
+        "public_record_label": "CCJs",
+        "values": {},
+        "decoy_aliases": {},
+    },
+    "de": {
+        "postcode_label": "Postal code",
+        "bureau": "Rheinland Kreditauskunft",
+        "searches_label": "Credit enquiries, last 6 months",
+        "public_record_label": "Debtor register entries",
+        "values": {
+            "postcode_district": {
+                "M14": "80331", "CF24": "50667", "LS6": "20095", "B15": "70173",
+                "G12": "60311", "NE2": "04109", "BS7": "01067", "L17": "30159",
+            },
+            "employer_name": {
+                "Ashby Group": "Brandt Gruppe", "Calder Logistics": "Albrecht Logistik GmbH",
+                "Northgate Retail": "Kessler Handel GmbH", "Fenwick & Co": "Vogt & Partner",
+                "Meridian Health": "Lindenhof Kliniken", "Solent Marine": "Weser Maritim AG",
+                "Kestrel Systems": "Falke Systeme GmbH", "Harrow Estates": "Hanse Immobilien GmbH",
+            },
+        },
+        "decoy_aliases": {"postcode_district": ["postal code", "postleitzahl", "plz"]},
+    },
 }
 
 
+def localise(df: pd.DataFrame, market: str) -> pd.DataFrame:
+    """Swap decoy values for the market's own (a German postal code, a German employer)."""
+    values = LOCALES[market]["values"]
+    if not values:
+        return df
+    df = df.copy()
+    for col, mapping in values.items():
+        missing = set(df[col].astype(str)) - set(mapping)
+        if missing:
+            raise ValueError(f"{market}: no local value for {col} {sorted(missing)}")
+        df[col] = df[col].astype(str).map(mapping)
+    return df
+
+
 def render_documents(row: pd.Series, f: dict[str, float], env: Environment,
-                     currency: str = "£") -> list[ItemContext]:
+                     currency: str = "£", market: str = "sample") -> list[ItemContext]:
     received = date(2026, 3, 31)
     opened_year = 2026 - int(row.file_age_months // 12)
     opened_month = ((3 - int(row.file_age_months % 12)) - 1) % 12 + 1
+    loc = LOCALES[market]
     ctx = dict(row.items()) | {
         "cur": currency,
+        "postcode_label": loc["postcode_label"],
+        "bureau": loc["bureau"],
+        "searches_label": loc["searches_label"],
+        "public_record_label": loc["public_record_label"],
         "received": received.strftime("%-d %B %Y"),
         "instalment": f["_instalment"],
         "file_opened": date(opened_year, opened_month, 1).strftime("%B %Y"),
@@ -420,6 +473,9 @@ def build(
     gen = api.generate(str(spec), n, out=str(book_path), seed=seed)
     df = pd.read_parquet(book_path)
     assert not any(c.startswith("_") or c == "capacity_tier" for c in df.columns), "helper leaked"
+    if LOCALES[market]["values"]:
+        df = localise(df, market)
+        df.to_parquet(book_path, index=False)
 
     env = Environment(loader=FileSystemLoader(str(TEMPLATES)), undefined=StrictUndefined)
 
@@ -452,7 +508,7 @@ def build(
                 domain="credit_underwriting",
                 task="case_review",
                 prompt=PROMPT,
-                context=render_documents(row, f, env, mk["currency"]),
+                context=render_documents(row, f, env, mk["currency"], market),
                 deterministic_checks=[
                     "material_omission",
                     "numeric_fidelity",
@@ -475,7 +531,10 @@ def build(
                     driver_aliases={k: ALIASES.get(k, []) for k in drivers},
                     driver_directions=dict.fromkeys(drivers, "decreases"),
                     decoy_refs=decoys,
-                    decoy_aliases={k: DECOY_ALIASES.get(k, []) for k in decoys},
+                    decoy_aliases={
+                        k: DECOY_ALIASES.get(k, []) + LOCALES[market]["decoy_aliases"].get(k, [])
+                        for k in decoys
+                    },
                     omission_refs=omit,
                     omission_labels=omit_labels,
                     omission_aliases=omit_aliases,

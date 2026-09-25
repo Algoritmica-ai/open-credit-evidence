@@ -1,7 +1,7 @@
 # Credit Bureau Summary
 
 **Reference:** {{ application_id }}
-**Bureau:** Northgate Credit Reference
+**Bureau:** {{ bureau }}
 **Search date:** {{ received }}
 
 ## Score
@@ -14,7 +14,7 @@
 |---|---|
 | Credit file opened | {{ file_opened }} ({{ file_age_months }} months) |
 | Accounts on file | {{ accounts }} |
-| Searches, last 6 months | {{ searches }} |
+| {{ searches_label }} | {{ searches }} |
 
 ## Payment history
 
@@ -23,4 +23,4 @@
 | Delinquencies, last 24 months | {{ delinquencies_24m }} |
 | Most recent delinquency | {% if delinquencies_24m > 0 %}{{ delinquency_recency_months }} months ago{% else %}None{% endif %} |
 | Defaults recorded | None |
-| CCJs | None |
+| {{ public_record_label }} | None |
