@@ -3,12 +3,12 @@
   "engine": {
     "package": "credit-evidence-engine",
     "version": "0.1.0.dev0",
-    "git_commit": "8cfae73"
+    "git_commit": "b5596d7"
   },
   "pack": {
     "pack_id": "underwriter-de",
-    "version": "0.6.0",
-    "items_sha256": "f5a04a502d89ad875cfa82aa760eca7b914ec25878e2dca970d846756d471826",
+    "version": "0.7.0",
+    "items_sha256": "76912232c9c22ec3e73ee330d62a4cca19d0b3ab17aaa4f543c17bf00f94d3f7",
     "items": 20,
     "domain": "credit_underwriting",
     "scorecard_version": "underwriter-scorecard-0.1.0",
@@ -190,8 +190,8 @@
       "fingerprint": "1869632eafca897436984f33787f7a00bdb65e00462c86c6abb7ba9d15ee7e15",
       "note": null,
       "checked_at": [
-        "2026-09-25T02:33:26+00:00",
-        "2026-09-25T02:46:02+00:00"
+        "2026-09-25T04:56:21+00:00",
+        "2026-09-25T05:08:54+00:00"
       ],
       "seen_in_transcripts": [
         "1869632eafca897436984f33787f7a00bdb65e00462c86c6abb7ba9d15ee7e15"
@@ -275,8 +275,8 @@
       "fingerprint": "50b3265fb2c0eb7584995d76d592e76ce0e5229dce108843ea016c3e3e35d074",
       "note": null,
       "checked_at": [
-        "2026-09-25T02:33:31+00:00",
-        "2026-09-25T02:46:04+00:00"
+        "2026-09-25T04:56:26+00:00",
+        "2026-09-25T05:08:57+00:00"
       ]
     },
     "embed": {
@@ -333,12 +333,12 @@
       "fingerprint": "ed2942bb7c71b8fbe8bb7fdf3946e96c714c475c1f7e8535afaca6d0645cc042",
       "note": null,
       "checked_at": [
-        "2026-09-25T02:33:32+00:00",
-        "2026-09-25T02:46:06+00:00"
+        "2026-09-25T04:56:28+00:00",
+        "2026-09-25T05:08:58+00:00"
       ]
     }
   },
-  "started_at": "2026-09-25T02:33:22+00:00",
-  "finished_at": "2026-09-25T02:46:06+00:00",
-  "scored_at": "2026-09-25T02:46:06+00:00"
+  "started_at": "2026-09-25T04:56:18+00:00",
+  "finished_at": "2026-09-25T05:08:58+00:00",
+  "scored_at": "2026-09-25T05:08:58+00:00"
 }

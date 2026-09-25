@@ -1,6 +1,6 @@
 # For an auditor — how to check this evidence pack
 
-Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-de` v0.6.0 · run `2026-09-25-de` · model calls 2026-09-25
+Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-de` v0.7.0 · run `2026-09-25-de` · model calls 2026-09-25
 
 ## What is in the run
 
@@ -37,10 +37,10 @@ Which model, exactly, served each role: a SHA-256 over what the server reports a
 
 ## Identifiers
 
-- Engine commit `8cfae73`; pack `underwriter-de` v0.6.0, items sha256 `f5a04a502d89ad875cfa82aa760eca7b914ec25878e2dca970d846756d471826`.
+- Engine commit `b5596d7`; pack `underwriter-de` v0.7.0, items sha256 `76912232c9c22ec3e73ee330d62a4cca19d0b3ab17aaa4f543c17bf00f94d3f7`.
 - SDD spec hash `5a827b5de979bad9`, seed 7.
 - Regulation corpus sha256 `4a7d4f6c5717220557107a6cb7760a41e9cd2b2431e89bf76625fef44064b523`; rule pack `DE-CREDIT-LENDING` sha256 `e47e562381d65fbd945bfcf56fbc4e0b9554f87dd410b47b6566318ebaa4e5f7`. The embedder reproduced the index before the first call (cosine 1.0 on `ai-act-art-9#1`). 55/55 passages found verbatim in CELEX:02024R1689-20260727 + CELEX:32023L2225 (checked 2026-09-24).
-- Model calls 2026-09-25T02:33:22+00:00 to 2026-09-25T02:46:06+00:00; checks scored 2026-09-25T02:46:06+00:00.
+- Model calls 2026-09-25T04:56:18+00:00 to 2026-09-25T05:08:58+00:00; checks scored 2026-09-25T05:08:58+00:00.
 
 ## The other reports
 

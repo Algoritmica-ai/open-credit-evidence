@@ -4,7 +4,7 @@
   "runtime": {
     "node": "rtx-3se-06-04",
     "sandbox": "evidence-judge",
-    "started_at": "2026-09-25T02:46:23Z",
+    "started_at": "2026-09-25T05:56:29Z",
     "endpoint": "https://inference.local/v1",
     "nemoclaw": "0.0.124",
     "openshell": "0.0.116",
@@ -32,8 +32,8 @@
       "arbiter": "nemotron-3-super"
     }
   },
-  "started_at": "2026-09-25T02:46:09+00:00",
-  "finished_at": "2026-09-25T03:25:40+00:00",
+  "started_at": "2026-09-25T05:56:14+00:00",
+  "finished_at": "2026-09-25T06:43:16+00:00",
   "briefings": 60,
   "errors": 0,
   "planned": 60,

@@ -1,6 +1,6 @@
-# Model risk report — underwriter-de v0.6.0 — run 2026-09-25-de
+# Model risk report — underwriter-de v0.7.0 — run 2026-09-25-de
 
-Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-de` v0.6.0 · run `2026-09-25-de` · model calls 2026-09-25
+Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-de` v0.7.0 · run `2026-09-25-de` · model calls 2026-09-25
 
 ## 1. Use and scope
 
@@ -44,22 +44,22 @@ Pass rate over briefings, with a 95% interval computed over cases: repeats of on
 
 | check | passed | pass rate | 95% interval | GO at | status |
 |---|---|---|---|---|---|
-| `material_omission` | 60/60 | 100% | 100% – 100% | 95% | GO |
-| `numeric_fidelity` | 30/60 | 50% | 37% – 63% | 98% | NO-GO |
-| `decoy_citation` | 46/60 | 77% | 60% – 93% | 95% | NO-GO |
-| `flip_accuracy` | 54/60 | 90% | 78% – 100% | 90% | GO |
-| `comparison_fidelity` | 57/60 | 95% | 88% – 100% | 98% | CONDITIONAL |
-| `claim_consistency` | 54/60 | 90% | 79% – 100% | 98% | CONDITIONAL |
+| `material_omission` | 57/60 | 95% | 88% – 100% | 95% | GO |
+| `numeric_fidelity` | 32/60 | 53% | 41% – 65% | 98% | NO-GO |
+| `decoy_citation` | 35/60 | 58% | 45% – 72% | 95% | NO-GO |
+| `flip_accuracy` | 57/60 | 95% | 88% – 100% | 90% | GO |
+| `comparison_fidelity` | 57/60 | 95% | 90% – 100% | 98% | CONDITIONAL |
+| `claim_consistency` | 58/60 | 97% | 92% – 100% | 98% | CONDITIONAL |
 
-Judge `readability` (`nemotron-3-super`): mean 0.997 on 0–1 over 60 briefings; every citation was a passage it was given in 60/60. A model's opinion; reported, never used to pass or fail.
+Judge `readability` (`nemotron-3-super`): mean 0.992 on 0–1 over 60 briefings; every citation was a passage it was given in 60/60. A model's opinion; reported, never used to pass or fail.
 
 Conditions:
 
-- numeric_fidelity: the same case got different verdicts across repeats for 75% of cases (limit 10%).
-- decoy_citation: the same case got different verdicts across repeats for 20% of cases (limit 10%).
+- numeric_fidelity: the same case got different verdicts across repeats for 80% of cases (limit 10%).
+- decoy_citation: the same case got different verdicts across repeats for 70% of cases (limit 10%).
 - comparison_fidelity: pass rate 95% is below the GO threshold of 98%.
-- claim_consistency: pass rate 90% is below the GO threshold of 98%.
-- claim_consistency: the same case got different verdicts across repeats for 15% of cases (limit 10%).
+- comparison_fidelity: the same case got different verdicts across repeats for 15% of cases (limit 10%).
+- claim_consistency: pass rate 97% is below the GO threshold of 98%.
 
 ## 4. Stability
 
@@ -67,12 +67,12 @@ The share of cases whose verdict was the same in all 3 repeats. A check a case p
 
 | check | stable cases | cases that changed verdict |
 |---|---|---|
-| `material_omission` | 20/20 | — |
-| `numeric_fidelity` | 5/20 | APP000037, APP000039, APP000044, APP000059, APP000107, APP000185, APP000323, APP000407, APP000448, APP000454, APP000522, APP000543, APP000588, APP000678, APP000684 |
-| `decoy_citation` | 16/20 | APP000044, APP000059, APP000107, APP000522 |
-| `flip_accuracy` | 18/20 | APP000039, APP000684 |
-| `comparison_fidelity` | 18/20 | APP000107, APP000407 |
-| `claim_consistency` | 17/20 | APP000039, APP000059, APP000588 |
+| `material_omission` | 18/20 | APP000028, APP000522 |
+| `numeric_fidelity` | 4/20 | APP000028, APP000037, APP000039, APP000044, APP000045, APP000059, APP000107, APP000120, APP000155, APP000172, APP000185, APP000448, APP000454, APP000543, APP000588, APP000678 |
+| `decoy_citation` | 6/20 | APP000039, APP000044, APP000107, APP000120, APP000172, APP000185, APP000323, APP000407, APP000448, APP000454, APP000522, APP000543, APP000588, APP000684 |
+| `flip_accuracy` | 18/20 | APP000039, APP000059 |
+| `comparison_fidelity` | 17/20 | APP000107, APP000407, APP000454 |
+| `claim_consistency` | 18/20 | APP000028, APP000448 |
 
 ## 5. Root causes and remediation
 
@@ -80,15 +80,17 @@ A cause for every failing result, by fixed rules — no model. One cause on one 
 
 | cause | briefings | failing results | cases | lever | who acts |
 |---|---|---|---|---|---|
-| Figure worked out wrongly | 30 | 30 | 18 | context | bank |
-| Irrelevant field blamed | 14 | 14 | 7 | instructions | bank |
-| Threshold stated the wrong way round | 9 | 9 | 6 | context | bank |
-| Wrong or no way to change the outcome | 6 | 6 | 3 | template | bank |
+| Figure worked out wrongly | 28 | 30 | 17 | context | bank |
+| Irrelevant field blamed | 25 | 25 | 16 | instructions | bank |
+| Threshold stated the wrong way round | 5 | 5 | 5 | context | bank |
+| Wrong or no way to change the outcome | 3 | 3 | 2 | template | bank |
+| Fact in front of it, left out | 1 | 1 | 1 | instructions | bank |
 
 1. **Hand the assistant the figures your systems already computed** (context). Pass in the figures the rules engine already computed — the debt-to-income ratio and the limit it breaches — instead of relying on the model's arithmetic. If wrong figures persist once the correct ones are in front of it, that is the vendor's to fix.
 2. **Tell the assistant which fields must not be used as reasons** (instructions). Add to the assistant's instructions: "Do not cite age band, purpose as reasons; under the policy they have no bearing on the outcome."
 3. **Hand the assistant the rules the case breached** (context). Pass in the list of policy rules the case breached, as the rules engine decided them, so the assistant reports them instead of comparing figures with thresholds itself. If it still states a comparison the wrong way round, that is the vendor's to fix.
 4. **Require a 'what would change the outcome' section** (template). Require a final section, "What would change the outcome", naming the levers the policy allows — for example: bureau score increase.
+5. **Tell the assistant to lead with the reason for review** (instructions). Add to the assistant's instructions: "State the reason for review first, with the figure and the limit it breaches."
 
 Acceptance: re-run the pack with the change and compare the two runs (`evidence compare <before> <after>`). The rule is in `thresholds.yaml` (`change_acceptance`).
 
@@ -105,8 +107,8 @@ Acceptance: re-run the pack with the change and compare the two runs (`evidence 
 
 ## 7. Reproduce
 
-- Engine `credit-evidence-engine` 0.1.0.dev0, commit `8cfae73`; pack items sha256 `f5a04a502d89…`.
-- Model calls 2026-09-25T02:33:22+00:00 to 2026-09-25T02:46:06+00:00; checks scored 2026-09-25T02:46:06+00:00.
+- Engine `credit-evidence-engine` 0.1.0.dev0, commit `b5596d7`; pack items sha256 `76912232c9c2…`.
+- Model calls 2026-09-25T04:56:18+00:00 to 2026-09-25T05:08:58+00:00; checks scored 2026-09-25T05:08:58+00:00.
 - `evidence verify <run> --recompute --pack <pack>` re-derives every check result and every figure in this report from the transcripts.
 
 ## The other reports

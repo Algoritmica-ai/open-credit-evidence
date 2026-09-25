@@ -1,48 +1,56 @@
 # For underwriters — what to watch for in the assistant's briefings
 
-Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-de` v0.6.0 · run `2026-09-25-de` · model calls 2026-09-25
+Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-de` v0.7.0 · run `2026-09-25-de` · model calls 2026-09-25
 
 The briefing is a summary of the file, written by a model. On these cases it went wrong in the ways below, most frequent first. Each comes with a sentence the assistant actually wrote and what to do when you see one like it.
 
-## Figure worked out wrongly — 30 of 60 briefings
+## Figure worked out wrongly — 28 of 60 briefings
 
 The assistant worked a figure out itself and got it wrong.
 
-> … of €367, results in a TMDS ratio of approximately 41.5%, which sits above the policy limit of 40%. **What the …
+> … debt service of €760. This represents approximately **43.2%** of the applicant's gross monthly income (€1,996), …
 
-— case APP000037, repeat 1
+— case APP000028, repeat 2
 
 **What to do:** Check any ratio or amount the briefing works out against the application form before relying on it. The briefing's own arithmetic is where it is most often wrong.
 
-## Irrelevant field blamed — 14 of 60 briefings
+## Irrelevant field blamed — 25 of 60 briefings
 
 The assistant blamed a field that has no bearing on the outcome.
 
-> Specifically, the applicant’s total monthly debt service exceeds the policy threshold of 40% of gross monthly income, and the applicant falls within the "thin file" category due to a credit file age of under 24 months.
+> Specifically, the applicant’s total monthly debt service exceeds the 40% affordability threshold, and the applicant falls within the "thin file" category due to a credit file age of 44 months (under 24 months is the policy limit, though this file is older, the score and history rules still apply).
 
 — case APP000028, repeat 1
 
 **What to do:** Disregard reasoning that rests on age band, loan purpose. The lending policy does not use them.
 
-## Threshold stated the wrong way round — 9 of 60 briefings
+## Threshold stated the wrong way round — 5 of 60 briefings
 
 The assistant compared a figure with a policy threshold and got the direction wrong, or said a limit was breached when its own figure says it was not.
 
-> Credit History: The bureau score is 645, which is below the 600 threshold requiring review.
+> Additionally, the applicant’s credit score of 645 falls below the 600 threshold requiring review, and the credit file is 6 months old, which is considered a "thin file" (under 24 months).
 
-— case APP000107, repeat 2
+— case APP000107, repeat 3
 
 **What to do:** When a briefing says a figure is above or below a limit, compare the two numbers yourself.
 
-## Wrong or no way to change the outcome — 6 of 60 briefings
+## Wrong or no way to change the outcome — 3 of 60 briefings
 
 The assistant did not name a valid way to change the outcome.
 
-> *   **Bureau Score:** The credit score is 570, which is below the 600 cutoff requiring review.
+> Additionally, the applicant’s credit score of 570 falls below the 600 benchmark, triggering a secondary review requirement.
 
-— case APP000039, repeat 3
+— case APP000039, repeat 1
 
 **What to do:** If the briefing does not say what would change the outcome, work it out from the policy: which limit is breached, and by how much.
+
+## Fact in front of it, left out — 1 of 60 briefings
+
+The fact was in the documents the assistant was handed, and it left it out.
+
+Case APP000028: omitted 1/1 material fact(s): ['income not verified']
+
+**What to do:** Read the reason for referral in the file itself. The briefing may leave out the fact that decides the case.
 
 ## Before you rely on a briefing
 

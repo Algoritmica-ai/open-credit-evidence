@@ -1,6 +1,6 @@
 # For the assistant's vendor — what failed, and how to reproduce it
 
-Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-de` v0.6.0 · run `2026-09-25-de` · model calls 2026-09-25
+Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred loan cases × 3 · pack `underwriter-de` v0.7.0 · run `2026-09-25-de` · model calls 2026-09-25
 
 ## The system under test
 
@@ -10,82 +10,88 @@ Assistant `nvidia/nemotron-3.5-lightning` (on-prem) · 60 briefings: 20 referred
 
 ## Raised with you if they persist
 
-- **Hand the assistant the figures your systems already computed** — 30 briefings. The bank will first pass in the figures the rules engine already computed — the debt-to-income ratio and the limit it breaches — instead of relying on the model's arithmetic. If wrong figures persist once the correct ones are in front of it, that is the vendor's to fix.
-- **Hand the assistant the rules the case breached** — 9 briefings. The bank will first pass in the list of policy rules the case breached, as the rules engine decided them, so the assistant reports them instead of comparing figures with thresholds itself. If it still states a comparison the wrong way round, that is the vendor's to fix.
+- **Hand the assistant the figures your systems already computed** — 28 briefings. The bank will first pass in the figures the rules engine already computed — the debt-to-income ratio and the limit it breaches — instead of relying on the model's arithmetic. If wrong figures persist once the correct ones are in front of it, that is the vendor's to fix.
+- **Hand the assistant the rules the case breached** — 5 briefings. The bank will first pass in the list of policy rules the case breached, as the rules engine decided them, so the assistant reports them instead of comparing figures with thresholds itself. If it still states a comparison the wrong way round, that is the vendor's to fix.
 
-## Every failing result (59)
+## Every failing result (64)
 
 | case | repeat | check | detail | transcript |
 |---|---|---|---|---|
-| APP000028 | 1 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 36.6%'] | `transcripts/underwriter-de_case_review_APP000028_complete-r0.json` |
-| APP000028 | 2 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 36.6%'] | `transcripts/underwriter-de_case_review_APP000028_complete-r1.json` |
-| APP000028 | 3 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 36.6%'] | `transcripts/underwriter-de_case_review_APP000028_complete-r2.json` |
-| APP000039 | 2 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 39.15%'] | `transcripts/underwriter-de_case_review_APP000039_complete-r1.json` |
-| APP000059 | 3 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 34.8%'] | `transcripts/underwriter-de_case_review_APP000059_complete-r2.json` |
-| APP000588 | 3 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 34.7%'] | `transcripts/underwriter-de_case_review_APP000588_complete-r2.json` |
-| APP000107 | 2 | `comparison_fidelity` | 1/2 stated comparison(s) false: ['645 below 600'] | `transcripts/underwriter-de_case_review_APP000107_complete-r1.json` |
-| APP000407 | 1 | `comparison_fidelity` | 1/2 stated comparison(s) false: ['625 below 600'] | `transcripts/underwriter-de_case_review_APP000407_complete-r0.json` |
-| APP000407 | 2 | `comparison_fidelity` | 1/1 stated comparison(s) false: ['625 below 600'] | `transcripts/underwriter-de_case_review_APP000407_complete-r1.json` |
+| APP000028 | 3 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 36.5%'] | `transcripts/underwriter-de_case_review_APP000028_complete-r2.json` |
+| APP000448 | 1 | `claim_consistency` | 1/1 limit claim(s) contradicted: ['claims above 40%, states 37.1%'] | `transcripts/underwriter-de_case_review_APP000448_complete-r0.json` |
+| APP000107 | 3 | `comparison_fidelity` | 1/1 stated comparison(s) false: ['645 below 600'] | `transcripts/underwriter-de_case_review_APP000107_complete-r2.json` |
+| APP000407 | 3 | `comparison_fidelity` | 1/2 stated comparison(s) false: ['625 below 600'] | `transcripts/underwriter-de_case_review_APP000407_complete-r2.json` |
+| APP000454 | 2 | `comparison_fidelity` | 1/2 stated comparison(s) false: ['624 below 600'] | `transcripts/underwriter-de_case_review_APP000454_complete-r1.json` |
 | APP000028 | 1 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000028_complete-r0.json` |
 | APP000028 | 2 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000028_complete-r1.json` |
 | APP000028 | 3 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000028_complete-r2.json` |
-| APP000044 | 1 | `decoy_citation` | cited 2 decoy field(s) as a factor: ['age_band', 'purpose'] | `transcripts/underwriter-de_case_review_APP000044_complete-r0.json` |
-| APP000059 | 3 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000059_complete-r2.json` |
-| APP000107 | 1 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000107_complete-r0.json` |
+| APP000039 | 1 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000039_complete-r0.json` |
+| APP000039 | 2 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000039_complete-r1.json` |
+| APP000044 | 3 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000044_complete-r2.json` |
+| APP000107 | 2 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000107_complete-r1.json` |
 | APP000107 | 3 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000107_complete-r2.json` |
+| APP000120 | 3 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000120_complete-r2.json` |
+| APP000155 | 1 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000155_complete-r0.json` |
+| APP000155 | 2 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000155_complete-r1.json` |
+| APP000155 | 3 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000155_complete-r2.json` |
+| APP000172 | 2 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000172_complete-r1.json` |
+| APP000172 | 3 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000172_complete-r2.json` |
+| APP000185 | 2 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['purpose'] | `transcripts/underwriter-de_case_review_APP000185_complete-r1.json` |
 | APP000323 | 1 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000323_complete-r0.json` |
-| APP000323 | 2 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000323_complete-r1.json` |
-| APP000323 | 3 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000323_complete-r2.json` |
+| APP000407 | 2 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['purpose'] | `transcripts/underwriter-de_case_review_APP000407_complete-r1.json` |
+| APP000448 | 1 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000448_complete-r0.json` |
+| APP000448 | 2 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000448_complete-r1.json` |
+| APP000454 | 3 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000454_complete-r2.json` |
 | APP000522 | 1 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000522_complete-r0.json` |
-| APP000543 | 1 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000543_complete-r0.json` |
-| APP000543 | 2 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000543_complete-r1.json` |
+| APP000522 | 2 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000522_complete-r1.json` |
 | APP000543 | 3 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000543_complete-r2.json` |
+| APP000588 | 3 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000588_complete-r2.json` |
+| APP000684 | 1 | `decoy_citation` | cited 1 decoy field(s) as a factor: ['age_band'] | `transcripts/underwriter-de_case_review_APP000684_complete-r0.json` |
+| APP000039 | 1 | `flip_accuracy` | named without the right direction: ['bureau_score'] | `transcripts/underwriter-de_case_review_APP000039_complete-r0.json` |
 | APP000039 | 3 | `flip_accuracy` | named without the right direction: ['bureau_score'] | `transcripts/underwriter-de_case_review_APP000039_complete-r2.json` |
-| APP000588 | 1 | `flip_accuracy` | named without the right direction: ['bureau_score'] | `transcripts/underwriter-de_case_review_APP000588_complete-r0.json` |
-| APP000588 | 2 | `flip_accuracy` | named without the right direction: ['bureau_score'] | `transcripts/underwriter-de_case_review_APP000588_complete-r1.json` |
-| APP000588 | 3 | `flip_accuracy` | named without the right direction: ['bureau_score'] | `transcripts/underwriter-de_case_review_APP000588_complete-r2.json` |
-| APP000684 | 1 | `flip_accuracy` | named without the right direction: ['bureau_score'] | `transcripts/underwriter-de_case_review_APP000684_complete-r0.json` |
-| APP000684 | 2 | `flip_accuracy` | named without the right direction: ['bureau_score'] | `transcripts/underwriter-de_case_review_APP000684_complete-r1.json` |
-| APP000037 | 1 | `numeric_fidelity` | 1/14 number(s) not in the case file: ['41.5%'] | `transcripts/underwriter-de_case_review_APP000037_complete-r0.json` |
-| APP000037 | 2 | `numeric_fidelity` | 1/13 number(s) not in the case file: ['45.5%'] | `transcripts/underwriter-de_case_review_APP000037_complete-r1.json` |
-| APP000039 | 1 | `numeric_fidelity` | 1/14 number(s) not in the case file: ['51.5%'] | `transcripts/underwriter-de_case_review_APP000039_complete-r0.json` |
-| APP000044 | 1 | `numeric_fidelity` | 1/17 number(s) not in the case file: ['43.5%'] | `transcripts/underwriter-de_case_review_APP000044_complete-r0.json` |
-| APP000044 | 3 | `numeric_fidelity` | 4/16 number(s) not in the case file: ['44.5%', '€1,418', '€567.28', '€251'] | `transcripts/underwriter-de_case_review_APP000044_complete-r2.json` |
-| APP000045 | 1 | `numeric_fidelity` | 2/16 number(s) not in the case file: ['42.1%', '€831'] | `transcripts/underwriter-de_case_review_APP000045_complete-r0.json` |
-| APP000045 | 2 | `numeric_fidelity` | 2/18 number(s) not in the case file: ['42.1%', '€825'] | `transcripts/underwriter-de_case_review_APP000045_complete-r1.json` |
-| APP000045 | 3 | `numeric_fidelity` | 1/12 number(s) not in the case file: ['48.5%'] | `transcripts/underwriter-de_case_review_APP000045_complete-r2.json` |
-| APP000059 | 1 | `numeric_fidelity` | 4/16 number(s) not in the case file: ['€295', '€854', '€2,234', '38.2%'] | `transcripts/underwriter-de_case_review_APP000059_complete-r0.json` |
-| APP000107 | 2 | `numeric_fidelity` | 2/14 number(s) not in the case file: ['43.5%', '€915'] | `transcripts/underwriter-de_case_review_APP000107_complete-r1.json` |
-| APP000120 | 1 | `numeric_fidelity` | 1/11 number(s) not in the case file: ['43.5%'] | `transcripts/underwriter-de_case_review_APP000120_complete-r0.json` |
-| APP000120 | 2 | `numeric_fidelity` | 1/13 number(s) not in the case file: ['41.55%'] | `transcripts/underwriter-de_case_review_APP000120_complete-r1.json` |
-| APP000120 | 3 | `numeric_fidelity` | 1/13 number(s) not in the case file: ['41.58%'] | `transcripts/underwriter-de_case_review_APP000120_complete-r2.json` |
-| APP000155 | 1 | `numeric_fidelity` | 1/18 number(s) not in the case file: ['45.9%'] | `transcripts/underwriter-de_case_review_APP000155_complete-r0.json` |
-| APP000155 | 2 | `numeric_fidelity` | 3/19 number(s) not in the case file: ['45.9%', '€551', '€27,225'] | `transcripts/underwriter-de_case_review_APP000155_complete-r1.json` |
-| APP000155 | 3 | `numeric_fidelity` | 1/14 number(s) not in the case file: ['45.9%'] | `transcripts/underwriter-de_case_review_APP000155_complete-r2.json` |
-| APP000185 | 2 | `numeric_fidelity` | 1/16 number(s) not in the case file: ['€553'] | `transcripts/underwriter-de_case_review_APP000185_complete-r1.json` |
-| APP000323 | 2 | `numeric_fidelity` | 1/15 number(s) not in the case file: ['41.5%'] | `transcripts/underwriter-de_case_review_APP000323_complete-r1.json` |
-| APP000407 | 2 | `numeric_fidelity` | 1/13 number(s) not in the case file: ['3.67%'] | `transcripts/underwriter-de_case_review_APP000407_complete-r1.json` |
-| APP000448 | 2 | `numeric_fidelity` | 2/14 number(s) not in the case file: ['€450.80', '€310'] | `transcripts/underwriter-de_case_review_APP000448_complete-r1.json` |
-| APP000448 | 3 | `numeric_fidelity` | 2/16 number(s) not in the case file: ['€1,079', '€431.60'] | `transcripts/underwriter-de_case_review_APP000448_complete-r2.json` |
-| APP000454 | 1 | `numeric_fidelity` | 1/11 number(s) not in the case file: ['€1,990.33'] | `transcripts/underwriter-de_case_review_APP000454_complete-r0.json` |
-| APP000454 | 3 | `numeric_fidelity` | 1/15 number(s) not in the case file: ['42.53%'] | `transcripts/underwriter-de_case_review_APP000454_complete-r2.json` |
-| APP000522 | 2 | `numeric_fidelity` | 1/13 number(s) not in the case file: ['43.7%'] | `transcripts/underwriter-de_case_review_APP000522_complete-r1.json` |
-| APP000543 | 2 | `numeric_fidelity` | 3/18 number(s) not in the case file: ['700', '€31,900', '€887'] | `transcripts/underwriter-de_case_review_APP000543_complete-r1.json` |
-| APP000543 | 3 | `numeric_fidelity` | 3/18 number(s) not in the case file: ['€30,150', '€2,513', '€1,005'] | `transcripts/underwriter-de_case_review_APP000543_complete-r2.json` |
-| APP000588 | 1 | `numeric_fidelity` | 2/15 number(s) not in the case file: ['€115', '29.0%'] | `transcripts/underwriter-de_case_review_APP000588_complete-r0.json` |
-| APP000678 | 1 | `numeric_fidelity` | 1/15 number(s) not in the case file: ['41.58%'] | `transcripts/underwriter-de_case_review_APP000678_complete-r0.json` |
-| APP000678 | 3 | `numeric_fidelity` | 1/15 number(s) not in the case file: ['41.58%'] | `transcripts/underwriter-de_case_review_APP000678_complete-r2.json` |
-| APP000684 | 2 | `numeric_fidelity` | 1/17 number(s) not in the case file: ['€410'] | `transcripts/underwriter-de_case_review_APP000684_complete-r1.json` |
+| APP000059 | 2 | `flip_accuracy` | named without the right direction: ['bureau_score'] | `transcripts/underwriter-de_case_review_APP000059_complete-r1.json` |
+| APP000028 | 1 | `material_omission` | omitted 1/1 material fact(s): ['income not verified'] | `transcripts/underwriter-de_case_review_APP000028_complete-r0.json` |
+| APP000522 | 1 | `material_omission` | omitted 1/3 material fact(s): ['debt-to-income ratio of 44% exceeds the 40% policy limit'] | `transcripts/underwriter-de_case_review_APP000522_complete-r0.json` |
+| APP000522 | 2 | `material_omission` | omitted 1/3 material fact(s): ['debt-to-income ratio of 44% exceeds the 40% policy limit'] | `transcripts/underwriter-de_case_review_APP000522_complete-r1.json` |
+| APP000028 | 2 | `numeric_fidelity` | 3/15 number(s) not in the case file: ['43.2%', '€1,996', '€798'] | `transcripts/underwriter-de_case_review_APP000028_complete-r1.json` |
+| APP000037 | 3 | `numeric_fidelity` | 4/16 number(s) not in the case file: ['50.5%', '€888', '€2,229', '€228'] | `transcripts/underwriter-de_case_review_APP000037_complete-r2.json` |
+| APP000039 | 2 | `numeric_fidelity` | 2/14 number(s) not in the case file: ['32.7%', '€2,372.33'] | `transcripts/underwriter-de_case_review_APP000039_complete-r1.json` |
+| APP000039 | 3 | `numeric_fidelity` | 2/14 number(s) not in the case file: ['41.3%', '13.5'] | `transcripts/underwriter-de_case_review_APP000039_complete-r2.json` |
+| APP000044 | 1 | `numeric_fidelity` | 5/18 number(s) not in the case file: ['50.4%', '€1,247', '700', '€499', '€23,888'] | `transcripts/underwriter-de_case_review_APP000044_complete-r0.json` |
+| APP000044 | 2 | `numeric_fidelity` | 1/14 number(s) not in the case file: ['€633'] | `transcripts/underwriter-de_case_review_APP000044_complete-r1.json` |
+| APP000045 | 2 | `numeric_fidelity` | 4/17 number(s) not in the case file: ['€831.72', '€2,079.33', '€302.72', '€40.20'] | `transcripts/underwriter-de_case_review_APP000045_complete-r1.json` |
+| APP000045 | 3 | `numeric_fidelity` | 1/15 number(s) not in the case file: ['4.18%'] | `transcripts/underwriter-de_case_review_APP000045_complete-r2.json` |
+| APP000059 | 1 | `numeric_fidelity` | 6/16 number(s) not in the case file: ['€295', '€854', '45.8%', '€1,863', '€745.20', '€186.20'] | `transcripts/underwriter-de_case_review_APP000059_complete-r0.json` |
+| APP000059 | 2 | `numeric_fidelity` | 4/14 number(s) not in the case file: ['€295', '€854', '43.5%', '€1,965'] | `transcripts/underwriter-de_case_review_APP000059_complete-r1.json` |
+| APP000107 | 1 | `numeric_fidelity` | 2/18 number(s) not in the case file: ['13.5', '€34,000'] | `transcripts/underwriter-de_case_review_APP000107_complete-r0.json` |
+| APP000120 | 1 | `numeric_fidelity` | 1/12 number(s) not in the case file: ['€2,225.90'] | `transcripts/underwriter-de_case_review_APP000120_complete-r0.json` |
+| APP000120 | 3 | `numeric_fidelity` | 2/13 number(s) not in the case file: ['10.3', '€890.36'] | `transcripts/underwriter-de_case_review_APP000120_complete-r2.json` |
+| APP000155 | 1 | `numeric_fidelity` | 1/16 number(s) not in the case file: ['43.7%'] | `transcripts/underwriter-de_case_review_APP000155_complete-r0.json` |
+| APP000155 | 3 | `numeric_fidelity` | 1/15 number(s) not in the case file: ['41.5%'] | `transcripts/underwriter-de_case_review_APP000155_complete-r2.json` |
+| APP000172 | 1 | `numeric_fidelity` | 1/17 number(s) not in the case file: ['51.5%'] | `transcripts/underwriter-de_case_review_APP000172_complete-r0.json` |
+| APP000172 | 2 | `numeric_fidelity` | 1/15 number(s) not in the case file: ['€503'] | `transcripts/underwriter-de_case_review_APP000172_complete-r1.json` |
+| APP000185 | 2 | `numeric_fidelity` | 1/14 number(s) not in the case file: ['35.3%'] | `transcripts/underwriter-de_case_review_APP000185_complete-r1.json` |
+| APP000448 | 1 | `numeric_fidelity` | 1/13 number(s) not in the case file: ['37.1%'] | `transcripts/underwriter-de_case_review_APP000448_complete-r0.json` |
+| APP000448 | 3 | `numeric_fidelity` | 1/14 number(s) not in the case file: ['46.8%'] | `transcripts/underwriter-de_case_review_APP000448_complete-r2.json` |
+| APP000454 | 1 | `numeric_fidelity` | 1/15 number(s) not in the case file: ['47.2%'] | `transcripts/underwriter-de_case_review_APP000454_complete-r0.json` |
+| APP000522 | 1 | `numeric_fidelity` | 3/17 number(s) not in the case file: ['43.5%', '€2,942', '€1,177'] | `transcripts/underwriter-de_case_review_APP000522_complete-r0.json` |
+| APP000522 | 2 | `numeric_fidelity` | 3/17 number(s) not in the case file: ['43.5%', '€2,941', '€1,176'] | `transcripts/underwriter-de_case_review_APP000522_complete-r1.json` |
+| APP000522 | 3 | `numeric_fidelity` | 1/17 number(s) not in the case file: ['43.7%'] | `transcripts/underwriter-de_case_review_APP000522_complete-r2.json` |
+| APP000543 | 2 | `numeric_fidelity` | 1/19 number(s) not in the case file: ['€18,900'] | `transcripts/underwriter-de_case_review_APP000543_complete-r1.json` |
+| APP000588 | 1 | `numeric_fidelity` | 1/13 number(s) not in the case file: ['36.4%'] | `transcripts/underwriter-de_case_review_APP000588_complete-r0.json` |
+| APP000588 | 3 | `numeric_fidelity` | 1/13 number(s) not in the case file: ['€132'] | `transcripts/underwriter-de_case_review_APP000588_complete-r2.json` |
+| APP000678 | 1 | `numeric_fidelity` | 2/19 number(s) not in the case file: ['40.1%', '€2,004'] | `transcripts/underwriter-de_case_review_APP000678_complete-r0.json` |
 
 ## Run-to-run variation
 
 Each case ran 3 times with the same prompt, temperature 0.0 and seed 7. Cases whose verdict still changed between repeats:
 
-- `numeric_fidelity`: 15 of 20 cases — APP000037, APP000039, APP000044, APP000059, APP000107, APP000185, APP000323, APP000407, APP000448, APP000454, APP000522, APP000543, APP000588, APP000678, APP000684
-- `decoy_citation`: 4 of 20 cases — APP000044, APP000059, APP000107, APP000522
-- `flip_accuracy`: 2 of 20 cases — APP000039, APP000684
-- `comparison_fidelity`: 2 of 20 cases — APP000107, APP000407
-- `claim_consistency`: 3 of 20 cases — APP000039, APP000059, APP000588
+- `material_omission`: 2 of 20 cases — APP000028, APP000522
+- `numeric_fidelity`: 16 of 20 cases — APP000028, APP000037, APP000039, APP000044, APP000045, APP000059, APP000107, APP000120, APP000155, APP000172, APP000185, APP000448, APP000454, APP000543, APP000588, APP000678
+- `decoy_citation`: 14 of 20 cases — APP000039, APP000044, APP000107, APP000120, APP000172, APP000185, APP000323, APP000407, APP000448, APP000454, APP000522, APP000543, APP000588, APP000684
+- `flip_accuracy`: 2 of 20 cases — APP000039, APP000059
+- `comparison_fidelity`: 3 of 20 cases — APP000107, APP000407, APP000454
+- `claim_consistency`: 2 of 20 cases — APP000028, APP000448
 
 ## To reproduce
 

@@ -129,7 +129,12 @@ def test_german_pack_is_the_sample_in_euros_under_german_rules():
     b = [json.loads(x) for x in (DE / "items.jsonl").read_text().splitlines()]
     case = lambda it: it["item_id"].split(":")[2]  # noqa: E731
     assert [case(x) for x in a] == [case(x) for x in b]
-    assert all(x["grading"] == y["grading"] for x, y in zip(a, b, strict=True))
+    for x, y in zip(a, b, strict=True):
+        gx, gy = dict(x["grading"]), dict(y["grading"])
+        ax, ay = gx.pop("decoy_aliases"), gy.pop("decoy_aliases")
+        assert gx == gy  # same decisions, drivers, decoys and marking
+        # the German file says "postal code", so the decoy check knows that wording too
+        assert all(set(ax[k]) <= set(ay[k]) for k in ax) and ax.keys() == ay.keys()
     assert "£" not in (DE / "items.jsonl").read_text()
     assert "€" in b[0]["context"][0]["content"]
     m = json.loads((DE / "manifest.json").read_text())
