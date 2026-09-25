@@ -3,10 +3,12 @@
 # Copyright (c) 2026 Algoritmica GmbH
 """Streamed tool calls for the judge NIM, for agent runtimes that always stream.
 
-The Nano judge NIM parses tool calls with the parser packaged with its model
+The Nano judge NIM parsed tool calls with the parser packaged with its model
 (``nemotron_json``), which works only on complete replies: a streamed request
-that offers tools is refused with "Tool calling is not supported in streaming
-mode!". OpenClaw, the agent runtime inside NemoClaw, streams every request.
+that offered tools was refused with "Tool calling is not supported in streaming
+mode!". OpenClaw, the agent runtime inside NemoClaw, streams every request. The
+judge is now the Nemotron 3 Super NIM; the relay stays in front of it so that
+an agent gets its tool calls whichever parser the judge NIM ships with.
 
 This relay sits between the two. A streamed chat request that offers tools is
 sent to the NIM unstreamed; the complete reply, tool calls parsed, is then

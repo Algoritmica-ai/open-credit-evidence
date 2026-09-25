@@ -28,6 +28,8 @@ import json
 import os
 import subprocess
 import tempfile
+import time
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -86,9 +88,36 @@ def bundles(run: Path, pack: Pack, corpus: Corpus | None, limit: int | None = No
     return out, facts
 
 
+Sink = Callable[[list[dict[str, Any]]], None]
+POLL_S = 30  # how often finished briefings are fetched from the sandbox
+
+
+def done_keys(run: Path) -> set[tuple[str, int]]:
+    """Briefings the run's panel already has a good record for."""
+    path = run / "panel" / "records.jsonl"
+    if not path.is_file():
+        return set()
+    return {(r["item_id"], r["repeat"]) for r in map(json.loads, path.read_text(
+        encoding="utf-8").splitlines()) if not r.get("error")}
+
+
+def _read_records(path: Path) -> list[dict[str, Any]]:
+    """Records in a file that may still be being written: a torn last line is skipped."""
+    out = []
+    if path.is_file():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            try:
+                out.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    return out
+
+
 def run_direct(bundle_list: list[dict[str, Any]], *, workers: int, log: Any,
-               models: dict[str, str] | None = None) -> tuple[list[dict[str, Any]], dict]:
-    """The panel in this process, against the judge endpoint."""
+               models: dict[str, str] | None = None, sink: Sink | None = None
+               ) -> tuple[list[dict[str, Any]], dict]:
+    """The panel in this process, against the judge endpoint. Each finished briefing
+    goes to ``sink`` as it arrives."""
     ep = endpoint_for("judge")
     key = os.environ.get("NVIDIA_API_KEY") if ep.is_build else None
     models = models or {r: ep.model_id for r in ("reader", "challenger", "arbiter")}
@@ -96,18 +125,24 @@ def run_direct(bundle_list: list[dict[str, Any]], *, workers: int, log: Any,
     def call(**kw: Any) -> dict[str, Any]:
         return panel.chat(ep.base_url, api_key=key, **kw)
 
-    records = panel.run_many(bundle_list, call=call, models=models, workers=workers, log=log)
+    records = panel.run_many(bundle_list, call=call, models=models, workers=workers, log=log,
+                             write=(lambda r: sink([r])) if sink else (lambda r: None))
     return records, {"kind": "direct", "endpoint": ep.base_url, "models": models}
 
 
 def run_nemoclaw(bundle_list: list[dict[str, Any]], *, workers: int, log: Any,
-                 models: dict[str, str] | None = None) -> tuple[list[dict[str, Any]], dict]:
-    """The panel inside the NemoClaw sandbox on the node, via panel_nemoclaw.sh."""
+                 models: dict[str, str] | None = None, sink: Sink | None = None
+                 ) -> tuple[list[dict[str, Any]], dict]:
+    """The panel inside the NemoClaw sandbox on the node, via panel_nemoclaw.sh.
+
+    The script copies finished briefings back as the panel runs; they go to
+    ``sink`` every ``POLL_S`` seconds, and whatever arrived is kept if it fails.
+    """
     hosts = os.environ.get("EVIDENCE_PANEL_SSH", "").split()
     if len(hosts) != 2:
         raise RuntimeError("set EVIDENCE_PANEL_SSH to '<login host> <node>', e.g. "
                            "'codefest rtx-3se-06-04'")
-    model = (models or {}).get("reader") or "nano-judge"
+    model = (models or {}).get("reader") or endpoint_for("judge").model_id
     with tempfile.TemporaryDirectory() as tmp:
         job = Path(tmp)
         (job / "bundles.jsonl").write_text(
@@ -115,10 +150,36 @@ def run_nemoclaw(bundle_list: list[dict[str, Any]], *, workers: int, log: Any,
             encoding="utf-8")
         (job / "panel.py").write_bytes(Path(panel.__file__).read_bytes())
         log(f"  running {len(bundle_list)} briefings in the NemoClaw sandbox on {hosts[1]}")
-        subprocess.run(["bash", str(SCRIPT), str(job), hosts[0], hosts[1], model,
-                        str(workers)], check=True)
-        records = [json.loads(x) for x in (job / "records.jsonl").read_text(
-            encoding="utf-8").splitlines() if x.strip()]
+        proc = subprocess.Popen(["bash", str(SCRIPT), str(job), hosts[0], hosts[1], model,
+                                 str(workers)])
+        seen, shown = 0.0, set()
+        while True:
+            finished = proc.poll() is not None
+            path = job / "records.jsonl"
+            if path.is_file() and path.stat().st_mtime != seen:
+                seen = path.stat().st_mtime
+                arrived = _read_records(path)
+                # nemoclaw exec holds the sandbox's output until the end: report
+                # progress from the records as they come back instead
+                for r in arrived:
+                    key = (r["item_id"], r["repeat"])
+                    if key not in shown:
+                        shown.add(key)
+                        case = r["item_id"].split(":")[2] if r["item_id"].count(":") >= 2 \
+                            else r["item_id"]
+                        flag = {True: "flag", False: "ok", None: "—"}[r.get("flag_for_review")]
+                        log(f"  {len(shown)}/{len(bundle_list)}  {case} r{r['repeat']}  "
+                            f"value {r.get('value')}  {flag}"
+                            + (f"  error: {r['error']}" if r.get("error") else ""))
+                if sink:
+                    sink(arrived)
+            if finished:
+                break
+            time.sleep(POLL_S)
+        records = _read_records(job / "records.jsonl")
+        if proc.returncode:
+            raise RuntimeError(f"panel_nemoclaw.sh exited {proc.returncode}; "
+                               f"{len(records)} briefings came back and are kept")
         runtime = json.loads((job / "runtime.json").read_text(encoding="utf-8"))
     return records, runtime | {"kind": "nemoclaw",
                                "models": {r: model for r in ("reader", "challenger",
@@ -126,8 +187,11 @@ def run_nemoclaw(bundle_list: list[dict[str, Any]], *, workers: int, log: Any,
 
 
 def record(run: Path, records: list[dict[str, Any]], facts: dict[str, Any],
-           runtime: dict[str, Any], started: str) -> dict[str, Any]:
-    """Keep the last good record per briefing, write panel/, and describe what ran."""
+           runtime: dict[str, Any], started: str, complete: bool = True) -> dict[str, Any]:
+    """Keep the last good record per briefing, write panel/, and describe what ran.
+
+    Called as briefings finish (``complete`` False) and once at the end.
+    """
     latest: dict[tuple[str, int], dict[str, Any]] = {}
     prior = run / "panel" / "records.jsonl"
     if prior.is_file():  # a resumed panel keeps what an earlier pass finished
@@ -149,6 +213,7 @@ def record(run: Path, records: list[dict[str, Any]], facts: dict[str, Any],
         "runtime": runtime,
         "started_at": started, "finished_at": _now(),
         "briefings": len(rows), "errors": sum(1 for r in rows if r.get("error")),
+        "planned": facts.get("briefings"), "complete": complete,
         "corpus": facts.get("corpus"), "passages_by_field": facts.get("passages_by_field"),
         "roles": {"reader": "scores the briefing as the underwriter would, no case file",
                   "challenger": "checks it against the case file and the deterministic "

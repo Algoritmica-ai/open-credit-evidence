@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
+import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -285,13 +287,38 @@ def _cmd_panel(a: argparse.Namespace) -> int:
                   f"{ec['cosine']}); rebuild it first", file=sys.stderr)
             return 1
     bundles, facts = panel_run.bundles(run, pack, corpus, limit=a.limit)
+    done = set() if a.redo else panel_run.done_keys(run)
+    todo = [b for b in bundles if (b["item_id"], b["repeat"]) not in done]
+    if done:
+        print(f"panel: {len(bundles) - len(todo)} of {len(bundles)} briefings already done; "
+              f"{len(todo)} to go (--redo to start over)")
+    if a.redo and (run / "panel").is_dir():
+        shutil.rmtree(run / "panel")
     started = datetime.now(UTC).isoformat(timespec="seconds")
+    running = {"kind": a.runtime, "status": "running"}
+
+    def sink(recs: list[dict[str, Any]]) -> None:  # finished briefings, as they arrive
+        panel_run.record(run, recs, facts, running, started, complete=False)
+
     runner = panel_run.run_nemoclaw if a.runtime == "nemoclaw" else panel_run.run_direct
-    records, runtime = runner(bundles, workers=a.workers, log=print)
-    m = panel_run.record(run, records, facts, runtime, started)
+    try:
+        records, runtime = runner(todo, workers=a.workers, log=print, sink=sink) if todo \
+            else ([], {"kind": a.runtime})
+    except (RuntimeError, OSError, subprocess.CalledProcessError) as exc:
+        m = panel_run.record(run, [], facts, running | {"status": f"stopped: {exc}"}, started,
+                             complete=False)
+        write_evidence(run)  # the run stays sealed and verifiable with a partial panel
+        print(f"panel stopped: {exc}\n{m['briefings']} of {m['planned']} briefings are in "
+              f"{run / 'panel'}; run the same command again to finish", file=sys.stderr)
+        return 1
+    finished = panel_run.done_keys(run) | {(r["item_id"], r["repeat"]) for r in records
+                                           if not r.get("error")}
+    m = panel_run.record(run, records, facts, runtime, started,
+                         complete=len(finished) >= len(bundles))
     out = write_evidence(run)
-    print(f"panel: {m['briefings']} briefings recorded ({m['errors']} errors) in "
-          f"{run / 'panel'}; evidence rebuilt and {out['files_sealed']} files sealed")
+    print(f"panel: {m['briefings']} briefings recorded ({m['errors']} errors, "
+          f"{len(finished)}/{len(bundles)} done) in {run / 'panel'}; evidence rebuilt and "
+          f"{out['files_sealed']} files sealed")
     print(f"report {run / 'evidence' / 'panel.md'}")
     return 0
 
@@ -379,6 +406,8 @@ def main(argv: list[str] | None = None) -> int:
     pn.add_argument("--corpus", help="regulation corpus (default: the run judge's; 'none')")
     pn.add_argument("--limit", type=int, help="only the first N items")
     pn.add_argument("--workers", type=int, default=4, help="briefings reviewed at once")
+    pn.add_argument("--redo", action="store_true",
+                    help="discard the run's panel records and start over (default: resume)")
     pn.set_defaults(fn=_cmd_panel)
 
     w = sub.add_parser("ui", help="serve the local web UI")

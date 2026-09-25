@@ -47,11 +47,13 @@ import urllib.request
 from collections.abc import Callable
 from typing import Any
 
-PANEL_VERSION = "panel-v1"
+PANEL_VERSION = "panel-v2"
 FIELDS = ("intelligible", "actionable", "overridable")
 MAX_PER_FIELD = 2
-MAX_STEPS = 8  # model turns per agent, tool rounds included
-MAX_TOKENS = 3000  # a reasoning model spends tokens thinking; leave room
+# Model turns per agent, tool rounds included. The Challenger checks figures one
+# tool call at a time: a thorough one makes six or seven before it answers.
+MAX_STEPS = {"reader": 4, "challenger": 14, "arbiter": 4}
+MAX_TOKENS = 8000  # per turn; a reasoning model can spend thousands of tokens thinking
 TOOL_RESULT_CHARS = 4000
 TIMEOUT = 600
 
@@ -208,19 +210,23 @@ def run_tool(name: str, args: dict[str, Any], bundle: dict[str, Any]) -> str:
 
 def chat(base_url: str, model: str, messages: list[dict[str, Any]],
          tools: list[str] | None = None, api_key: str | None = None,
-         max_tokens: int = MAX_TOKENS, use_env_proxy: bool = False) -> dict[str, Any]:
+         max_tokens: int = MAX_TOKENS, use_env_proxy: bool = False,
+         json_only: bool = False) -> dict[str, Any]:
     """One unstreamed chat completion from an OpenAI-compatible server.
 
     A self-hosted server is called directly, never through a proxy. Inside a
     NemoClaw sandbox every connection goes through the sandbox's own proxy,
     which enforces its network policy: ``use_env_proxy`` takes it from the
-    environment.
+    environment. ``json_only`` has the server constrain the answer to valid JSON
+    (after any reasoning).
     """
     body: dict[str, Any] = {"model": model, "messages": messages, "max_tokens": max_tokens,
                             "temperature": 0}
     if tools:
         body["tools"] = [{"type": "function", "function": {"name": n, **TOOLS[n]}}
                          for n in tools]
+    if json_only:
+        body["response_format"] = {"type": "json_object"}
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
@@ -255,22 +261,31 @@ def parse_json(text: str, keys: tuple[str, ...]) -> dict[str, Any] | None:
 
 def run_agent(role: str, system: str, user: str, bundle: dict[str, Any], *, call: Chat,
               model: str, keys: tuple[str, ...]) -> dict[str, Any]:
-    """One agent: model turns and tool rounds until it answers, recorded step by step."""
+    """One agent: model turns and tool rounds until it answers, recorded step by step.
+
+    An answer that is empty (the turn's tokens went on reasoning) or not the JSON
+    asked for is followed by one more turn, without tools, in which the server
+    constrains the reply to valid JSON. So is the last turn, if the agent is
+    still calling tools when its turns run out.
+    """
     tools = ROLE_TOOLS[role]
+    steps_max = MAX_STEPS[role]
     messages: list[dict[str, Any]] = [{"role": "system", "content": system},
                                       {"role": "user", "content": user}]
     steps: list[dict[str, Any]] = []
-    for n in range(MAX_STEPS):
-        last = n == MAX_STEPS - 1
-        if last and tools:
+    closing = False  # the next turn is the JSON-only answer
+    for n in range(steps_max):
+        if n == steps_max - 1 and not closing:
+            closing = True
             messages.append({"role": "user", "content": "Stop using tools. Give your final "
                              "answer now, as the JSON object asked for."})
-        reply = call(model=model, messages=messages, tools=None if last else (tools or None))
+        reply = call(model=model, messages=messages,
+                     tools=None if closing else (tools or None), json_only=closing)
         msg = (reply.get("choices") or [{}])[0].get("message") or {}
         calls = msg.get("tool_calls") or []
         step: dict[str, Any] = {"latency_ms": reply.get("_latency_ms"), "usage": reply.get(
-            "usage"), "id": reply.get("id")}
-        if calls:
+            "usage"), "id": reply.get("id"), "json_only": closing}
+        if calls and not closing:
             messages.append({"role": "assistant", "content": msg.get("content") or "",
                              "tool_calls": calls})
             step["tool_calls"] = []
@@ -292,18 +307,21 @@ def run_agent(role: str, system: str, user: str, bundle: dict[str, Any], *, call
         step["reply"] = text[:6000]
         steps.append(step)
         parsed = parse_json(text, keys)
-        if parsed is None and not last:  # one reminder, then give up
-            messages += [{"role": "assistant", "content": text},
-                         {"role": "user", "content": "Answer with the JSON object only."}]
+        if parsed is None and not closing:  # empty or malformed: one constrained turn
+            if text:
+                messages.append({"role": "assistant", "content": text})
+            messages.append({"role": "user", "content": "Give your final answer now: the "
+                             "JSON object asked for, and nothing else."})
+            closing = True
             continue
         out = {"role": role, "model": model, "steps": steps, "parsed": parsed,
                "tool_calls": sum(len(s.get("tool_calls", [])) for s in steps)}
         if parsed is None:
-            out["error"] = f"no parseable answer in {MAX_STEPS} turns"
+            out["error"] = "no parseable answer, even constrained to JSON"
         return out
     return {"role": role, "model": model, "steps": steps, "parsed": None,
             "tool_calls": sum(len(s.get("tool_calls", [])) for s in steps),
-            "error": f"no parseable answer in {MAX_STEPS} turns"}
+            "error": f"no answer in {steps_max} turns"}
 
 
 # --------------------------------------------------------------------------- panel
@@ -344,13 +362,17 @@ def run_panel(bundle: dict[str, Any], *, call: Chat, models: dict[str, str]) -> 
     regulation = "\n\nREGULATION PASSAGES:\n\n" + passages_block(passages) if passages else ""
     briefing = f"BRIEFING:\n{bundle['briefing']}"
     t0 = time.time()
-    reader = run_agent("reader", READER + regulation, briefing, bundle, call=call,
-                       model=models["reader"], keys=("intelligible", "actionable"))
     listed = run_tool("list_checks", {}, bundle)
-    challenger = run_agent("challenger", CHALLENGER,
-                           f"{briefing}\n\nCHECKS RUN ON THIS BRIEFING:\n{listed}", bundle,
-                           call=call,
-                           model=models["challenger"], keys=("findings",))
+    # The Reader and the Challenger do not see each other's work: run them at once.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as both:
+        reading = both.submit(run_agent, "reader", READER + regulation, briefing, bundle,
+                              call=call, model=models["reader"],
+                              keys=("intelligible", "actionable"))
+        challenging = both.submit(run_agent, "challenger", CHALLENGER,
+                                  f"{briefing}\n\nCHECKS RUN ON THIS BRIEFING:\n{listed}",
+                                  bundle, call=call, model=models["challenger"],
+                                  keys=("findings",))
+        reader, challenger = reading.result(), challenging.result()
     brief = {
         "reader": reader["parsed"] or {"error": reader.get("error")},
         "challenger": challenger["parsed"] or {"error": challenger.get("error")},
@@ -432,7 +454,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--in", dest="inp", required=True, help="bundles.jsonl from the engine")
     ap.add_argument("--out", required=True, help="records.jsonl (appended; resumes)")
     ap.add_argument("--base-url", required=True)
-    ap.add_argument("--model", default="nano-judge", help="model for all three agents")
+    ap.add_argument("--model", default="nemotron-3-super", help="model for all three agents")
     ap.add_argument("--reader-model")
     ap.add_argument("--challenger-model")
     ap.add_argument("--arbiter-model")

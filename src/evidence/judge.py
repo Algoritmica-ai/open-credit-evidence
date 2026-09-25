@@ -14,9 +14,10 @@ asked whether the briefing is complete or correct; the deterministic checks own
 that.
 
 Which model answers is a deployment decision (``EVIDENCE_JUDGE_BASE_URL`` /
-``EVIDENCE_JUDGE_MODEL``): Nemotron 3 Ultra on NVIDIA Build, or a distilled
-Nano served on-prem. Every record names the model, the endpoint, the passages
-it saw and the corpus version they came from.
+``EVIDENCE_JUDGE_MODEL``): Nemotron 3 Ultra on NVIDIA Build, or a model served
+on-prem — today the Nemotron 3 Super NIM on the team's node. Every record names
+the model, the endpoint, the passages it saw and the corpus version they came
+from.
 """
 
 from __future__ import annotations

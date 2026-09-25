@@ -13,25 +13,37 @@
 # only what the sandbox's network policy names (runtime.json records the entry
 # names and a hash of the policy). The panel's one destination is
 # https://inference.local/v1, which OpenShell routes to the team's judge
-# (through stream_relay.py to the Nano NIM).
+# (through stream_relay.py to the judge NIM, Nemotron 3 Super).
 set -euo pipefail
-DIR=$1 MODEL=${2:-nano-judge} WORKERS=${3:-4}
+DIR=$1 MODEL=${2:-nemotron-3-super} WORKERS=${3:-4}
 SANDBOX=${SANDBOX:-evidence-judge}
 export NVM_DIR=$HOME/.nvm; . "$NVM_DIR/nvm.sh" >/dev/null
 export PATH=$HOME/.local/bin:$PATH
 module load docker >/dev/null 2>&1 || true
 export NEMOCLAW_GATEWAY_PORT=${NEMOCLAW_GATEWAY_PORT:-8300}
 export OPENSHELL_GATEWAY=${OPENSHELL_GATEWAY:-nemoclaw-$NEMOCLAW_GATEWAY_PORT}
-clean() { sed "s/\x1b\[[0-9;]*m//g" | { grep -v "Active gateway" || true; }; }
+# unbuffered all the way, so each finished briefing shows as it finishes
+clean() { sed -u "s/\x1b\[[0-9;]*m//g" | { grep --line-buffered -v "Active gateway" || true; }; }
 NAME=$(basename "$DIR")
 BOX=/sandbox/$NAME   # the sandbox workspace: files can be copied in and out only here
 
 started=$(date -u +%FT%TZ)
+# a retried job may find its records in the sandbox already; keep them (panel.py resumes)
+if nemoclaw "$SANDBOX" exec --no-tty -- test -f "$BOX/records.jsonl" >/dev/null 2>&1; then
+  openshell sandbox download "$SANDBOX" "$BOX/records.jsonl" "$DIR/" 2>&1 | clean | tail -1
+fi
 openshell sandbox upload "$SANDBOX" "$DIR" /sandbox 2>&1 | clean | tail -1
-nemoclaw "$SANDBOX" exec --no-tty -- python3 "$BOX/panel.py" --in "$BOX/bundles.jsonl" \
+# Copy finished briefings out of the sandbox every 30 s and on exit, so the job
+# directory (and from it the laptop) always holds what is done so far.
+fetch() { openshell sandbox download "$SANDBOX" "$BOX/records.jsonl" "$DIR/" >/dev/null 2>&1 || true; }
+trap fetch EXIT
+nemoclaw "$SANDBOX" exec --no-tty -- python3 -u "$BOX/panel.py" --in "$BOX/bundles.jsonl" \
   --out "$BOX/records.jsonl" --base-url https://inference.local/v1 --model "$MODEL" \
-  --workers "$WORKERS" --use-env-proxy 2>&1 | clean
-openshell sandbox download "$SANDBOX" "$BOX/records.jsonl" "$DIR/" 2>&1 | clean | tail -1
+  --workers "$WORKERS" --use-env-proxy 2>&1 | clean &
+PANEL=$!
+while kill -0 "$PANEL" 2>/dev/null; do sleep 30; fetch; done
+wait "$PANEL"
+fetch
 nemoclaw "$SANDBOX" exec --no-tty -- rm -rf "$BOX" >/dev/null 2>&1 || true
 
 # What the panel ran inside, for the evidence.

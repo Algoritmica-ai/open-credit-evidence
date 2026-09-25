@@ -35,18 +35,23 @@ RELAY_PORT=$(free_port $((EMBED_PORT+1)))
 RELAY="$HOME/open-credit-evidence/scripts/cluster/stream_relay.py"
 # All three roles are NVIDIA NIMs, pinned to fixed releases (never a moving tag).
 NIM_IMAGE=nvcr.io/nim/nvidia/nemotron-3.5-lightning-30b-a3b:2.0.9-variant
-JUDGE_IMAGE=nvcr.io/nim/nvidia/nvidia-nemotron-nano-9b-v2:1.12.2
+# The judge (and every agent of the judge panel): Nemotron 3 Super 120B-A12B. Its NIM
+# publishes a moving tag only, so it is pinned by digest; FP8 across two GPUs
+# (profile vllm-fp8-tp2-pp1).
+JUDGE_IMAGE=nvcr.io/nim/nvidia/nemotron-3-super-120b-a12b@sha256:d56c72bdbb532008dc97c16d291f638e1b47fdb4d6a1daf02568ff9b2e1b66fc
+JUDGE_PROFILE=1e705d1cf3866d22b04077194c735b651f0bfec8e7ae4cf8d8f551f803c064f6
 EMBED_IMAGE=nvcr.io/nim/nvidia/nemotron-3-embed-1b:2.2.2
 PROXY=http://10.130.232.8:3128
 source ~/.ngc_key 2>/dev/null || true
 
 # A whole node is the team's allocation and the only thing SLURM can actually
 # guarantee: containers started by hand on a "free" node hold GPUs SLURM knows
-# nothing about. Use the three GPUs with the least memory in use.
+# nothing about. Use the four GPUs with the least memory in use: one each for the
+# assistant and the embedder, two for the judge.
 mapfile -t FREE < <(docker run --rm --gpus all --entrypoint nvidia-smi "$JUDGE_IMAGE" \
   --query-gpu=index,memory.used --format=csv,noheader,nounits \
   | tr -d ' ' | awk -F, -v ids="$CUDA_VISIBLE_DEVICES" 'BEGIN{split(ids,a,","); for(i in a) ok[a[i]]=1} ok[$1]{print $2","$1}' \
-  | sort -n | head -3 | cut -d, -f2)
+  | sort -n | head -4 | cut -d, -f2)
 echo "allocation $CUDA_VISIBLE_DEVICES -> using GPUs ${FREE[*]}; ports $LIGHTNING_PORT $JUDGE_PORT $EMBED_PORT"
 for g in "${FREE[@]}"; do
   used=$(docker run --rm --gpus "\"device=$g\"" --entrypoint nvidia-smi "$JUDGE_IMAGE" --query-gpu=memory.used --format=csv,noheader,nounits | tr -d ' ')
@@ -76,15 +81,14 @@ docker run -d --name team08-lightning --gpus "\"device=${FREE[0]}\"" --shm-size=
   -e NO_PROXY="localhost,127.0.0.1" -e no_proxy="localhost,127.0.0.1" \
   -v /data/team08/nim-cache:/opt/nim/.cache "$NIM_IMAGE" >/dev/null
 
-# The judge NIM takes its tool-call parser from the tool_use_config_v2.json that
-# ships with its model (nemotron_json, non-streaming): tool calls work in
-# non-streamed requests only. 64k context: agent runtimes send long system prompts.
+# 64k context: agent runtimes and the judge panel send long prompts. Tool calling on,
+# for the panel's Challenger and for NemoClaw agents.
 # The judge and embedder NIMs listen on 8000 (and 8001) inside their containers;
 # they are published on the job's ports rather than run on the host network, where
 # 8001 is taken by the Lightning NIM's own backend.
-docker run -d --name team08-judge --gpus "\"device=${FREE[1]}\"" --shm-size=16GB \
-  -u "$(id -u)" -p "$JUDGE_PORT:8000" -e NGC_API_KEY "${PROXY_ENV[@]}" \
-  -e NIM_SERVED_MODEL_NAME=nano-judge -e NIM_MAX_MODEL_LEN=65536 -e NIM_ENABLE_AUTO_TOOL_CHOICE=1 \
+docker run -d --name team08-judge --gpus "\"device=${FREE[1]},${FREE[3]}\"" --shm-size=16GB \
+  -u "$(id -u)" -p "$JUDGE_PORT:8000" -e NGC_API_KEY "${PROXY_ENV[@]}" -e NIM_MODEL_PROFILE="$JUDGE_PROFILE" \
+  -e NIM_SERVED_MODEL_NAME=nemotron-3-super -e NIM_MAX_MODEL_LEN=65536 -e NIM_ENABLE_AUTO_TOOL_CHOICE=1 \
   -v /data/team08/nim-cache:/opt/nim/.cache "$JUDGE_IMAGE" >/dev/null
 
 docker run -d --name team08-embed --gpus "\"device=${FREE[2]}\"" --shm-size=4GB \
@@ -93,7 +97,7 @@ docker run -d --name team08-embed --gpus "\"device=${FREE[2]}\"" --shm-size=4GB 
 
 for i in $(seq 1 180); do
   a=$(curl -s --noproxy '*' --max-time 3 "http://127.0.0.1:${LIGHTNING_PORT}/v1/models" | grep -c lightning)
-  j=$(curl -s --noproxy '*' --max-time 3 "http://127.0.0.1:${JUDGE_PORT}/v1/models" | grep -c nano-judge)
+  j=$(curl -s --noproxy '*' --max-time 3 "http://127.0.0.1:${JUDGE_PORT}/v1/models" | grep -c nemotron-3-super)
   e=$(curl -s --noproxy '*' --max-time 3 "http://127.0.0.1:${EMBED_PORT}/v1/models" | grep -c embed)
   echo "$(date +%H:%M:%S) lightning=$a judge=$j embed=$e"
   [[ $a -gt 0 && $j -gt 0 && $e -gt 0 ]] && break
@@ -107,7 +111,7 @@ cat > /data/team08/runs/servers.env <<ENV
 EVIDENCE_ASSISTANT_BASE_URL=http://$IP:$LIGHTNING_PORT/v1
 EVIDENCE_ASSISTANT_MODEL=nvidia/nemotron-3.5-lightning
 EVIDENCE_JUDGE_BASE_URL=http://$IP:$JUDGE_PORT/v1
-EVIDENCE_JUDGE_MODEL=nano-judge
+EVIDENCE_JUDGE_MODEL=nemotron-3-super
 EVIDENCE_EMBED_BASE_URL=http://$IP:$EMBED_PORT/v1
 EVIDENCE_EMBED_MODEL=nvidia/nemotron-3-embed-1b
 # NemoClaw only (streamed tool calls), not read by the engine:

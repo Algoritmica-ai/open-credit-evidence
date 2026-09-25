@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Algoritmica GmbH
 """Which model, exactly, answered: a fingerprint per role for the evidence.
 
-A model's name is a label. ``nano-judge`` is our alias; the same name can serve
+A model's name is a label. ``nemotron-3-super`` is our alias; the same name can serve
 different weights after a restart, and a moving container tag can change the
 serving stack under it. The fingerprint names what actually ran, from two
 sources:
