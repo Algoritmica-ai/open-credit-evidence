@@ -144,11 +144,16 @@ sandbox, where its calls go through OpenShell's managed inference route
 (`scripts/cluster/panel_nemoclaw.sh`; the route reaches the judge NIM through
 `scripts/cluster/stream_relay.py`).
 
-In a browser, for business users: **Evaluations** (the verdict in plain words, what went
-wrong, what to change, reports per reader, and an integrity check), **Review** (the memos in
-red, amber and green lanes; each finding a card to confirm and correct, or dispute with a
-reason) and **Feedback** (review results, rulings on disputed verdicts, and the feedback
-pack). The full console — packs, corpora, runs, compare, the tamper demo — is at `/advanced/`:
+In a browser, for business users, in three steps. The home page shows the assistant's
+status from its latest test and the one next step. **Test** starts a test (which assistant,
+which rules, which cases, and optionally the three-agent panel) and gives the result in plain
+words: what went wrong, what to change, the sealed report as a PDF. **Review** puts the
+flagged memos in three groups (check first, worth a look, probably fine) and asks one
+question per finding: is the memo wrong here? **Improve** settles disagreements, builds the
+feedback pack and starts the re-test. Earlier tests, and comparing two of them, are one click
+away. The full console (packs, corpora, runs, the tamper demo) is at `/advanced/`. A test
+started in the browser runs the panel in the NemoClaw sandbox when `EVIDENCE_PANEL_SSH` is
+set, else directly against the judge endpoint. To start it:
 
 ```bash
 .venv/bin/pip install -e ".[web]"

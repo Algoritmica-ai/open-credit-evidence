@@ -270,6 +270,10 @@ def test_review_endpoints_on_a_copy_of_a_committed_run(tmp_path, monkeypatch):
     monkeypatch.setattr(web, "RUNS", runs)
     monkeypatch.setattr(web, "PACKS", ROOT / "packs")
     c = TestClient(web.app)
+    ov = c.get("/api/overview").json()
+    assert ov["run"]["run_id"] == src.name and ov["jobs"] == []
+    assert ov["stages"]["review"] == "not_started" and ov["stages"]["next"] == "review"
+    assert ov["stages"]["flagged"] == ov["stages"]["lanes"]["red"] + ov["stages"]["lanes"]["amber"]
     q = c.get(f"/api/review/{src.name}").json()
     assert q["summary"]["memos"] == 60 and q["memos"][0]["lane"] == "red"
     memo = q["memos"][0]["memo"]
@@ -284,9 +288,53 @@ def test_review_endpoints_on_a_copy_of_a_committed_run(tmp_path, monkeypatch):
                       "verdicts": [{"card_id": x["card_id"], "action": "confirm",
                                     "correction": "fixed"} for x in m["cards"]]})
     assert ok.status_code == 200
+    st = c.get("/api/overview", params={"run": src.name}).json()["stages"]
+    assert st["review"] == "in_progress" and st["flagged_checked"] == 1
     assert c.post(f"/api/runs/{src.name}/verify", json={}).json()["ok"]
     fb = c.post(f"/api/review/{src.name}/feedback").json()
     assert fb["counts"]["judge_labels.jsonl"] >= 1
     assert c.get(f"/api/review/{src.name}/feedback/manifest.json").status_code == 200
-    assert "Credit Evidence Engine" in c.get("/").text
+    assert c.get("/api/overview").json()["stages"]["feedback_built"]
+    d = c.get(f"/api/runs/{src.name}").json()
+    assert d["panel"]["briefings"] == 60 and d["headline"]["memos"] == 60
+    assert "Credit Evidence" in c.get("/").text
     assert c.get("/advanced/").status_code == 200
+
+
+def test_a_test_started_from_the_browser_can_run_the_panel(client, monkeypatch):
+    calls = []
+
+    def fake_panel(run, pack, **kw):
+        calls.append((run.name, kw["runtime"]))
+        kw["log"]("  1/2  x r0  value 1.0  ok")
+        return {"ok": True, "message": "panel: done", "briefings": 2, "planned": 2}
+
+    monkeypatch.delenv("EVIDENCE_PANEL_SSH", raising=False)
+    monkeypatch.setattr("evidence.panel_run.panel_over_run", fake_panel)
+    job = client.post("/api/run", json={"pack": "underwriter-sample", "repeats": 1, "limit": 2,
+                                        "panel": True}).json()
+    assert [j["job_id"] for j in client.get("/api/jobs").json()] in ([job["job_id"]], [])
+    for _ in range(200):
+        j = client.get(f"/api/run/{job['job_id']}").json()
+        if j["status"] in ("done", "error"):
+            break
+        time.sleep(0.05)
+    assert j["status"] == "done" and j["phase"] == "done" and j["panel"], j
+    assert calls == [(job["run_id"], "direct")] and "panel_error" not in j
+    assert client.get("/api/jobs").json() == []
+
+
+def test_a_failed_panel_leaves_the_test_standing(client, monkeypatch):
+    def broken(run, pack, **kw):
+        raise RuntimeError("judge unreachable")
+
+    monkeypatch.setattr("evidence.panel_run.panel_over_run", broken)
+    job = client.post("/api/run", json={"pack": "underwriter-sample", "repeats": 1, "limit": 1,
+                                        "panel": True}).json()
+    for _ in range(200):
+        j = client.get(f"/api/run/{job['job_id']}").json()
+        if j["status"] in ("done", "error"):
+            break
+        time.sleep(0.05)
+    assert j["status"] == "done" and "judge unreachable" in j["panel_error"]
+    assert client.post(f"/api/runs/{job['run_id']}/verify", json={}).json()["ok"]

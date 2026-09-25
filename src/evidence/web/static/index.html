@@ -3,21 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Credit Evidence Engine</title>
+  <title>Credit Evidence</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <header class="top">
-    <a class="brand" href="#/">Credit Evidence Engine</a>
-    <nav>
-      <a href="#/" data-nav="runs">Evaluations</a>
-      <a href="#/review" data-nav="review">Review</a>
-      <a href="#/feedback" data-nav="feedback">Feedback</a>
-    </nav>
-    <a class="quiet" href="/advanced/">Advanced</a>
+    <a class="brand" href="#/">Credit Evidence</a>
+    <nav class="steps" id="steps" aria-label="Steps"></nav>
+    <a class="history" href="#/history" data-nav="history">Earlier tests</a>
   </header>
   <main id="view" aria-live="polite"></main>
-  <footer class="foot">Cases are generated from credit policy. No customer data is used.</footer>
+  <footer class="foot"><a href="/advanced/">Engine console</a></footer>
   <script src="/app.js"></script>
 </body>
 </html>
