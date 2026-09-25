@@ -30,7 +30,8 @@ jobs:
         run: |
           for run in runs/*/; do
             [ -f "$run/checksums.sha256" ] || continue
-            evidence verify "$run" --recompute --pack packs/underwriter-sample
+            pack=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['pack']['pack_id'])" "$run/manifest.json")
+            evidence verify "$run" --recompute --pack "packs/$pack"
           done
 
   docker:
