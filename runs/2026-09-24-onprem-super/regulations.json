@@ -1,0 +1,265 @@
+{
+  "jurisdiction": "IT",
+  "ruleset_id": "IT-CREDIT-LENDING",
+  "ruleset_version": "1.0.0",
+  "ruleset_sha256": "f547b8e333fed05408151120ec9279c062bf8b505915c9781e1854eeb3d02c63",
+  "context_sha256": "36fc622bbe57acd7726200978dc4611c57e81e64935f87c14c5cf424f207f0f5",
+  "status": "pass",
+  "coverage_complete": true,
+  "total_rules": 16,
+  "applicable_rules": 12,
+  "passed_rules": 9,
+  "failed_rules": 0,
+  "advisory_rules": 3,
+  "findings": [
+    {
+      "rule_id": "IT-TUB-124-BIS-CURRENT",
+      "title": "Consumer creditworthiness assessment",
+      "status": "pass",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [
+        "creditworthiness_assessment",
+        "information_sources",
+        "information_verification",
+        "decision_rationale"
+      ],
+      "evidence_references": {
+        "creditworthiness_assessment": "artifact://case/assessment.json",
+        "information_sources": "artifact://case/source-manifest.json",
+        "information_verification": "artifact://case/verification.json",
+        "decision_rationale": "artifact://case/decision-rationale.json"
+      },
+      "reason": "all required evidence references are present"
+    },
+    {
+      "rule_id": "IT-TUB-120-UNDECIES",
+      "title": "Residential mortgage creditworthiness assessment",
+      "status": "not_applicable",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [],
+      "evidence_references": {},
+      "reason": "case facts do not meet this rule's applicability conditions"
+    },
+    {
+      "rule_id": "IT-TUB-125-DATABASE-DECISION",
+      "title": "Database information following consumer-credit refusal",
+      "status": "not_applicable",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [],
+      "evidence_references": {},
+      "reason": "case facts do not meet this rule's applicability conditions"
+    },
+    {
+      "rule_id": "IT-SIC-CODE-2019",
+      "title": "Private credit-information systems safeguards",
+      "status": "pass",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [
+        "sic_privacy_notice",
+        "sic_source_provenance",
+        "sic_scoring_information",
+        "sic_correction_route"
+      ],
+      "evidence_references": {
+        "sic_privacy_notice": "artifact://case/notices/sic-privacy.pdf",
+        "sic_source_provenance": "artifact://case/source-manifest.json#sic",
+        "sic_scoring_information": "artifact://case/notices/scoring-information.pdf",
+        "sic_correction_route": "workflow://customer-rights/sic-correction"
+      },
+      "reason": "all required evidence references are present"
+    },
+    {
+      "rule_id": "IT-BDI-CR-CIRCULAR-139",
+      "title": "Bank of Italy Central Credit Register instructions",
+      "status": "not_applicable",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [],
+      "evidence_references": {},
+      "reason": "case facts do not meet this rule's applicability conditions"
+    },
+    {
+      "rule_id": "IT-BDI-TRANSPARENCY-2009",
+      "title": "Transparency and fair customer relations",
+      "status": "pass",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [
+        "precontractual_disclosure",
+        "creditworthiness_procedure_version",
+        "complaints_route"
+      ],
+      "evidence_references": {
+        "precontractual_disclosure": "artifact://case/notices/secci.pdf",
+        "creditworthiness_procedure_version": "policy://creditworthiness/v4.2",
+        "complaints_route": "workflow://complaints/credit"
+      },
+      "reason": "all required evidence references are present"
+    },
+    {
+      "rule_id": "IT-BDI-CIRCULAR-285",
+      "title": "Bank governance and credit-risk controls",
+      "status": "pass",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [
+        "credit_policy_version",
+        "internal_control_owner",
+        "outsourcing_assessment"
+      ],
+      "evidence_references": {
+        "credit_policy_version": "policy://credit/v8.1",
+        "internal_control_owner": "role://credit-risk-control",
+        "outsourcing_assessment": "risk://vendors/open-credit-evidence/2026"
+      },
+      "reason": "all required evidence references are present"
+    },
+    {
+      "rule_id": "IT-BDI-CIRCULAR-288",
+      "title": "Article 106 intermediary governance and credit-risk controls",
+      "status": "not_applicable",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [],
+      "evidence_references": {},
+      "reason": "case facts do not meet this rule's applicability conditions"
+    },
+    {
+      "rule_id": "IT-PRIVACY-CODE-196-2003",
+      "title": "Italian personal-data protection overlay",
+      "status": "pass",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [
+        "privacy_notice",
+        "lawful_basis",
+        "retention_policy",
+        "data_subject_rights_route"
+      ],
+      "evidence_references": {
+        "privacy_notice": "artifact://case/notices/privacy.pdf",
+        "lawful_basis": "ropa://creditworthiness-assessment",
+        "retention_policy": "policy://records/credit-evidence/v3",
+        "data_subject_rights_route": "workflow://privacy/rights"
+      },
+      "reason": "all required evidence references are present"
+    },
+    {
+      "rule_id": "IT-AML-DLGS-231-2007",
+      "title": "Customer due diligence and AML recordkeeping",
+      "status": "pass",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [
+        "aml_cdd_status",
+        "beneficial_owner_check",
+        "aml_record_reference"
+      ],
+      "evidence_references": {
+        "aml_cdd_status": "workflow://aml/cdd/complete",
+        "beneficial_owner_check": "workflow://aml/ubo/not-applicable-natural-person",
+        "aml_record_reference": "artifact://case/aml-record.json"
+      },
+      "reason": "all required evidence references are present"
+    },
+    {
+      "rule_id": "IT-USURY-LAW-108-1996",
+      "title": "Time-specific anti-usury threshold check",
+      "status": "pass",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [
+        "pricing_threshold_check",
+        "pricing_period"
+      ],
+      "evidence_references": {
+        "pricing_threshold_check": "artifact://case/pricing/usury-check.json",
+        "pricing_period": "2026-Q3"
+      },
+      "reason": "all required evidence references are present"
+    },
+    {
+      "rule_id": "IT-CONSUMER-CODE-206-2005",
+      "title": "Fair and non-misleading consumer communications",
+      "status": "pass",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [
+        "consumer_communications_review"
+      ],
+      "evidence_references": {
+        "consumer_communications_review": "workflow://legal/communications/approved"
+      },
+      "reason": "all required evidence references are present"
+    },
+    {
+      "rule_id": "IT-ABF-REDRESS",
+      "title": "Complaints and Banking and Financial Ombudsman route",
+      "status": "pass",
+      "obligation_owner": "lender",
+      "missing_evidence": [],
+      "evidence_checked": [
+        "complaints_route",
+        "abf_notice"
+      ],
+      "evidence_references": {
+        "complaints_route": "workflow://complaints/credit",
+        "abf_notice": "artifact://case/notices/abf.pdf"
+      },
+      "reason": "all required evidence references are present"
+    },
+    {
+      "rule_id": "IT-AI-LAW-132-2025",
+      "title": "Italian AI principles and national governance",
+      "status": "advisory",
+      "obligation_owner": "lender",
+      "missing_evidence": [
+        "ai_governance_record"
+      ],
+      "evidence_checked": [
+        "ai_governance_record"
+      ],
+      "evidence_references": {},
+      "reason": "Contextual national overlay. Article 3(5) prevents this law from being treated as a separate new AI-system obligation beyond the EU AI Act."
+    },
+    {
+      "rule_id": "IT-DLGS-212-2025-DATA",
+      "title": "Upcoming consumer-credit data-source restrictions",
+      "status": "advisory",
+      "obligation_owner": "lender",
+      "missing_evidence": [
+        "prohibited_data_check",
+        "information_proportionality"
+      ],
+      "evidence_checked": [
+        "prohibited_data_check",
+        "information_proportionality"
+      ],
+      "evidence_references": {},
+      "reason": "Non-blocking until 20 November 2026 or, if later, 90 days after the relevant Bank of Italy implementing provisions enter into force."
+    },
+    {
+      "rule_id": "IT-DLGS-212-2025-AUTOMATION-RIGHTS",
+      "title": "Upcoming rights for automated creditworthiness processing",
+      "status": "advisory",
+      "obligation_owner": "lender",
+      "missing_evidence": [
+        "automated_processing_notice",
+        "consumer_explanation",
+        "human_reconsideration_route"
+      ],
+      "evidence_checked": [
+        "automated_processing_notice",
+        "consumer_explanation",
+        "human_reconsideration_route"
+      ],
+      "evidence_references": {},
+      "reason": "Non-blocking until 20 November 2026 or, if later, 90 days after the relevant Bank of Italy implementing provisions enter into force."
+    }
+  ],
+  "note": "evidence-presence assessment only; legal applicability and substantive compliance require lender and legal review"
+}
