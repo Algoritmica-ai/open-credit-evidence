@@ -144,10 +144,11 @@ sandbox, where its calls go through OpenShell's managed inference route
 (`scripts/cluster/panel_nemoclaw.sh`; the route reaches the judge NIM through
 `scripts/cluster/stream_relay.py`).
 
-The same flow in a browser — pack (choose, build from a spec, or upload), cases,
-run (with cancel), evidence (the decision, why it failed and what to change, every
-briefing with its verdicts, then the pack by obligation), verify (with a tamper demo on
-a copy of the run), compare (did a change help?):
+In a browser, for business users: **Evaluations** (the verdict in plain words, what went
+wrong, what to change, reports per reader, and an integrity check), **Review** (the memos in
+red, amber and green lanes; each finding a card to confirm and correct, or dispute with a
+reason) and **Feedback** (review results, rulings on disputed verdicts, and the feedback
+pack). The full console — packs, corpora, runs, compare, the tamper demo — is at `/advanced/`:
 
 ```bash
 .venv/bin/pip install -e ".[web]"
