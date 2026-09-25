@@ -90,7 +90,8 @@ def bundles(run: Path, pack: Pack, corpus: Corpus | None, limit: int | None = No
 
 
 Sink = Callable[[list[dict[str, Any]]], None]
-POLL_S = 30  # how often finished briefings are fetched from the sandbox
+POLL_S = 1  # how often the job directory is looked at (a stop, new records, the end);
+# panel_nemoclaw.sh fetches finished briefings from the node every 30 s
 
 
 def done_keys(run: Path) -> set[tuple[str, int]]:
@@ -115,7 +116,8 @@ def _read_records(path: Path) -> list[dict[str, Any]]:
 
 
 def run_direct(bundle_list: list[dict[str, Any]], *, workers: int, log: Any,
-               models: dict[str, str] | None = None, sink: Sink | None = None
+               models: dict[str, str] | None = None, sink: Sink | None = None,
+               should_stop: Callable[[], bool] | None = None
                ) -> tuple[list[dict[str, Any]], dict]:
     """The panel in this process, against the judge endpoint. Each finished briefing
     goes to ``sink`` as it arrives."""
@@ -127,17 +129,21 @@ def run_direct(bundle_list: list[dict[str, Any]], *, workers: int, log: Any,
         return panel.chat(ep.base_url, api_key=key, **kw)
 
     records = panel.run_many(bundle_list, call=call, models=models, workers=workers, log=log,
-                             write=(lambda r: sink([r])) if sink else (lambda r: None))
+                             write=(lambda r: sink([r])) if sink else (lambda r: None),
+                             should_stop=should_stop)
     return records, {"kind": "direct", "endpoint": ep.base_url, "models": models}
 
 
 def run_nemoclaw(bundle_list: list[dict[str, Any]], *, workers: int, log: Any,
-                 models: dict[str, str] | None = None, sink: Sink | None = None
+                 models: dict[str, str] | None = None, sink: Sink | None = None,
+                 should_stop: Callable[[], bool] | None = None
                  ) -> tuple[list[dict[str, Any]], dict]:
     """The panel inside the NemoClaw sandbox on the node, via panel_nemoclaw.sh.
 
     The script copies finished briefings back as the panel runs; they go to
-    ``sink`` every ``POLL_S`` seconds, and whatever arrived is kept if it fails.
+    ``sink`` as they arrive, and whatever arrived is kept if it fails.
+    ``should_stop`` leaves a STOP file in the job directory; the script passes it into
+    the sandbox, where panel.py stops at the next turn and exits normally.
     """
     hosts = os.environ.get("EVIDENCE_PANEL_SSH", "").split()
     if len(hosts) != 2:
@@ -155,6 +161,9 @@ def run_nemoclaw(bundle_list: list[dict[str, Any]], *, workers: int, log: Any,
                                  str(workers)])
         seen, shown = 0.0, set()
         while True:
+            if should_stop is not None and should_stop() and not (job / "STOP").exists():
+                (job / "STOP").touch()
+                log("  stopping: the reviews in progress end at their next turn")
             finished = proc.poll() is not None
             path = job / "records.jsonl"
             if path.is_file() and path.stat().st_mtime != seen:
@@ -181,7 +190,11 @@ def run_nemoclaw(bundle_list: list[dict[str, Any]], *, workers: int, log: Any,
         if proc.returncode:
             raise RuntimeError(f"panel_nemoclaw.sh exited {proc.returncode}; "
                                f"{len(records)} briefings came back and are kept")
-        runtime = json.loads((job / "runtime.json").read_text(encoding="utf-8"))
+        rt_file = job / "runtime.json"
+        if not rt_file.is_file() and (job / "STOP").exists():
+            runtime = {"note": "stopped before the sandbox recorded what it ran"}
+        else:
+            runtime = json.loads(rt_file.read_text(encoding="utf-8"))
     return records, runtime | {"kind": "nemoclaw",
                                "models": {r: model for r in ("reader", "challenger",
                                                              "arbiter")}}
@@ -233,7 +246,8 @@ class EmbedderMismatch(RuntimeError):
 
 def panel_over_run(run: Path, pack: Pack, *, corpus: str | None = None,
                    runtime: str = "direct", workers: int = 4, limit: int | None = None,
-                   redo: bool = False, log: Callable[[str], None] = print) -> dict[str, Any]:
+                   redo: bool = False, log: Callable[[str], None] = print,
+                   should_stop: Callable[[], bool] | None = None) -> dict[str, Any]:
     """Run the panel over a finished run, record it and seal the evidence again.
 
     ``corpus`` None takes the run judge's corpus (else EU); ``"none"`` gives the panel no
@@ -267,8 +281,8 @@ def panel_over_run(run: Path, pack: Pack, *, corpus: str | None = None,
 
     runner = run_nemoclaw if runtime == "nemoclaw" else run_direct
     try:
-        records, rt = runner(todo, workers=workers, log=log, sink=sink) if todo \
-            else ([], {"kind": runtime})
+        records, rt = runner(todo, workers=workers, log=log, sink=sink,
+                             should_stop=should_stop) if todo else ([], {"kind": runtime})
     except (RuntimeError, OSError, subprocess.CalledProcessError) as exc:
         m = record(run, [], facts, running | {"status": f"stopped: {exc}"}, started,
                    complete=False)
@@ -279,8 +293,18 @@ def panel_over_run(run: Path, pack: Pack, *, corpus: str | None = None,
                            "to finish"}
     finished = done_keys(run) | {(r["item_id"], r["repeat"]) for r in records
                                  if not r.get("error")}
+    stopped = bool(should_stop and should_stop()) and len(finished) < len(planned)
+    if stopped:
+        rt = rt | {"status": "stopped: cancelled by the user"}
     m = record(run, records, facts, rt, started, complete=len(finished) >= len(planned))
     out = write_evidence(run)
+    if stopped:
+        return {"ok": True, "stopped": True, "briefings": m["briefings"],
+                "planned": len(planned), "errors": m["errors"],
+                "report": str(run / "evidence" / "panel.md"),
+                "message": f"panel stopped: {len(finished)} of {len(planned)} briefings "
+                           f"reviewed are kept in {run / 'panel'}; the same command finishes "
+                           "the rest"}
     return {"ok": True, "briefings": m["briefings"], "planned": len(planned),
             "errors": m["errors"], "report": str(run / "evidence" / "panel.md"),
             "message": f"panel: {m['briefings']} briefings recorded ({m['errors']} errors, "

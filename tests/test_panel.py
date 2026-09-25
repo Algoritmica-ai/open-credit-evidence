@@ -246,6 +246,53 @@ def test_a_run_with_a_single_judge_keeps_it_as_the_lone_judge(stubbed, tmp_path,
     assert "lone_judge" not in s
     assert "the single judge" in (run / "evidence" / "panel.md").read_text()
 
+
+def test_a_stopped_panel_keeps_what_finished_and_starts_nothing_new(stubbed, tmp_path,  # noqa: F811
+                                                                     monkeypatch):
+    from evidence import panel_run
+    from evidence.evidence import verify_run, write_evidence
+    from evidence.runner import run_pack
+
+    run = tmp_path / "run"
+    run_pack(stubbed, run, repeats=1, limit=3, corpus="EU", log=lambda s: None)
+    write_evidence(run, stubbed.obligations)
+    call, _ = scripted()
+    monkeypatch.setattr(panel, "chat", lambda base_url, api_key=None, **kw: call(**kw))
+    first_done = lambda: (run / "panel" / "records.jsonl").is_file()  # noqa: E731
+    res = panel_run.panel_over_run(run, stubbed, corpus="EU", workers=1, log=lambda s: None,
+                                   should_stop=first_done)
+    # the stop is seen once the first record is on disk; a second, instant stub review
+    # can finish in between, a third never starts
+    assert res["ok"] and res["stopped"] and 1 <= res["briefings"] < 3 and res["planned"] == 3
+    m = json.loads((run / "panel" / "manifest.json").read_text())
+    assert m["complete"] is False and m["runtime"]["status"].startswith("stopped")
+    assert verify_run(run, stubbed, recompute=True).ok
+    # the same call without a stop finishes the rest
+    again = panel_run.panel_over_run(run, stubbed, corpus="EU", log=lambda s: None)
+    assert again["ok"] and not again.get("stopped") and again["briefings"] == 3
+
+
+def test_a_review_in_progress_ends_at_its_next_turn():
+    calls = {"n": 0}
+    call, _ = scripted()
+
+    def counting(**kw):
+        calls["n"] += 1
+        return call(**kw)
+
+    out = panel.run_many([BUNDLE, BUNDLE | {"repeat": 1}], call=counting,
+                         models={"reader": "m", "challenger": "m", "arbiter": "m"}, workers=1,
+                         log=lambda s: None, should_stop=lambda: calls["n"] >= 2)
+    assert out == [] and calls["n"] == 2  # no record, no error, and no third call
+
+
+def test_the_sandbox_panel_stops_when_a_stop_file_appears(tmp_path):
+    (tmp_path / "bundles.jsonl").write_text(json.dumps(BUNDLE) + "\n")
+    (tmp_path / "STOP").touch()
+    rc = panel.main(["--in", str(tmp_path / "bundles.jsonl"), "--out",
+                     str(tmp_path / "records.jsonl"), "--base-url", "http://unreachable.invalid"])
+    assert rc == 0 and (tmp_path / "records.jsonl").read_text() == ""
+
 def test_panel_module_runs_on_the_standard_library_alone():
     import ast
     from pathlib import Path

@@ -507,7 +507,8 @@ def _job_worker(job_id: str, pack: Pack, out: Path, opts: dict[str, Any]) -> Non
             _panel_phase(job, pack, out, log)
         with _lock:
             job.update(
-                status="cancelled" if manifest["cancelled"] else "done",
+                status="cancelled" if manifest["cancelled"] or job.get("panel_stopped")
+                else "done",
                 phase="done",
                 run_id=manifest["run_id"],
                 transcripts=manifest["transcripts"],
@@ -529,8 +530,12 @@ def _panel_phase(job: dict[str, Any], pack: Pack, out: Path, log: Any) -> None:
     runtime = "nemoclaw" if os.environ.get("EVIDENCE_PANEL_SSH") else "direct"
     workers = int(os.environ.get("EVIDENCE_PANEL_WORKERS", "8"))
     try:
-        res = panel_run.panel_over_run(out, pack, runtime=runtime, workers=workers, log=log)
+        res = panel_run.panel_over_run(out, pack, runtime=runtime, workers=workers, log=log,
+                                       should_stop=lambda: job.get("cancel", False))
         note = None if res["ok"] else res["message"]
+        if res.get("stopped"):
+            with _lock:
+                job["panel_stopped"] = True
     except Exception as exc:  # noqa: BLE001 — the evaluation stands without the panel
         note = f"{type(exc).__name__}: {exc}"
     if note:
@@ -594,13 +599,14 @@ def start_run(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
 
 @app.post("/api/run/{job_id}/cancel")
 def cancel_run(job_id: str) -> dict[str, Any]:
-    """Ask the worker to stop before its next model call. Completed briefings are kept."""
+    """Ask the worker to stop: no memo or panel review starts, and a review in progress ends
+    at its next turn. Everything finished is kept and sealed."""
     job = _jobs.get(job_id)
     if job is None:
         raise HTTPException(404, "job not found")
     with _lock:
         job["cancel"] = True
-        job["log"].append("  cancel requested — finishing the call in flight")
+        job["log"].append("  stop requested — finishing the calls in flight")
     return {"job_id": job_id, "cancel": True}
 
 

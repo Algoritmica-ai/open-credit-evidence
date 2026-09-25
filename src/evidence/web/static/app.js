@@ -130,7 +130,7 @@ async function viewHome() {
   const job = (ov.jobs || [])[0];
   const banner = job ? `<a class="note-box blue link" href="#/running/${enc(job.job_id)}" style="text-decoration:none">
       <span class="spinner" style="width:22px;height:22px" aria-hidden="true"></span>
-      <span class="grow">A test is running: ${job.phase === "panel" ? "second opinion" : "memos"} ${job.done} of ${job.total}.</span>${ICON.arrow}</a>` : "";
+      <span class="grow">A test is running: ${job.phase === "panel" ? "second opinion" : "memos"} ${job.done} of ${job.total}. Open it to follow or stop it.</span>${ICON.arrow}</a>` : "";
   if (!ov.run) {
     $view.innerHTML = `<div class="stack">${banner}
       <div class="stack tight"><p class="muted small">You are testing</p><h1>Credit memo assistant</h1>
@@ -267,17 +267,23 @@ async function viewRunning(jobId) {
         job.phase === "panel" ? pct(job.done, job.total) : null));
     }
     items.push(line(job.status === "done" ? "done" : "todo", "Sealing the result", "Every file is fingerprinted, so anyone can check later that nothing was changed"));
-    let foot = `<p class="muted">You can close this page. The result will be waiting on the home page.</p>
-      ${job.phase === "memos" ? '<button class="btn" id="stop" style="align-self:flex-start">Stop the test</button>' : ""}`;
+    let foot = job.cancel
+      ? `<div class="row"><span class="spinner" aria-hidden="true"></span><p>Stopping. The AI calls already under way finish first, which can take a minute or two. Everything finished so far is kept.</p></div>`
+      : `<p class="muted">You can close this page. The result will be waiting on the home page.</p>
+      <button class="btn" id="stop" style="align-self:flex-start">Stop the test</button>`;
     if (job.status === "done") foot = `<a class="btn primary large" href="#/result/${enc(job.run_id)}" style="align-self:flex-start">See the result${ICON.arrow}</a>`;
-    if (job.status === "cancelled") foot = `<p>The test was stopped. ${job.transcripts ? `The ${job.transcripts} memos written so far are kept.` : ""}</p>${job.transcripts ? `<a class="btn" href="#/result/${enc(job.run_id)}" style="align-self:flex-start">See what was done</a>` : ""}`;
+    if (job.status === "cancelled") foot = `<p>The test was stopped. ${job.transcripts ? `The ${job.transcripts} memos written so far are kept${job.panel ? ", with the second opinions that finished" : ""}.` : "Nothing was written yet."}</p>${job.transcripts ? `<a class="btn" href="#/result/${enc(job.run_id)}" style="align-self:flex-start">See what was done</a>` : ""}`;
     if (job.status === "error") foot = `<p class="error">The test stopped with an error: ${esc(job.error)}</p><a class="btn" href="#/new" style="align-self:flex-start">Try again</a>`;
     $view.innerHTML = `<div class="stack" style="gap:28px">
       <div class="stack tight"><h1>${job.status === "done" ? "The test is finished" : "Testing the credit memo assistant"}</h1>
         <p class="muted" style="font-size:17px">Started at ${esc((job.started || "").slice(11, 13))}:${esc((job.started || "").slice(13, 15))} UTC</p></div>
       <ol class="card" style="list-style:none;padding:8px 28px;margin:0">${items.join("")}</ol>${foot}</div>`;
     const stop = document.getElementById("stop");
-    if (stop) stop.onclick = async () => { stop.disabled = true; await api(`/api/run/${enc(jobId)}/cancel`, {}); };
+    if (stop) stop.onclick = async () => {
+      if (!confirm("Stop this test? Everything finished so far is kept.")) return;
+      stop.disabled = true;
+      await api(`/api/run/${enc(jobId)}/cancel`, {});
+    };
   };
   const tick = async () => {
     if (!location.hash.startsWith("#/running/")) return;
