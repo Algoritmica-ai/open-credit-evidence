@@ -1,0 +1,28 @@
+{
+  "item_id": "underwriter-de:case_review:APP000037:complete",
+  "run_id": "2026-09-25-de",
+  "repeat": 0,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "http://10.130.232.21:8200/v1",
+    "fingerprint": "1869632eafca897436984f33787f7a00bdb65e00462c86c6abb7ba9d15ee7e15"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000037\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mrs |\n| Age band | 45-54 |\n| Employment type | permanent |\n| Employer | Meridian Health |\n| Time in current role | 79 months |\n| Postcode district | B15 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | €22,295 |\n| Income verified | Yes |\n| Existing monthly credit commitments | €367 |\n| Dependants | 2 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | €22,266 |\n| Term | 36 months |\n| Stated purpose | vehicle |\n| Indicative monthly instalment | €749 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000037\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**700** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | December 2015 (135 months) |\n| Accounts on file | 7 |\n| Searches, last 6 months | 1 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 0 |\n| Most recent delinquency | None |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, €2,000 to €40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application was referred for underwriter review because the automated rules flagged the file for exceeding the **40% Total Monthly Debt Service (TMDS) threshold**. The calculated monthly instalment of €749, combined with existing commitments of €367, results in a TMDS ratio of approximately 41.5%, which sits above the policy limit of 40%.\n\n**What the File Shows – Against the Applicant:**\n*   **Affordability:** The proposed loan instalment (€749) plus existing monthly credit commitments (€367) total €1,116. Against a gross monthly income of €1,857 (derived from the annual figure of €22,295), this results in a TMDS ratio of **41.5%**. This exceeds the policy threshold of 40%.\n*   **Credit History:** The applicant has a bureau score of 700 and a clean payment history (0 delinquencies in the last 24 months, no defaults, no CCJs). The credit file is established (135 months old). There are no adverse credit events that would normally trigger a decline.\n\n**What the File Shows – In Favour of the Applicant:**\n*   **Strong Credit Profile:** A bureau score of 700 indicates a good credit history. The applicant has no missed payments and no adverse credit.\n*   **Stable Employment:** The applicant has held permanent employment with Meridian Health for 79 months (over 6 years), demonstrating income stability.\n*   **Verified Income:** Income has been verified as part of the application process.\n\n**Conditions for a Different Outcome:**\nFor the application to fall within automated policy thresholds and be approved without further underwriter discretion, one of the following would need to change:\n1.  **Reduce the Loan Amount or Term:** The monthly instalment would need to be lowered so that the total monthly debt service (existing commitments + new instalment) does not exceed 40% of gross monthly income (i.e., below €742.80 per month).\n2.  **Increase Verified Income:** The gross annual income would need to increase to raise the 40% threshold above the current €1,116 monthly debt service total.\n3.  **Reduce Existing Commitments:** The applicant's existing monthly credit commitments would need to be lowered.",
+  "latency_ms": 2122,
+  "tokens_in": 685,
+  "tokens_out": 516,
+  "provider_id": "chatcmpl-a7986ddd400b56d0",
+  "started_at": "2026-09-25T02:38:34+00:00",
+  "sha256": "24906fa1b01892951b050a33b6fee7d9597ed300b89820dc411b5570623a561c"
+}

@@ -1,0 +1,28 @@
+{
+  "item_id": "underwriter-de:case_review:APP000323:complete",
+  "run_id": "2026-09-25-de",
+  "repeat": 0,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "http://10.130.232.21:8200/v1",
+    "fingerprint": "1869632eafca897436984f33787f7a00bdb65e00462c86c6abb7ba9d15ee7e15"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000323\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mr |\n| Age band | 65+ |\n| Employment type | permanent |\n| Employer | Ashby Group |\n| Time in current role | 22 months |\n| Postcode district | LS6 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | €26,401 |\n| Income verified | Yes |\n| Existing monthly credit commitments | €461 |\n| Dependants | 2 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | €23,682 |\n| Term | 48 months |\n| Stated purpose | home improvement |\n| Indicative monthly instalment | €634 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000323\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**695** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | December 2017 (111 months) |\n| Accounts on file | 6 |\n| Searches, last 6 months | 2 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 2 |\n| Most recent delinquency | 1 months ago |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, €2,000 to €40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application was referred for manual underwriter review because the automated rules could not settle it. Specifically, the applicant exceeds the **40% affordability threshold** and has **delinquencies within the last 12 months**, both of which trigger mandatory underwriter review according to the Personal Loan Lending Policy (PL-2026.1).\n\n**What the File Shows – Against the Applicant:**\n\n*   **Affordability Breach:** The proposed monthly instalment of **€634**, combined with existing monthly credit commitments of **€461**, results in total monthly debt service of **€1,095**. Against the applicant's gross annual income of **€26,401** (gross monthly income approx. €2,200), this represents a debt-to-income ratio of **approximately 49.8%**, exceeding the policy threshold of 40%.\n*   **Credit History Issues:** The credit bureau report (Northgate Credit Reference) shows **2 delinquencies within the last 24 months**, with the most recent occurring **1 month ago**. Policy states that any missed payment within the last 12 months requires underwriter review.\n*   **Age Factor:** The applicant is in the **65+ age band**, which, combined with the other factors, contributes to the risk profile requiring manual assessment.\n\n**What Would Need to Change for a Favorable Outcome:**\n\nFor the application to fall within policy without further underwriter discretion, one or more of the following would need to change:\n\n1.  **Affordability:** The total monthly debt service must be reduced to **≤ 40% of gross monthly income** (approx. €880). This could be achieved by reducing the requested facility amount, extending the term beyond 48 months, or providing additional verified income.\n2.  **Credit History:** The applicant would need to demonstrate a period of clean payment history moving forward, though the recent delinquency (1 month ago) already necessitates this review.\n\nThe underwriter will now determine if a reduced facility, a longer term, or additional income verification can bring this application within acceptable risk parameters.",
+  "latency_ms": 1965,
+  "tokens_in": 686,
+  "tokens_out": 464,
+  "provider_id": "chatcmpl-bd3d9f4ce1985df3",
+  "started_at": "2026-09-25T02:41:03+00:00",
+  "sha256": "12776265fb7680acce206c6350add73d46ce71da77617b88035ca76696175f61"
+}

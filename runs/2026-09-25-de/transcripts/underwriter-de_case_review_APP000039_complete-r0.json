@@ -1,0 +1,28 @@
+{
+  "item_id": "underwriter-de:case_review:APP000039:complete",
+  "run_id": "2026-09-25-de",
+  "repeat": 0,
+  "sut": {
+    "model_id": "nvidia/nemotron-3.5-lightning",
+    "prompt_version": "0f7c3b98eca20e37",
+    "params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 900,
+      "seed": 7,
+      "enable_thinking": false
+    },
+    "endpoint": "http://10.130.232.21:8200/v1",
+    "fingerprint": "1869632eafca897436984f33787f7a00bdb65e00462c86c6abb7ba9d15ee7e15"
+  },
+  "system_prompt": "You are supporting an underwriter. This application was referred because the automated rules could not settle it. Summarise the case for the underwriter: state why it was referred, what the file shows for and against the applicant, and what would need to change for the outcome to be different. Use only the documents provided.",
+  "user_prompt": "# Personal Loan Application\n\n**Reference:** APP000039\n**Received:** 31 March 2026\n\n## Applicant\n\n| Field | Value |\n|---|---|\n| Title | Mr |\n| Age band | 35-44 |\n| Employment type | permanent |\n| Employer | Ashby Group |\n| Time in current role | 164 months |\n| Postcode district | NE2 |\n\n## Income and outgoings\n\n| Field | Value |\n|---|---|\n| Gross annual income | €23,723 |\n| Income verified | Yes |\n| Existing monthly credit commitments | €462 |\n| Dependants | 1 |\n\n## Facility requested\n\n| Field | Value |\n|---|---|\n| Amount | €13,738 |\n| Term | 60 months |\n| Stated purpose | other |\n| Indicative monthly instalment | €312 |\n\n\n# Credit Bureau Summary\n\n**Reference:** APP000039\n**Bureau:** Northgate Credit Reference\n**Search date:** 31 March 2026\n\n## Score\n\n**570** *(range 0–999)*\n\n## File\n\n| Field | Value |\n|---|---|\n| Credit file opened | September 2025 (18 months) |\n| Accounts on file | 3 |\n| Searches, last 6 months | 1 |\n\n## Payment history\n\n| Field | Value |\n|---|---|\n| Delinquencies, last 24 months | 0 |\n| Most recent delinquency | None |\n| Defaults recorded | None |\n| CCJs | None |\n\n\n# Personal Loan Lending Policy — Extract\n\n**Policy version:** PL-2026.1\n**Applies to:** unsecured personal loans, €2,000 to €40,000\n\n## Affordability\n\n| Rule | Threshold |\n|---|---|\n| Total monthly debt service, as a share of gross monthly income | Must not exceed **40%** |\n| Debt service includes | Existing credit commitments plus the proposed instalment |\n| Income basis | Gross annual income, verified where available |\n\nApplications above the 40% threshold require underwriter review. The underwriter may\nconsider a reduced facility, a longer term, or additional verified income.\n\n## Credit history\n\n| Rule | Threshold |\n|---|---|\n| Bureau score | Below 600 requires underwriter review |\n| Missed payments | Any missed payment within the last 12 months requires underwriter review |\n| Credit file age | Under 24 months is considered a thin file |\n\n## Underwriter briefing standard\n\nA briefing must state the reason for review, the applicable threshold, and what\nwould need to change for the application to fall within policy.\n",
+  "retrieved": [],
+  "output": "**Case Summary for Underwriter Review**\n\n**Reason for Referral:**\nThis application has been referred for underwriter review due to two policy triggers. Firstly, the applicant's **bureau score of 570 falls below the 600 threshold**, requiring mandatory review. Secondly, the proposed loan results in a **Total Monthly Debt Service of 51.5% of gross monthly income**, which exceeds the policy maximum of 40%.\n\n**What the File Shows:**\n\n*   **Against the Applicant (The Breaches):**\n    *   **Affordability Breach:** The proposed monthly instalment of €312, combined with existing monthly credit commitments of €462, results in total monthly debt service of €774. Against a gross monthly income of €1,977 (derived from the annual figure of €23,723), this represents **51.5%** of income. The policy strictly mandates that this must not exceed 40%.\n    *   **Credit Score:** The bureau score of 570 is below the 600 benchmark for automated approval.\n\n*   **In Favour of the Applicant (Mitigating Factors):**\n    *   **Strong Employment:** The applicant has been in permanent employment with Ashby Group for **164 months** (over 13 years), demonstrating stability.\n    *   **Clean Credit History:** The credit file shows **zero delinquencies** in the last 24 months, no defaults, and no CCJs. The file opened in September 2025, and while it is relatively young, the payment behaviour is impeccable.\n    *   **Verified Income:** Income has been verified as part of the application process.\n\n**What Would Need to Change for a Positive Outcome:**\nFor this application to fall within policy and be approved without further underwriter discretion, the following would need to change:\n\n1.  **Affordability:** The total monthly debt service must be reduced to **≤40% of gross monthly income** (€790.80). Currently, the debt burden is too high. This could be achieved by:\n    *   **Reducing the loan amount** to lower the monthly instalment.\n    *   **Extending the term** beyond 60 months to lower the monthly payment.\n    *   **Paying down existing commitments** to reduce the €462 monthly commitment.\n2.  **Credit Score:** While the underwriter can override the score threshold given the strong employment history and clean payment record, the score itself would need to improve for a standard automated approval in the future.",
+  "latency_ms": 2245,
+  "tokens_in": 684,
+  "tokens_out": 553,
+  "provider_id": "chatcmpl-ba53cc693c5ac335",
+  "started_at": "2026-09-25T02:39:50+00:00",
+  "sha256": "51a4ae16980158d29e5b0421c904ee7b9bfc11f3c4293656e414505e8c988e95"
+}
