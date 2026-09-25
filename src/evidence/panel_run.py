@@ -26,6 +26,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 import time
@@ -224,3 +225,64 @@ def record(run: Path, records: list[dict[str, Any]], facts: dict[str, Any],
     (run / "panel" / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n",
                                                  encoding="utf-8")
     return manifest
+
+
+class EmbedderMismatch(RuntimeError):
+    """The embedder does not reproduce the corpus index, so retrieval would drift."""
+
+
+def panel_over_run(run: Path, pack: Pack, *, corpus: str | None = None,
+                   runtime: str = "direct", workers: int = 4, limit: int | None = None,
+                   redo: bool = False, log: Callable[[str], None] = print) -> dict[str, Any]:
+    """Run the panel over a finished run, record it and seal the evidence again.
+
+    ``corpus`` None takes the run judge's corpus (else EU); ``"none"`` gives the panel no
+    regulation passages. A panel that stops part-way leaves a sealed, partial record, and
+    the same call finishes it. Returns ``ok``, a one-line ``message`` and the counts.
+    """
+    from evidence.evidence import write_evidence
+
+    manifest = json.loads((run / "manifest.json").read_text(encoding="utf-8"))
+    corp = None
+    if corpus != "none":
+        corp = Corpus(corpus or ((manifest.get("judge") or {}).get("corpus") or {}).get(
+            "jurisdiction") or "EU")
+        ec = corp.check_embedder()
+        if not ec["ok"]:
+            raise EmbedderMismatch(f"the embedder does not reproduce the {corp.jurisdiction} "
+                                   f"index (cosine {ec['cosine']}); rebuild it first")
+    planned, facts = bundles(run, pack, corp, limit=limit)
+    done = set() if redo else done_keys(run)
+    todo = [b for b in planned if (b["item_id"], b["repeat"]) not in done]
+    if done:
+        log(f"panel: {len(planned) - len(todo)} of {len(planned)} briefings already done; "
+            f"{len(todo)} to go (--redo to start over)")
+    if redo and (run / "panel").is_dir():
+        shutil.rmtree(run / "panel")
+    started = _now()
+    running = {"kind": runtime, "status": "running"}
+
+    def sink(recs: list[dict[str, Any]]) -> None:  # finished briefings, as they arrive
+        record(run, recs, facts, running, started, complete=False)
+
+    runner = run_nemoclaw if runtime == "nemoclaw" else run_direct
+    try:
+        records, rt = runner(todo, workers=workers, log=log, sink=sink) if todo \
+            else ([], {"kind": runtime})
+    except (RuntimeError, OSError, subprocess.CalledProcessError) as exc:
+        m = record(run, [], facts, running | {"status": f"stopped: {exc}"}, started,
+                   complete=False)
+        write_evidence(run)  # the run stays sealed and verifiable with a partial panel
+        return {"ok": False, "briefings": m["briefings"], "planned": m["planned"],
+                "message": f"panel stopped: {exc}\n{m['briefings']} of {m['planned']} "
+                           f"briefings are in {run / 'panel'}; run the same command again "
+                           "to finish"}
+    finished = done_keys(run) | {(r["item_id"], r["repeat"]) for r in records
+                                 if not r.get("error")}
+    m = record(run, records, facts, rt, started, complete=len(finished) >= len(planned))
+    out = write_evidence(run)
+    return {"ok": True, "briefings": m["briefings"], "planned": len(planned),
+            "errors": m["errors"], "report": str(run / "evidence" / "panel.md"),
+            "message": f"panel: {m['briefings']} briefings recorded ({m['errors']} errors, "
+                       f"{len(finished)}/{len(planned)} done) in {run / 'panel'}; evidence "
+                       f"rebuilt and {out['files_sealed']} files sealed"}

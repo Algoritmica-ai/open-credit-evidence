@@ -175,6 +175,32 @@ def test_panel_on_a_run_is_recorded_sealed_and_reported(stubbed, tmp_path, monke
     assert len(rows) == 2 and not any(r.get("error") for r in rows)
 
 
+
+def test_panel_over_run_records_seals_and_resumes(stubbed, tmp_path, monkeypatch):  # noqa: F811
+    from evidence import panel_run
+    from evidence.evidence import verify_run, write_evidence
+    from evidence.runner import run_pack
+
+    run = tmp_path / "run"
+    run_pack(stubbed, run, repeats=1, limit=2, corpus="EU", log=lambda s: None)
+    write_evidence(run, stubbed.obligations)
+    call, _ = scripted()
+    monkeypatch.setattr(panel, "chat", lambda base_url, api_key=None, **kw: call(**kw))
+    res = panel_run.panel_over_run(run, stubbed, corpus="EU", workers=2, log=lambda s: None)
+    assert res["ok"] and res["briefings"] == 2 and res["planned"] == 2
+    assert verify_run(run, stubbed, recompute=True).ok
+    said = []
+    again = panel_run.panel_over_run(run, stubbed, corpus="EU", log=said.append)
+    assert again["ok"] and "2 of 2 briefings already done" in said[0]
+
+    def down(*a, **k):
+        raise OSError("sandbox unreachable")
+
+    monkeypatch.setattr(panel_run, "run_direct", down)
+    stopped = panel_run.panel_over_run(run, stubbed, corpus="EU", redo=True, log=lambda s: None)
+    assert not stopped["ok"] and "sandbox unreachable" in stopped["message"]
+    assert verify_run(run, stubbed, recompute=True).ok  # still sealed, with a partial panel
+
 def test_panel_module_runs_on_the_standard_library_alone():
     import ast
     from pathlib import Path

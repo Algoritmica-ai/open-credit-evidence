@@ -15,8 +15,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
-import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -271,55 +269,21 @@ def _cmd_corpus(a: argparse.Namespace) -> int:
 
 def _cmd_panel(a: argparse.Namespace) -> int:
     from evidence import panel_run
-    from evidence.corpus import Corpus
-    from evidence.evidence import write_evidence
 
     run = Path(a.run)
     manifest = json.loads((run / "manifest.json").read_text(encoding="utf-8"))
     pack = load_pack(a.pack or Path("packs") / manifest["pack"]["pack_id"])
-    corpus = None
-    if a.corpus != "none":
-        corpus = Corpus(a.corpus or ((manifest.get("judge") or {}).get("corpus") or {}).get(
-            "jurisdiction") or "EU")
-        ec = corpus.check_embedder()
-        if not ec["ok"]:
-            print(f"the embedder does not reproduce the {corpus.jurisdiction} index (cosine "
-                  f"{ec['cosine']}); rebuild it first", file=sys.stderr)
-            return 1
-    bundles, facts = panel_run.bundles(run, pack, corpus, limit=a.limit)
-    done = set() if a.redo else panel_run.done_keys(run)
-    todo = [b for b in bundles if (b["item_id"], b["repeat"]) not in done]
-    if done:
-        print(f"panel: {len(bundles) - len(todo)} of {len(bundles)} briefings already done; "
-              f"{len(todo)} to go (--redo to start over)")
-    if a.redo and (run / "panel").is_dir():
-        shutil.rmtree(run / "panel")
-    started = datetime.now(UTC).isoformat(timespec="seconds")
-    running = {"kind": a.runtime, "status": "running"}
-
-    def sink(recs: list[dict[str, Any]]) -> None:  # finished briefings, as they arrive
-        panel_run.record(run, recs, facts, running, started, complete=False)
-
-    runner = panel_run.run_nemoclaw if a.runtime == "nemoclaw" else panel_run.run_direct
     try:
-        records, runtime = runner(todo, workers=a.workers, log=print, sink=sink) if todo \
-            else ([], {"kind": a.runtime})
-    except (RuntimeError, OSError, subprocess.CalledProcessError) as exc:
-        m = panel_run.record(run, [], facts, running | {"status": f"stopped: {exc}"}, started,
-                             complete=False)
-        write_evidence(run)  # the run stays sealed and verifiable with a partial panel
-        print(f"panel stopped: {exc}\n{m['briefings']} of {m['planned']} briefings are in "
-              f"{run / 'panel'}; run the same command again to finish", file=sys.stderr)
+        res = panel_run.panel_over_run(run, pack, corpus=a.corpus, runtime=a.runtime,
+                                       workers=a.workers, limit=a.limit, redo=a.redo)
+    except panel_run.EmbedderMismatch as exc:
+        print(exc, file=sys.stderr)
         return 1
-    finished = panel_run.done_keys(run) | {(r["item_id"], r["repeat"]) for r in records
-                                           if not r.get("error")}
-    m = panel_run.record(run, records, facts, runtime, started,
-                         complete=len(finished) >= len(bundles))
-    out = write_evidence(run)
-    print(f"panel: {m['briefings']} briefings recorded ({m['errors']} errors, "
-          f"{len(finished)}/{len(bundles)} done) in {run / 'panel'}; evidence rebuilt and "
-          f"{out['files_sealed']} files sealed")
-    print(f"report {run / 'evidence' / 'panel.md'}")
+    if not res["ok"]:
+        print(res["message"], file=sys.stderr)
+        return 1
+    print(res["message"])
+    print(f"report {res['report']}")
     return 0
 
 

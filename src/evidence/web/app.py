@@ -502,15 +502,50 @@ def _job_worker(job_id: str, pack: Pack, out: Path, opts: dict[str, Any]) -> Non
         )
         if manifest["transcripts"]:
             write_evidence(out, pack.obligations)
+        if opts.get("panel") and manifest["transcripts"] and not manifest["cancelled"]:
+            _panel_phase(job, pack, out, log)
         with _lock:
             job.update(
                 status="cancelled" if manifest["cancelled"] else "done",
+                phase="done",
                 run_id=manifest["run_id"],
                 transcripts=manifest["transcripts"],
             )
     except Exception as exc:  # noqa: BLE001 — the browser needs the message, not a 500
         with _lock:
             job.update(status="error", error=f"{type(exc).__name__}: {exc}")
+
+
+def _panel_phase(job: dict[str, Any], pack: Pack, out: Path, log: Any) -> None:
+    """The three-agent panel over the finished run. It runs in the NemoClaw sandbox when
+    EVIDENCE_PANEL_SSH names the cluster, else here against the judge endpoint. A panel
+    that fails leaves the run sealed without it; the job says why."""
+    from evidence import panel_run
+
+    with _lock:
+        job.update(phase="panel", done=0, total=job["total"])
+        job["log"].append("  second opinion: three AI reviewers")
+    runtime = "nemoclaw" if os.environ.get("EVIDENCE_PANEL_SSH") else "direct"
+    workers = int(os.environ.get("EVIDENCE_PANEL_WORKERS", "8"))
+    try:
+        res = panel_run.panel_over_run(out, pack, runtime=runtime, workers=workers, log=log)
+        note = None if res["ok"] else res["message"]
+    except Exception as exc:  # noqa: BLE001 — the evaluation stands without the panel
+        note = f"{type(exc).__name__}: {exc}"
+    if note:
+        with _lock:
+            job["panel_error"] = note
+            job["log"].append(f"  panel stopped: {note}")
+
+
+@app.get("/api/jobs")
+def jobs() -> list[dict[str, Any]]:
+    """Tests running now, newest first, for the home page."""
+    with _lock:
+        rows = [{"job_id": k} | {x: v.get(x) for x in ("status", "phase", "done", "total",
+                                                       "run_id", "started", "panel")}
+                for k, v in _jobs.items() if v.get("status") == "running"]
+    return sorted(rows, key=lambda r: r["started"] or "", reverse=True)
 
 
 @app.post("/api/run")
@@ -523,6 +558,7 @@ def start_run(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
         repeats = min(repeats, SHARED_MAX_REPEATS)
         limit = min(limit or SHARED_MAX_ITEMS, SHARED_MAX_ITEMS)
     judge = bool(payload.get("judge", True))
+    panel = bool(payload.get("panel", False)) and judge
     corpus = payload.get("corpus", "EU")
     corpus = None if corpus in (None, "", "none") else _safe_name(str(corpus), "corpus")
     if not os.environ.get("NVIDIA_API_KEY") and endpoint_for("assistant").is_build:
@@ -533,6 +569,8 @@ def start_run(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
     total = (limit or len(pack.items)) * repeats
     _jobs[job_id] = {
         "status": "running",
+        "phase": "memos",
+        "panel": panel,
         "done": 0,
         "total": total,
         "log": [],
@@ -545,7 +583,8 @@ def start_run(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
             job_id,
             pack,
             out,
-            {"repeats": repeats, "judge": judge, "limit": limit, "corpus": corpus},
+            {"repeats": repeats, "judge": judge, "limit": limit, "corpus": corpus,
+             "panel": panel},
         ),
         daemon=True,
     ).start()
@@ -627,12 +666,58 @@ def runs() -> list[dict[str, Any]]:
     return out
 
 
+def _stages(run: Path) -> dict[str, Any]:
+    """Where a run stands in test, review, improve, and the one next step."""
+    from evidence import review
+
+    q = _review_queue(run)
+    s = review.summary(run, q)
+    done = review.reviews(run)
+    flagged = [m for m in q if m["lane"] in ("red", "amber")]
+    checked = sum(1 for m in flagged if m["memo"] in done)
+    fb = run / "feedback" / "manifest.json"
+    if not done:
+        rv = "not_started"
+    elif checked < len(flagged):
+        rv = "in_progress"
+    else:
+        rv = "done"
+    if fb.is_file():
+        im = "done"
+    elif rv == "done" or s["needs_adjudication"] or s["settled"]:
+        im = "in_progress"
+    else:
+        im = "not_started"
+    step = "review" if rv != "done" else "improve" if im != "done" else "test"
+    return {"review": rv, "improve": im, "next": step, "flagged": len(flagged),
+            "flagged_checked": checked, "reviewed": len(done), "memos": len(q),
+            "lanes": s["lanes"], "needs_adjudication": s["needs_adjudication"],
+            "feedback_built": fb.is_file()}
+
+
+@app.get("/api/overview")
+def overview(run: str | None = None) -> dict[str, Any]:
+    """The home page: the latest sealed test (or ``run``), where it stands, what is running."""
+    rows = [r for r in runs() if r["sealed"] and r["transcripts"]]
+    current = next((r for r in rows if r["run_id"] == run), None) if run else None
+    if current is None and rows:
+        current = max(rows, key=lambda r: r.get("finished_at") or "")
+    out: dict[str, Any] = {"run": None, "jobs": jobs(), "tests": len(rows)}
+    if current:
+        out["run"] = {k: current[k] for k in ("run_id", "pack", "sut", "finished_at", "verdict",
+                                              "memos", "memos_with_error", "panel")}
+        out["stages"] = _stages(_run_dir(current["run_id"]))
+    return out
+
+
 @app.get("/api/runs/{run_id}")
 def run_detail(run_id: str) -> dict[str, Any]:
     path = _run_dir(run_id)
     ev = path / "evidence"
     return {
         "run_id": run_id,
+        "headline": _headline(path),
+        "panel": _read_json(ev / "panel.json") if (ev / "panel.json").is_file() else None,
         "manifest": _read_json(path / "manifest.json"),
         "summary": _read_json(ev / "summary.json") if (ev / "summary.json").is_file() else None,
         "report": (ev / "report.md").read_text(encoding="utf-8")
@@ -887,6 +972,15 @@ def review_feedback_file(run_id: str, name: str) -> FileResponse:
 
 
 # ------------------------------------------------------------------ pages
+
+
+@app.middleware("http")
+async def _no_stale_pages(request: Any, call_next: Any) -> Any:
+    """Browsers revalidate the page, script and styles each time, so an upgrade shows at once."""
+    response = await call_next(request)
+    if not request.url.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
 
 
 @app.get("/")
