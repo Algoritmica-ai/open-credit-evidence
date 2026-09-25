@@ -261,7 +261,9 @@ def test_a_stopped_panel_keeps_what_finished_and_starts_nothing_new(stubbed, tmp
     first_done = lambda: (run / "panel" / "records.jsonl").is_file()  # noqa: E731
     res = panel_run.panel_over_run(run, stubbed, corpus="EU", workers=1, log=lambda s: None,
                                    should_stop=first_done)
-    assert res["ok"] and res["stopped"] and res["briefings"] == 1 and res["planned"] == 3
+    # the stop is seen once the first record is on disk; a second, instant stub review
+    # can finish in between, a third never starts
+    assert res["ok"] and res["stopped"] and 1 <= res["briefings"] < 3 and res["planned"] == 3
     m = json.loads((run / "panel" / "manifest.json").read_text())
     assert m["complete"] is False and m["runtime"]["status"].startswith("stopped")
     assert verify_run(run, stubbed, recompute=True).ok
