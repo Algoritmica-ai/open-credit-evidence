@@ -22,7 +22,7 @@ What we have, verified 16 Sep 2026, and how the framework uses it.
 |---|---|---|
 | Assistant (Lightning) | NIM in the servers job (`scripts/cluster/servers.sbatch`), port from 8200 | Fixed seed on a local vLLM is reproducible; the free endpoint was not, and took 8–150 s per call. Runner at volume needs both. |
 | Teacher (Ultra) | NVIDIA Build, or Curiosity B300 (`scripts/cluster/serve_ultra.sh`) | 550B; too large for a single RTX GPU. Used once, to label the judge's training set. B300 option needs 4 GPUs (NVFP4 TP4). |
-| Judge (Nano) | NIM `nvidia-nemotron-nano-9b-v2:1.12.2` in the servers job, next free port, 64k context, tool calling on — the NIM's packaged `nemotron_json` parser, non-streamed requests only | Nemotron Nano 9B v2, un-tuned today — the baseline. The fine-tuned adapter is served with vLLM by `serve_nano.sh ADAPTER=` until it can be served as a NIM profile. Loan files never leave the box. |
+| Judge (Super) | NIM `nemotron-3-super-120b-a12b` (pinned by digest) in the servers job on two GPUs (FP8, profile `vllm-fp8-tp2-pp1`), next free port, served as `nemotron-3-super`, 64k context, tool calling on | Nemotron 3 Super 120B-A12B: the single judge and all three agents of the judge panel. Replaced the Nano 9B v2 NIM on 24 Sep, whose Challenger rarely used its tools and never read a check's evidence. Loan files never leave the box. Nano stays the fine-tuning target (`serve_nano.sh ADAPTER=`), not served by the job. |
 | Embed | NIM `nemotron-3-embed-1b:2.2.2` in the servers job, next free port (`serve_embed.sh` to debug it alone) | Nemotron 3 Embed 1B. With this, no case content and no query leaves the node, and a local run needs no NVIDIA key. |
 
 Switching a role is two lines in `.env`; see `.env.example`. Every `ChatResponse`
@@ -32,9 +32,10 @@ records its `endpoint`, so a transcript can always say cloud or on-prem.
 
 Containers started by hand sit outside SLURM: `sacct` shows nothing for them,
 the cluster sees the team as idle, and SLURM may allocate the GPUs they hold to
-another team. `scripts/cluster/servers.sbatch` runs the assistant NIM, the Nano
+another team. `scripts/cluster/servers.sbatch` runs the assistant NIM, the Super
 judge and the embedder as one job that holds a whole node (the team's
-allocation) for up to seven days, picks the three emptiest GPUs, takes free
+allocation) for up to seven days, picks the four emptiest GPUs (the judge takes
+two), takes free
 ports from 8200, and writes the endpoints to `/data/team08/runs/servers.env`.
 
 ```
@@ -63,10 +64,10 @@ and the log says why it stopped (`/data/team08/runs/servers-<jobid>.log`); the
 job ends only on `scancel`, the seven-day limit, or a server that keeps failing. The sections below describe the hand-started containers and are
 kept for debugging one server at a time.
 
-## Serving the Nano judge
+## Serving the Nano fine-tune
 
-The servers job runs the Nano NIM. `serve_nano.sh` serves the same weights with
-vLLM (pinned by digest) for the fine-tuned adapter:
+The servers job runs the Super NIM as the judge. `serve_nano.sh` serves the Nano
+9B v2 weights with vLLM (pinned by digest) for the fine-tuned adapter:
 
 ```
 srun --gres=gpu:1 -n1 -p defq --time=00:30:00 --pty bash
@@ -210,7 +211,7 @@ with `ADAPTER=`) becomes the runtime judge, and Ultra is no longer needed.
 | GPU | Use |
 |---|---|
 | one | Lightning NIM, long-lived |
-| one | Nano judge NIM |
+| two | Super judge NIM (FP8, TP2) |
 | one | Embedder NIM |
 | one–two | LoRA training (`nemo:26.08.00`) |
 | rest | interactive work |

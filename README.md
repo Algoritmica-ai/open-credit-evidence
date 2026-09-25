@@ -155,7 +155,7 @@ A hosted, shared demo of the UI is on Hugging Face:
 | Role | Model | Where |
 |---|---|---|
 | Assistant under test | `nvidia/nemotron-3.5-lightning` | The NIM on the team's GPU node (`.env.example` points there); or NVIDIA Build |
-| Judge (readability and oversight, citing the regulation) | Nemotron Nano 9B v2 (`nano-judge`), un-tuned today | NIM on the team's node, tool calling on (`.env.example` points there); Nemotron 3 Ultra on NVIDIA Build is the teacher for the fine-tune |
+| Judge and judge panel (readability and oversight, citing the regulation) | Nemotron 3 Super 120B-A12B (`nemotron-3-super`), FP8 on two GPUs | NIM on the team's node, tool calling on (`.env.example` points there); Nemotron 3 Ultra on NVIDIA Build is the teacher for the fine-tune |
 | Retriever (corpus build, judge retrieval) | Nemotron 3 Embed 1B | NIM on the team's node; or NVIDIA Build |
 
 Any role moves between cloud and on-prem with two lines in `.env`

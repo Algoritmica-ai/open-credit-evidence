@@ -69,6 +69,9 @@ def summarise(run: Path) -> dict[str, Any] | None:
     judge_vals = [judge[k] for k in keyed if judge.get(k) is not None]
     return {
         "panel": manifest.get("panel"),
+        # older panels recorded neither; their summaries stay as they were
+        **({"complete": manifest["complete"], "planned": manifest.get("planned")}
+           if "complete" in manifest else {}),
         "runtime": manifest.get("runtime"),
         "briefings": len(records), "answered": len(ok),
         "errors": len(records) - len(ok),
@@ -123,6 +126,9 @@ def lines(s: dict[str, Any]) -> list[str]:
          "review it. An opinion, reported and never used to pass or fail.", "",
          f"- Ran {where}. Models: reader `{models.get('reader')}`, challenger "
          f"`{models.get('challenger')}`, arbiter `{models.get('arbiter')}`.",
+         *([f"- **Incomplete:** {s['briefings']} of {s.get('planned')} briefings reviewed so "
+            "far; `evidence panel` on this run resumes it."] if s.get("complete") is False
+           else []),
          f"- {s['answered']}/{s['briefings']} briefings answered"
          + (f"; {s['errors']} failed and are left out" if s["errors"] else "") + ".",
          f"- Mean score {s['mean_value']} on 0–1 (the single judge: {s['judge_mean_value']}). "

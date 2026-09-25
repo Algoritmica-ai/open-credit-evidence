@@ -108,8 +108,10 @@ def test_panel_record_weighs_the_challenger_and_checks_citations():
     assert [c["name"] for c in ch["steps"][0]["tool_calls"]] == ["find_in_case_file",
                                                                  "check_result"]
     assert "£52,800" in ch["steps"][0]["tool_calls"][0]["result"]
-    # only the Challenger was offered tools
-    assert [s["tools"] is not None for s in seen] == [False, True, True, False]
+    # only the Challenger was offered tools (Reader and Challenger run at once)
+    offered = {(s["system"][:18], s["tools"] is not None) for s in seen}
+    assert offered == {("You are the Reader", False), ("You are the Challe", True),
+                       ("You are the Arbite", False)}
     assert rec["error"] is None
 
 
@@ -123,7 +125,23 @@ def test_an_agent_that_never_answers_is_recorded_not_raised():
     out = panel.run_agent("challenger", panel.CHALLENGER, "B", BUNDLE, call=call, model="m",
                           keys=("findings",))
     assert out["parsed"] is None and "no parseable answer" in out["error"]
-    assert out["tool_calls"] == panel.MAX_STEPS - 1  # the last turn is without tools
+    assert out["tool_calls"] == panel.MAX_STEPS["challenger"] - 1  # the last turn has no tools
+    assert out["steps"][-1]["json_only"] is True
+
+
+def test_an_empty_or_broken_answer_gets_one_json_only_turn():
+    asked = []
+
+    def call(model, messages, tools=None, json_only=False, **_):
+        asked.append(json_only)
+        if not json_only:
+            return _reply('{"findings": [{"claim": "x", "problem": broken json')
+        return _reply('{"findings": [], "checks_confirmed": [], "summary": "ok"}')
+
+    out = panel.run_agent("challenger", panel.CHALLENGER, "B", BUNDLE, call=call, model="m",
+                          keys=("findings",))
+    assert out["parsed"]["summary"] == "ok" and "error" not in out
+    assert asked == [False, True]
 
 
 def test_panel_on_a_run_is_recorded_sealed_and_reported(stubbed, tmp_path, monkeypatch):  # noqa: F811
@@ -192,3 +210,46 @@ def test_a_verdict_on_a_check_it_did_not_read_is_not_counted():
                                                       ("reader", "challenger", "arbiter")})
     assert rec["checks_confirmed"] == [] and rec["checks_disputed"] == []
     assert rec["unread_check_verdicts"] == ["claim_consistency", "numeric_fidelity"]
+
+
+def test_partial_panel_is_kept_marked_and_resumed(stubbed, tmp_path, monkeypatch):  # noqa: F811
+    from evidence import panel_run
+    from evidence.cli import main
+    from evidence.corpus import Corpus
+    from evidence.evidence import verify_run, write_evidence
+    from evidence.evidence.panel_report import summarise
+    from evidence.runner import run_pack
+
+    run = tmp_path / "run"
+    run_pack(stubbed, run, repeats=1, limit=2, corpus="EU", log=lambda s: None)
+    write_evidence(run, stubbed.obligations)
+    call, seen = scripted()
+    monkeypatch.setattr(panel, "chat", lambda base_url, api_key=None, **kw: call(**kw))
+    bundles, facts = panel_run.bundles(run, stubbed, Corpus("EU"))
+    # one briefing finished before the connection dropped
+    first = panel.run_panel(bundles[0], call=call, models={r: "m" for r in
+                                                            ("reader", "challenger",
+                                                             "arbiter")})
+    panel_run.record(run, [first], facts, {"kind": "nemoclaw", "status": "running"},
+                     "2026-09-24T00:00:00+00:00", complete=False)
+    write_evidence(run)
+    assert verify_run(run, stubbed, recompute=True).ok
+    s = summarise(run)
+    assert s["complete"] is False and s["briefings"] == 1 and s["planned"] == 2
+    assert "Incomplete" in (run / "evidence" / "panel.md").read_text()
+    # the same command again reviews only what is left
+    calls_before = len(seen)
+    monkeypatch.setattr("evidence.cli.load_pack", lambda p: stubbed)
+    assert main(["panel", str(run), "--workers", "1"]) == 0
+    assert len(seen) - calls_before == 4  # reader, challenger x2, arbiter: one briefing
+    s = summarise(run)
+    assert s["complete"] is True and s["answered"] == 2
+    assert verify_run(run, stubbed, recompute=True).ok
+
+
+def test_a_torn_last_line_is_skipped(tmp_path):
+    from evidence.panel_run import _read_records
+
+    p = tmp_path / "records.jsonl"
+    p.write_text('{"item_id": "a", "repeat": 0}\n{"item_id": "b", "rep')
+    assert [r["item_id"] for r in _read_records(p)] == ["a"]
