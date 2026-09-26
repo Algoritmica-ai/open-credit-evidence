@@ -2,7 +2,7 @@
 
 | Component | Licence | Use |
 |---|---|---|
-| synthetic-data-designer (sriramarun) | Apache-2.0 | Case generation from `specs/*.yaml` |
+| Synthetic Data Designer, vendored in `src/sdd` from Algoritmica-ai/deeploans (`synthetic-data-designer/`; `src/sdd/LICENSE`, `src/sdd/NOTICE`) | Apache-2.0 | Case generation from `specs/*.yaml`; the designer UI at `/sdd/` |
 | pydantic | MIT | Contract validation |
 | PyYAML | MIT | Spec and obligation files |
 | Jinja2 | BSD-3-Clause | Document rendering |
