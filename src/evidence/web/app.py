@@ -1121,20 +1121,33 @@ def review_queue(run_id: str) -> dict[str, Any]:
 @app.get("/api/review/{run_id}/memo")
 def review_memo(run_id: str, memo: str) -> dict[str, Any]:
     """One memo to review: its text, its findings as cards, the case file, any earlier review."""
-    from evidence import review
+    from evidence import facts, review
 
     run = _run_dir(run_id)
-    m = next((x for x in _review_queue(run) if x["memo"] == memo), None)
+    queue = _review_queue(run)
+    m = next((x for x in queue if x["memo"] == memo), None)
     if m is None:
         raise HTTPException(404, "memo not in this run")
-    pack_id = _read_json(run / "manifest.json")["pack"]["pack_id"]
+    manifest = _read_json(run / "manifest.json")
     try:
-        item = next(i for i in _pack(pack_id).items if i.item_id == m["item_id"])
+        item = next(i for i in _pack(manifest["pack"]["pack_id"]).items
+                    if i.item_id == m["item_id"])
+        seen = item.for_setup(manifest.get("setup") or "as_is")  # what the assistant saw
         case_file = [{"title": d.renderer.replace("_", " ").capitalize(), "content": d.content}
-                     for d in item.context]
-    except (HTTPException, StopIteration):
-        case_file = []
-    return m | {"case_file": case_file, "review": review.reviews(run).get(memo),
+                     for d in seen.context]
+        figures = facts.case_facts(seen.documents_text())
+    except (HTTPException, StopIteration, ValueError):
+        case_file, figures = [], []
+    cards = [c | {"facts": facts.link(c, figures)} for c in m["cards"]]
+    done = review.reviews(run)
+    # every run of the same case, this one included, to see whether they agree
+    runs = [{"memo": x["memo"], "repeat": x["repeat"], "lane": x["lane"],
+             "failing_checks": x["failing_checks"], "reviewed": x["memo"] in done,
+             "text": x["text"], "cards": [c | {"facts": facts.link(c, figures)}
+                                          for c in x["cards"]]}
+            for x in sorted(queue, key=lambda x: x["repeat"]) if x["item_id"] == m["item_id"]]
+    return m | {"cards": cards, "case_file": case_file, "facts": figures,
+                "groups": facts.GROUPS, "review": done.get(memo), "runs": runs,
                 "reasons": list(review.REASONS)}
 
 
@@ -1173,26 +1186,6 @@ def _coach_evidence(run: Path, memo: str) -> tuple[dict[str, Any], str]:
                                    reference_figures(case_file), checks)
 
 
-@app.post("/api/review/{run_id}/coach/prepare")
-def review_coach_prepare(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
-    """The coach's note on every finding of a memo, for each possible answer, prepared once
-    per memo: the page asks when the memo opens, and for the next memo ahead of time."""
-    from evidence import coach
-
-    run = _run_dir(run_id)
-    memo = str(payload.get("memo", ""))
-    m, evidence = _coach_evidence(run, memo)
-    call, model = _coach_call()
-    s, new = coach.for_memo(run_id, memo, model)
-    try:
-        if new:
-            coach.prepare(s, evidence=evidence, cards=m["cards"], call=call)
-        return coach.notes_of(s)
-    except OSError as exc:
-        coach.close(s.id)  # the next request tries again
-        raise HTTPException(502, f"the coach could not be reached: {exc}") from exc
-
-
 @app.post("/api/review/{run_id}/coach")
 def review_coach(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     """One exchange with the coach about a memo under review: it reads the reviewer's current
@@ -1211,7 +1204,8 @@ def review_coach(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         return coach.turn(s, evidence=evidence, cards=m["cards"],
                           verdicts=list(payload.get("verdicts") or []),
                           raised=list(payload.get("raised") or []),
-                          message=(str(payload.get("message") or "").strip() or None), call=call)
+                          message=(str(payload.get("message") or "").strip() or None), call=call,
+                          about=(str(payload.get("about") or "") or None))
     except OSError as exc:
         raise HTTPException(502, f"the coach could not be reached: {exc}") from exc
 

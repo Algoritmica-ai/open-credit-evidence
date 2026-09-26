@@ -296,6 +296,11 @@ def test_review_endpoints_on_a_copy_of_a_committed_run(tmp_path, monkeypatch):
     memo = q["memos"][0]["memo"]
     m = c.get(f"/api/review/{src.name}/memo", params={"memo": memo}).json()
     assert m["cards"] and m["case_file"] and m["text"]
+    # the case file at a glance, and the figures each finding is about
+    keys = {f["key"] for f in m["facts"]}
+    assert {"dti", "income_monthly", "score"} <= keys and set(m["groups"]) >= {"afford"}
+    assert all(set(c["facts"]) <= keys for c in m["cards"]) and any(c["facts"] for c in m["cards"])
+    assert all(d["title"] != "Rules engine" for d in m["case_file"])  # only what it was given
     bad = c.post(f"/api/review/{src.name}/submit",
                  json={"memo": memo, "reviewer": "t",
                        "verdicts": [{"card_id": m["cards"][0]["card_id"], "action": "dispute"}]})
@@ -312,17 +317,12 @@ def test_review_endpoints_on_a_copy_of_a_committed_run(tmp_path, monkeypatch):
     assert fb["counts"]["judge_labels.jsonl"] >= 1
     assert c.get(f"/api/review/{src.name}/feedback/manifest.json").status_code == 200
     assert c.get("/api/overview").json()["stages"]["feedback_built"]
-    # the coach: notes prepared as the memo opens, a conversation, kept with the review
+    # the coach: asked about one finding, kept with the review
     calls = []
 
     def coach_call():
         def call(model, messages, **kw):
             calls.append(messages[-1]["content"])
-            if "Prepare a note for every finding" in messages[-1]["content"]:
-                return {"choices": [{"message": {"content": json.dumps({"notes": [
-                    {"finding": 1, "evidence": "The figures give 36.5%.", "if_wrong": "Noted.",
-                     "if_right": "What does 36.5% against 40% say?", "if_unsure": "Look at the "
-                     "figures."}]})}}]}
             return {"choices": [{"message": {"content": json.dumps({"challenges": [
                 {"finding": 1, "question": "Why?", "evidence": "the figures"}], "reply": "r"})}}]}
         return call, "stub-coach"
@@ -334,25 +334,22 @@ def test_review_endpoints_on_a_copy_of_a_committed_run(tmp_path, monkeypatch):
         second = q["memos"][1]["memo"]
         m2 = c.get(f"/api/review/{src.name}/memo", params={"memo": second}).json()
         cid = m2["cards"][0]["card_id"]
-        p1 = c.post(f"/api/review/{src.name}/coach/prepare", json={"memo": second}).json()
-        assert p1["notes"][cid]["if_right"].startswith("What does")
-        p2 = c.post(f"/api/review/{src.name}/coach/prepare", json={"memo": second}).json()
-        assert p2["session_id"] == p1["session_id"] and len(calls) == 1  # prepared once
         first = [{"card_id": x["card_id"], "action": "dispute", "reason": "finding_wrong"}
                  for x in m2["cards"]]
         r = c.post(f"/api/review/{src.name}/coach", json={
-            "memo": second, "verdicts": first, "session_id": p1["session_id"]}).json()
-        assert r["session_id"] == p1["session_id"]  # the conversation carries on from the notes
-        assert r["challenges"][0]["card_id"] == cid
+            "memo": second, "verdicts": first, "about": cid}).json()
+        assert r["about"] == cid and r["challenges"][0]["card_id"] == cid
+        assert "asks about finding 1 only" in calls[0]
         final = [{"card_id": x["card_id"], "action": "confirm"} for x in m2["cards"]]
         rec = c.post(f"/api/review/{src.name}/submit", json={
             "memo": second, "reviewer": "t", "verdicts": final,
             "coach_session": r["session_id"],
             "first_answers": [{"card_id": cid, "action": "dispute"}]}).json()
-        assert rec["coach"]["model"] == "stub-coach" and rec["coach"]["changed_after_coach"]
+        assert rec["coach"]["model"] == "stub-coach"
+        assert rec["coach"]["changed_after_coach"] == [cid]
+        assert rec["coach"]["asked_about"] == [cid]
         assert rec["coach"]["answers_before"] == [{"card_id": cid, "action": "dispute",
                                                    "reason": None, "correction": None}]
-        assert cid in rec["coach"]["notes"]
         assert c.get(f"/api/review/{src.name}").json()["summary"]["coach"]["memos"] == 1
         assert c.post(f"/api/runs/{src.name}/verify", json={}).json()["ok"]
     finally:

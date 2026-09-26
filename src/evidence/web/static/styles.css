@@ -72,6 +72,7 @@ p { margin: 0; }
 main { max-width: 1280px; margin: 0 auto; padding: 40px 120px 56px; }
 main.narrow { max-width: 1040px; padding-left: 120px; padding-right: 120px; }
 main.wide { padding-left: 48px; padding-right: 48px; }
+main.review { max-width: 1680px; padding-top: 24px; }
 .foot { text-align: center; color: var(--ink-2); font-size: 14px; padding: 8px 24px 32px; }
 
 /* ------------------------------------------------------------ building blocks */
@@ -138,7 +139,43 @@ textarea { min-height: 88px; resize: vertical; }
 .subbar { display: flex; align-items: center; gap: 20px; padding: 10px 48px; background: var(--card); border-bottom: 1px solid var(--line); }
 .review-grid { display: flex; gap: 28px; align-items: flex-start; }
 .review-grid article { flex: 1; min-width: 0; }
-.review-grid aside { width: 460px; flex-shrink: 0; }
+.review-grid aside.factcol { width: 300px; }
+.review-grid aside { width: 480px; flex-shrink: 0; position: sticky; top: 200px; overflow-y: auto; padding-right: 4px; }
+.subbar.sticky { position: sticky; top: 72px; z-index: 4; flex-direction: column; align-items: stretch; gap: 8px; }
+.appstrip { display: flex; align-items: center; gap: 8px; min-width: 0; width: 100%; }
+.stripscroll { min-width: 0; display: flex; align-items: center; gap: 6px; overflow-x: auto; flex: 1; padding: 2px 0 6px; scrollbar-width: thin; }
+.striplane { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: var(--ink-2); white-space: nowrap; margin: 0 4px 0 8px; }
+.striplane:first-child { margin-left: 0; }
+.stripitem { display: inline-flex; align-items: center; gap: 3px; min-height: 30px; padding: 0 9px; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; color: var(--ink); text-decoration: none; white-space: nowrap; background: var(--card); }
+.stripitem:hover { border-color: var(--accent); color: var(--ink); }
+.stripitem.done { color: var(--ink-2); }
+.stripitem.done .icon { width: 12px; height: 12px; color: var(--green); }
+.stripitem.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.stripitem.on .muted, .stripitem.on .icon { color: var(--accent-ink); }
+.facts { padding: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; display: flex; flex-direction: column; gap: 12px; }
+.factgroup { display: flex; flex-direction: column; gap: 4px; }
+.factgrid { display: flex; flex-direction: column; gap: 2px; }
+.fact { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0 8px; padding: 5px 8px; border-radius: 8px; border: 1px solid transparent; }
+.factlabel { font-size: 13px; color: var(--ink-2); }
+.fact b { font-size: 14px; white-space: nowrap; }
+.fact .factpol { flex-basis: 100%; }
+.fact.hit { border-color: var(--mark-line); background: var(--mark); }
+.fact.on, .cfchip.on { outline: 2px solid var(--accent); outline-offset: 1px; }
+.factnum { display: inline-block; min-width: 16px; padding: 0 5px; border-radius: 999px; background: var(--mark-line); color: #fff; font-size: 11px; font-weight: 700; text-align: center; }
+.factpol { color: var(--ink-2); }
+.st-outside.factpol, .fact.st-outside .factpol, .case-val.st-outside { color: var(--red); }
+.st-ok.factpol, .fact.st-ok .factpol { color: var(--green); }
+.cfchip { display: inline-flex; align-items: baseline; gap: 4px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--green); color: var(--ink); background: var(--card); font-size: 13px; line-height: 1.6; white-space: nowrap; vertical-align: baseline; }
+.cfchip b { color: var(--green); }
+.cfchip.st-outside { border-color: var(--red); }
+.cfchip.st-outside b { color: var(--red); }
+.cfchip.st-no_bearing { border-color: var(--line); }
+.cfchip.st-no_bearing b { color: var(--ink); }
+.legend-mark { background: var(--mark); box-shadow: inset 0 -2px 0 var(--mark-line); padding: 0 4px; border-radius: 3px; }
+.versus { display: flex; flex-wrap: wrap; gap: 10px 24px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); }
+.versus b { font-size: 18px; }
+.memo-val { color: var(--red); }
+.memo-val.struck { text-decoration: line-through; text-decoration-thickness: 1px; }
 .memo-text { font-size: 16px; line-height: 1.7; white-space: pre-wrap; }
 .memo-text mark { background: var(--mark); color: inherit; padding: 1px 3px; border-radius: 3px; box-shadow: inset 0 -2px 0 var(--mark-line); }
 .memo-text mark.on { outline: 2px solid var(--accent); }
@@ -178,6 +215,19 @@ textarea { min-height: 88px; resize: vertical; }
 .finding.flash { outline: 3px solid var(--accent); outline-offset: 2px; }
 @media (max-width: 1280px) { .hide-md { display: none; } }
 
+/* the review screen on narrower screens: slimmer columns, then the figures above the memo */
+@media (max-width: 1400px) {
+  main.review { padding-left: 24px; padding-right: 24px; }
+  .review-grid { gap: 20px; }
+  .review-grid aside.factcol { width: 250px; }
+  .review-grid aside { width: 420px; }
+}
+@media (max-width: 1200px) {
+  .review-grid { flex-wrap: wrap; }
+  .review-grid aside.factcol { width: 100%; position: static; max-height: none !important; }
+  .factgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 12px; }
+}
+
 /* ------------------------------------------------------------ small screens */
 @media (max-width: 1100px) {
   main, main.narrow, main.wide { padding: 28px 24px 48px; }
@@ -186,7 +236,8 @@ textarea { min-height: 88px; resize: vertical; }
   .steps .sep { display: none; }
   .subbar { padding: 10px 24px; flex-wrap: wrap; }
   .review-grid { flex-direction: column; }
-  .review-grid aside { width: 100%; }
+  .review-grid aside, .review-grid aside.factcol { width: 100%; position: static; max-height: none !important; }
+  .subbar.sticky { position: static; }
 }
 @media (max-width: 760px) {
   h1 { font-size: 30px; }
@@ -211,3 +262,11 @@ textarea { min-height: 88px; resize: vertical; }
 tr.on td { background: var(--accent-soft); }
 dialog.modal { border: 0; border-radius: 16px; padding: 28px; width: min(520px, calc(100vw - 32px)); background: var(--card); color: var(--ink); box-shadow: 0 20px 60px rgba(0,0,0,.25); }
 dialog.modal::backdrop { background: rgba(15, 23, 42, .45); }
+
+/* the review screen: runs of a case, the coach button, the documents window */
+.btn.ghost { background: transparent; }
+dialog.modal.wide { width: min(880px, calc(100vw - 32px)); max-height: calc(100vh - 64px); }
+.runchip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); font-size: 13px; }
+.runchip.on { border-color: var(--accent); font-weight: 600; }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; }
+.other-run { padding: 24px 28px; border-style: dashed; }

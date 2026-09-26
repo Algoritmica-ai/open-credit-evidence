@@ -134,12 +134,15 @@ def _check_cards(r: dict[str, Any], labels: dict[str, str]) -> list[dict[str, An
                                    "from it",
                         "sentence": _clean(e.get("context")),
                         "anchor": str(e.get("value") or ""),  # the figure: its sentence is quoted
+                        "memo_value": str(e.get("value") or ""),
                         "evidence": "Checked against every figure in the case file and the "
                                     "calculations that follow from them."})
         elif name == "claim_consistency" and e.get("holds") is False:
             out.append({"problem": f"Says the ratio is {e.get('claims')}, but the memo itself "
                                    f"gives {e.get('contradicted_by')}%",
                         "sentence": _clean(e.get("claim_sentence")),
+                        # both of its statements: the case file shows which one is wrong
+                        "memo_value": f"{e.get('claims')}, and {e.get('contradicted_by')}%",
                         "evidence": _clean(e.get("figure_sentence"))})
         elif name == "comparison_fidelity" and e.get("holds") is False:
             out.append({"problem": f"Says {e.get('left')} is {e.get('relation')} {e.get('right')}, "
