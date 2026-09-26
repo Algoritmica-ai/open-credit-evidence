@@ -5,8 +5,8 @@ commit of its own repository. Change the designer there, then run
 `scripts/sync_sdd.sh <checkout>` here; do not edit these files in place.
 
 - Source: https://github.com/sriramarun/synthetic-data-designer.git
-- Commit: `91f753ddbbfcb6b624e6bb16358f9c009b94bca6` (branch `relative-api-paths`)
-- Synced: 2026-09-26T01:20:12Z
+- Commit: `089ad4aa18c6e407a218155f37a44f13ed7bc6b7` (branch `main`)
+- Synced: 2026-09-26T01:48:43Z
 - Licence: Apache-2.0 (`LICENSE`, `NOTICE`)
 
 `packs/` holds the designer's bundled recipes and this repository's
