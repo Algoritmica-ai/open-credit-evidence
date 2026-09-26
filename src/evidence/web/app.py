@@ -527,6 +527,8 @@ def _job_worker(job_id: str, pack: Pack, out: Path, opts: dict[str, Any]) -> Non
                 run_id=manifest["run_id"],
                 transcripts=manifest["transcripts"],
             )
+        if job.get("panel_remaining") and not job.get("cancel"):
+            _finish_panel(job, pack, out)
     except Exception as exc:  # noqa: BLE001 — the browser needs the message, not a 500
         with _lock:
             job.update(status="error", error=f"{type(exc).__name__}: {exc}")
@@ -543,19 +545,47 @@ def _panel_phase(job: dict[str, Any], pack: Pack, out: Path, log: Any) -> None:
         job["log"].append("  second opinion: three AI reviewers")
     runtime = "nemoclaw" if os.environ.get("EVIDENCE_PANEL_SSH") else "direct"
     workers = int(os.environ.get("EVIDENCE_PANEL_WORKERS", "8"))
+    quorum = float(os.environ.get("EVIDENCE_PANEL_QUORUM", "0.9"))
     try:
         res = panel_run.panel_over_run(out, pack, runtime=runtime, workers=workers, log=log,
-                                       should_stop=lambda: job.get("cancel", False))
+                                       should_stop=lambda: job.get("cancel", False),
+                                       quorum=quorum if quorum < 1 else None,
+                                       grace_s=float(os.environ.get("EVIDENCE_PANEL_GRACE_S",
+                                                                    "60")))
         note = None if res["ok"] else res["message"]
         if res.get("stopped"):
             with _lock:
                 job["panel_stopped"] = True
+        if res.get("partial"):  # sealed at the quorum: the rest are reviewed after the result
+            with _lock:
+                job["panel_remaining"] = res["remaining"]
+                job["log"].append(f"  panel sealed at {res['briefings']} of {res['planned']}; "
+                                  f"{res['remaining']} more are reviewed next")
     except Exception as exc:  # noqa: BLE001 — the evaluation stands without the panel
         note = f"{type(exc).__name__}: {exc}"
     if note:
         with _lock:
             job["panel_error"] = note
             job["log"].append(f"  panel stopped: {note}")
+
+
+def _finish_panel(job: dict[str, Any], pack: Pack, out: Path) -> None:
+    """After a result sealed at the quorum: review the briefings that were left, and seal
+    the run again. The test is already done; the job says how many are still coming."""
+    from evidence import panel_run
+
+    runtime = "nemoclaw" if os.environ.get("EVIDENCE_PANEL_SSH") else "direct"
+    try:
+        res = panel_run.panel_over_run(out, pack, runtime=runtime,
+                                       workers=int(os.environ.get("EVIDENCE_PANEL_WORKERS", "8")),
+                                       log=lambda s: None)
+        with _lock:
+            job["panel_remaining"] = 0 if res["ok"] else job.get("panel_remaining")
+            if not res["ok"]:
+                job["panel_error"] = res["message"]
+    except Exception as exc:  # noqa: BLE001
+        with _lock:
+            job["panel_error"] = f"{type(exc).__name__}: {exc}"
 
 
 @app.get("/api/jobs")
@@ -589,8 +619,13 @@ def make_fresh_pack(from_pack: str, keep: int | None = None,
     t0 = datetime.now(UTC)
     keep = max(5, min(int(keep or len(src.items)), 200))
     generated = max(int((m.get("sdd") or {}).get("generated") or 700), keep * 35)
-    manifest = build(generated, keep, seed, PACKS / pack_id, pack_id, None,
-                     m.get("market") or "sample", bank_figures=bank_figures)
+    # only referred applications become cases: when a seed yields too few, generate more
+    for _ in range(4):
+        manifest = build(generated, keep, seed, PACKS / pack_id, pack_id, None,
+                         m.get("market") or "sample", bank_figures=bank_figures)
+        if manifest["items"] >= keep:
+            break
+        generated *= 2
     fresh = _pack(pack_id)
     seen = {c.content for p in PACKS.glob(f"{family}*/items.jsonl") if p.parent.name != pack_id
             for it in load_pack(p.parent).items for c in it.context
