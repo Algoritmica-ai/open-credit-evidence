@@ -286,6 +286,8 @@ def test_review_endpoints_on_a_copy_of_a_committed_run(tmp_path, monkeypatch):
     (later / "manifest.json").write_text(json.dumps(m))
     nums = {r["run_id"]: r["test_no"] for r in c.get("/api/runs").json()}
     assert nums == {src.name: 1, "zz-later": 2}
+    used = {x["pack_id"]: x["used_in_tests"] for x in c.get("/api/packs").json() if "items" in x}
+    assert used[ov["run"]["pack"]["pack_id"]] == 2  # the run and its copy
     shutil.rmtree(later)
     assert ov["stages"]["review"] == "not_started" and ov["stages"]["next"] == "review"
     assert ov["stages"]["flagged"] == ov["stages"]["lanes"]["red"] + ov["stages"]["lanes"]["amber"]

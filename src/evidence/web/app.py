@@ -158,6 +158,14 @@ def meta() -> dict[str, Any]:
 
 @app.get("/api/packs")
 def packs() -> list[dict[str, Any]]:
+    used: dict[str, int] = {}  # how many tests each case set has been used in
+    for mf in RUNS.glob("*/manifest.json"):
+        try:
+            pid = (_read_json(mf).get("pack") or {}).get("pack_id")
+        except (OSError, ValueError):
+            continue
+        if pid:
+            used[pid] = used.get(pid, 0) + 1
     out = []
     for path in sorted(PACKS.glob("*/items.jsonl")):
         try:
@@ -181,6 +189,7 @@ def packs() -> list[dict[str, Any]]:
                 "sdd": p.manifest.get("sdd"),
                 "bank_figures": bool(p.manifest.get("bank_figures")),
                 "built_at": p.manifest.get("built_at"),
+                "used_in_tests": used.get(p.pack_id, 0),
                 "warnings": p.warnings,
             }
         )

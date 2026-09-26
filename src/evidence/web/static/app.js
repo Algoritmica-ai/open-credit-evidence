@@ -210,7 +210,7 @@ async function viewNew(preselect) {
   const [ov, meta, packs] = await Promise.all([overview(), api("/api/meta"), api("/api/packs")]);
   renderSteps(ov, "test", "New");
   page("narrow");
-  const usable = packs.filter((p) => !p.error && p.items);
+  const usable = packs.filter((p) => !p.error && p.items && (!packSeed(p.pack_id) || !p.used_in_tests || p.pack_id === preselect));
   const byJ = {};
   usable.forEach((p) => { const j = p.jurisdiction || PACK_JURISDICTION[packFamily(p.pack_id)] || "other"; (byJ[j] = byJ[j] || []).push(p); });
   Object.values(byJ).forEach((l) => l.sort((a, b) => (packSeed(a.pack_id) ? 1 : 0) - (packSeed(b.pack_id) ? 1 : 0) || (b.built_at || "").localeCompare(a.built_at || "")));
@@ -227,7 +227,7 @@ async function viewNew(preselect) {
   $view.innerHTML = `<div class="stack" style="gap:28px">
     <a class="link back" href="#/">${ICON.back}Home</a>
     <div class="stack tight" style="margin-top:-12px"><h1>Start a new test</h1>
-      <p class="muted" style="font-size:17px">Answer four questions. The test then runs by itself; a small test takes a few minutes.</p></div>
+      <p class="muted" style="font-size:17px">Answer three questions. The test then runs by itself; a small test takes a few minutes.</p></div>
     <fieldset><legend>1. Which assistant are you testing?</legend>
       <label for="assistant" class="small muted">Assistant</label>
       <select id="assistant"><option>Credit memo assistant (${esc(a.model)})</option></select>
@@ -235,15 +235,8 @@ async function viewNew(preselect) {
     <fieldset><legend>2. Which rules must its memos follow?</legend><div class="stack tight" id="rules"></div></fieldset>
     <fieldset><legend>3. Which test cases?</legend><div class="stack tight" id="cases"></div>
       <div class="row wrap" style="gap:12px"><button class="btn" id="fresh">${ICON.plus}Generate new cases</button>
-        <span class="small muted" id="freshmsg">Cases the assistant has never seen, made from your credit policy. You choose how many.</span></div></fieldset>
-    <fieldset><legend>4. How big a test?</legend>
-      <div class="row wrap" style="gap:20px;align-items:flex-end">
-        <div class="stack tight"><label class="small" for="ncases"><b>Cases to use</b></label>
-          <input type="number" id="ncases" min="1" step="1" style="width:120px"><span class="tiny muted" id="ncasesmax"></span></div>
-        <div class="stack tight"><label class="small" for="nrepeats"><b>Times each case is run</b></label>
-          <select id="nrepeats" style="width:160px">${[1, 2, 3, 4, 5].filter((n) => n <= maxRepeats).map((n) => `<option value="${n}" ${n === Math.min(3, maxRepeats) ? "selected" : ""}>${n === 1 ? "Once" : n === 2 ? "Twice" : n + " times"}</option>`).join("")}</select></div>
-        <p class="grow" id="nmemos" style="font-weight:600"></p></div>
-      <p class="small muted">Running a case more than once shows whether the assistant answers the same way each time. A small test (say 5 cases, twice) is quick for trying things out; a larger one gives firmer numbers.</p></fieldset>
+        <span class="small muted" id="freshmsg">Cases the assistant has never seen, made from your credit policy. You choose how many, and how many times each is run.</span></div>
+      <div class="note-box row wrap" style="gap:12px"><p class="grow" id="nmemos" style="font-weight:600"></p><button class="btn small" id="resize">Change</button></div></fieldset>
     <label class="choice-card"><input type="checkbox" id="panel" checked>
       <span class="stack tight"><span class="t">Also get a second opinion from three AI reviewers</span>
       <span class="small muted">One reads each memo, one challenges it against the case file, one decides. It replaces the single AI judge. Adds time, and helps sort what a person should check first.</span></span></label>
@@ -269,29 +262,28 @@ async function viewNew(preselect) {
     drawSize(true);
   };
   // How many cases from the chosen set, and how many times each: the memos to write.
+  const size = { cases: 0, repeats: Math.min(3, maxRepeats) };
   const drawSize = (reset) => {
     const p = (byJ[chosenJ] || []).find((x) => x.pack_id === chosenPack);
-    const most = Math.min(p ? p.items : 1, maxItems);
-    const box = document.getElementById("ncases");
-    box.max = String(most);
-    if (reset || !+box.value) box.value = String(most);
-    box.value = String(Math.max(1, Math.min(most, Math.round(+box.value) || most)));
-    document.getElementById("ncasesmax").textContent = `of ${plural(p ? p.items : 0, "case")} in the set`;
-    const n = +box.value * +document.getElementById("nrepeats").value;
-    document.getElementById("nmemos").textContent = `= ${plural(n, "memo")} to write and check`;
+    const most = Math.min(p ? p.items : 0, maxItems);
+    if (reset || !size.cases) size.cases = most;
+    size.cases = Math.max(Math.min(1, most), Math.min(most, size.cases));
+    document.getElementById("nmemos").textContent = `This test: ${plural(size.cases, "case")}, each run ${size.repeats === 1 ? "once" : size.repeats === 2 ? "twice" : size.repeats + " times"} = ${plural(size.cases * size.repeats, "memo")}`;
   };
   drawRules();
   drawCases();
-  ["ncases", "nrepeats"].forEach((k) => (document.getElementById(k).oninput = () => drawSize(false)));
-  document.getElementById("ncases").onchange = () => drawSize(false);
+  document.getElementById("resize").onclick = () => {
+    const p = (byJ[chosenJ] || []).find((x) => x.pack_id === chosenPack);
+    if (p) sizeDialog(Math.min(p.items, maxItems), size, maxRepeats, () => drawSize(false));
+  };
   document.getElementById("fresh").onclick = () => {
     const from = chosenPack || ((byJ[chosenJ] || [])[0] || {}).pack_id;
     if (!from) return;
-    const times = +document.getElementById("nrepeats").value;
+    const times = size.repeats;
     generateCases(from, (f, fresh, times) => {
       (byJ[chosenJ] = byJ[chosenJ] || []).unshift(fresh);
       chosenPack = f.pack_id;
-      document.getElementById("nrepeats").value = String(times);
+      size.repeats = times;
       drawCases();
       document.getElementById("freshmsg").innerHTML = `${f.items} new cases (set #${f.seed}) made in ${f.seconds} s and chosen, each run ${times === 1 ? "once" : times === 2 ? "twice" : times + " times"}. ${f.shared_with_other_packs ? `<span class="error">${f.shared_with_other_packs} match earlier cases.</span>` : "None of them appears in an earlier test."}`;
     }, times, maxRepeats);
@@ -301,7 +293,7 @@ async function viewNew(preselect) {
     if (!pack) return;
     ev.target.disabled = true;
     try {
-      const j = await api("/api/run", { pack, repeats: +document.getElementById("nrepeats").value, limit: +document.getElementById("ncases").value, judge: true, setup: "as_is", panel: document.getElementById("panel").checked });
+      const j = await api("/api/run", { pack, repeats: size.repeats, limit: size.cases, judge: true, setup: "as_is", panel: document.getElementById("panel").checked });
       location.hash = `#/running/${enc(j.job_id)}`;
     } catch (e) {
       document.getElementById("msg").textContent = e.message;
@@ -374,6 +366,37 @@ function generateCases(from, done, repeats = 3, maxRepeats = 5) {
   dlg.querySelector("#gen-n").select();
 }
 
+// "Change": how many cases of the chosen set to use, and how many times each is run.
+function sizeDialog(most, size, maxRepeats, done) {
+  const dlg = document.createElement("dialog");
+  dlg.className = "modal";
+  dlg.setAttribute("aria-labelledby", "size-title");
+  dlg.innerHTML = `<form method="dialog" class="stack mid">
+      <h2 id="size-title">Test size</h2>
+      <div class="stack tight"><label class="small" for="size-n"><b>Cases to use</b></label>
+        <input type="number" id="size-n" min="1" max="${most}" step="1" value="${size.cases}" style="width:120px">
+        <span class="tiny muted">Up to ${plural(most, "case")} in this set.</span></div>
+      <div class="stack tight"><label class="small" for="size-r"><b>Times each case is run</b></label>
+        <select id="size-r" style="width:160px">${[1, 2, 3, 4, 5].filter((n) => n <= maxRepeats).map((n) => `<option value="${n}" ${n === size.repeats ? "selected" : ""}>${n === 1 ? "Once" : n === 2 ? "Twice" : n + " times"}</option>`).join("")}</select>
+        <span class="tiny muted">The assistant can write a different memo each time for the same case, so running it more than once shows how consistent it is.</span></div>
+      <p class="small" id="size-total" style="font-weight:600"></p>
+      <div class="row" style="gap:10px"><button type="button" class="btn primary" id="size-ok">Done</button><button type="button" class="btn" id="size-cancel">Cancel</button></div></form>`;
+  document.body.appendChild(dlg);
+  const n = dlg.querySelector("#size-n"), r = dlg.querySelector("#size-r");
+  const total = () => (dlg.querySelector("#size-total").textContent = `= ${plural((Math.round(+n.value) || 0) * +r.value, "memo")}`);
+  n.oninput = total; r.oninput = total; total();
+  dlg.addEventListener("close", () => dlg.remove());
+  dlg.querySelector("#size-cancel").onclick = () => dlg.close();
+  dlg.querySelector("#size-ok").onclick = () => {
+    const v = Math.round(+n.value);
+    if (!(v >= 1 && v <= most)) { n.focus(); return; }
+    size.cases = v; size.repeats = +r.value;
+    dlg.close();
+    done();
+  };
+  dlg.showModal();
+}
+
 // ----------------------------------------------------------------- case sets
 
 async function viewCases() {
@@ -385,6 +408,7 @@ async function viewCases() {
   const designer = meta.designer;
   const row = (p) => `<tr><td style="font-weight:600">${esc(packName(p))}</td><td>${p.items}</td>
     <td>${esc(rulesName(p) || p.jurisdiction || "")}</td><td>${p.bank_figures ? "Yes" : '<span class="muted">No</span>'}</td>
+    <td>${p.used_in_tests ? plural(p.used_in_tests, "test") : '<span class="muted">Not yet</span>'}</td>
     <td class="muted" style="white-space:nowrap">${esc(when(p.built_at))}</td><td style="text-align:right"><a class="link" href="#/new/${enc(p.pack_id)}">Use in a test</a></td></tr>`;
   $view.innerHTML = `<div class="stack">
     <div class="stack tight"><h1>Case sets</h1>
@@ -409,7 +433,7 @@ async function viewCases() {
             <div class="row wrap" style="gap:12px"><button class="btn" id="buildspec">Build case set</button><span class="small" id="smsg"></span></div></div></details>
       </section>
     </div>
-    <section class="card" style="padding:8px 20px"><table><thead><tr><th>Case set</th><th>Cases</th><th>Rules</th><th>Bank figures</th><th>Made</th><th><span class="visually-hidden">Use</span></th></tr></thead>
+    <section class="card" style="padding:8px 20px"><table><thead><tr><th>Case set</th><th>Cases</th><th>Rules</th><th>Bank figures</th><th>Used in</th><th>Made</th><th><span class="visually-hidden">Use</span></th></tr></thead>
       <tbody>${usable.map(row).join("")}</tbody></table></section>
   </div>`;
   document.getElementById("create").onclick = async (ev) => {
