@@ -50,6 +50,64 @@ def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
 
+_FIG = {
+    "income": r"Gross annual income \| ([£€$])?([\d,]+(?:\.\d+)?)",
+    "commitments": r"Existing monthly credit commitments \| [£€$]?([\d,]+(?:\.\d+)?)",
+    "instalment": r"Indicative monthly instalment \| [£€$]?([\d,]+(?:\.\d+)?)",
+    "score": r"\*\*(\d{3})\*\*",
+    "file_age": r"Credit file opened \|[^|]*\((\d+) months\)",
+    "missed_24m": r"Delinquencies, last 24 months \| (\d+)",
+    "recent": r"Most recent delinquency \| (\d+) months ago",
+    "verified": r"Income verified \| (\w+)",
+}
+
+
+def reference_figures(case_file: str) -> str | None:
+    """The figures a credit memo turns on, computed exactly from the case file, for the
+    Challenger to compare the briefing with (panel-v4). None when the file does not hold
+    the credit-underwriting fields."""
+    import re
+
+    found = {k: re.search(p, case_file) for k, p in _FIG.items()}
+    if not all(found[k] for k in ("income", "commitments", "instalment")):
+        return None
+    cur = found["income"].group(1) or ""
+    num = lambda k, g=1: float(found[k].group(g).replace(",", ""))  # noqa: E731
+    income = num("income", 2)
+    monthly = income / 12
+    commitments, instalment = num("commitments"), num("instalment")
+    debt = commitments + instalment
+    ratio = debt / monthly * 100
+    room = 0.40 * monthly - commitments
+    lines = [
+        f"Gross monthly income: {cur}{income:,.0f} / 12 = {cur}{monthly:,.2f}",
+        f"Total monthly debt service: {cur}{commitments:,.0f} + {cur}{instalment:,.0f} = "
+        f"{cur}{debt:,.0f}",
+        f"Debt service as a share of gross monthly income: {ratio:.2f}% — "
+        f"{'above' if ratio > 40 else 'within'} the 40% limit",
+        f"Largest instalment within the 40% limit: 40% of {cur}{monthly:,.2f} minus "
+        f"{cur}{commitments:,.0f} = {cur}{room:,.2f}",
+    ]
+    if found["score"]:
+        s = int(found["score"].group(1))
+        lines.append(f"Bureau score: {s} — {'below' if s < 600 else 'at or above'} 600 "
+                     f"({'requires' if s < 600 else 'does not require'} underwriter review)")
+    if found["file_age"]:
+        a = int(found["file_age"].group(1))
+        thin = "a thin file (under 24 months)" if a < 24 else "not a thin file (24 months or more)"
+        lines.append(f"Credit file age: {a} months — {thin}")
+    if found["missed_24m"]:
+        n = int(found["missed_24m"].group(1))
+        recent = int(found["recent"].group(1)) if found["recent"] else None
+        within = n > 0 and recent is not None and recent <= 12
+        lines.append(f"Missed payments: {n} in the last 24 months" + (
+            f", the most recent {recent} months ago" if recent is not None else "") +
+            f" — {'within' if within else 'none within'} the last 12 months")
+    if found["verified"]:
+        lines.append(f"Income verified: {found['verified'].group(1)}")
+    return "\n".join(lines)
+
+
 def bundles(run: Path, pack: Pack, corpus: Corpus | None, limit: int | None = None
             ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """One bundle per briefing in the run, and what they were built from."""
@@ -76,8 +134,10 @@ def bundles(run: Path, pack: Pack, corpus: Corpus | None, limit: int | None = No
                    "detail": r["detail"],
                    "evidence": json.dumps(r.get("evidence"), ensure_ascii=False)[:EVIDENCE_CHARS]}
                   for r in results.get((t.item_id, t.repeat), [])]
+        case_file = item.documents_text()
         out.append({"item_id": t.item_id, "repeat": t.repeat, "briefing": t.output,
-                    "transcript_sha256": t.sha256, "case_file": item.documents_text(),
+                    "transcript_sha256": t.sha256, "case_file": case_file,
+                    "figures": reference_figures(case_file),
                     "checks": checks, "passages": passages})
     out.sort(key=lambda b: (b["item_id"], b["repeat"]))
     if limit:
@@ -130,7 +190,8 @@ def run_direct(bundle_list: list[dict[str, Any]], *, workers: int, log: Any,
 
     records = panel.run_many(bundle_list, call=call, models=models, workers=workers, log=log,
                              write=(lambda r: sink([r])) if sink else (lambda r: None),
-                             should_stop=should_stop, up_front=True)
+                             should_stop=should_stop, up_front=True, figures=True,
+                             think_last=True)
     return records, {"kind": "direct", "endpoint": ep.base_url, "models": models}
 
 
@@ -247,12 +308,17 @@ class EmbedderMismatch(RuntimeError):
 def panel_over_run(run: Path, pack: Pack, *, corpus: str | None = None,
                    runtime: str = "direct", workers: int = 4, limit: int | None = None,
                    redo: bool = False, log: Callable[[str], None] = print,
-                   should_stop: Callable[[], bool] | None = None) -> dict[str, Any]:
+                   should_stop: Callable[[], bool] | None = None,
+                   quorum: float | None = None, grace_s: float = 60) -> dict[str, Any]:
     """Run the panel over a finished run, record it and seal the evidence again.
 
     ``corpus`` None takes the run judge's corpus (else EU); ``"none"`` gives the panel no
     regulation passages. A panel that stops part-way leaves a sealed, partial record, and
     the same call finishes it. Returns ``ok``, a one-line ``message`` and the counts.
+
+    ``quorum`` (a share, e.g. 0.9): once that share of the briefings is reviewed, the rest
+    get ``grace_s`` seconds more; then the panel is sealed as it stands (``partial``) and
+    the same call, later, reviews what is left.
     """
     from evidence.evidence import write_evidence
 
@@ -276,13 +342,26 @@ def panel_over_run(run: Path, pack: Pack, *, corpus: str | None = None,
     started = _now()
     running = {"kind": runtime, "status": "running"}
 
+    progress = {"done": len(planned) - len(todo), "reached": None, "partial": False}
+
     def sink(recs: list[dict[str, Any]]) -> None:  # finished briefings, as they arrive
         record(run, recs, facts, running, started, complete=False)
+        progress["done"] = len(done_keys(run))
+
+    def stop() -> bool:
+        if should_stop is not None and should_stop():
+            return True
+        if quorum and planned and progress["done"] >= quorum * len(planned):
+            progress["reached"] = progress["reached"] or time.time()
+            if time.time() - progress["reached"] >= grace_s:
+                progress["partial"] = True
+                return True
+        return False
 
     runner = run_nemoclaw if runtime == "nemoclaw" else run_direct
     try:
         records, rt = runner(todo, workers=workers, log=log, sink=sink,
-                             should_stop=should_stop) if todo else ([], {"kind": runtime})
+                             should_stop=stop) if todo else ([], {"kind": runtime})
     except (RuntimeError, OSError, subprocess.CalledProcessError) as exc:
         m = record(run, [], facts, running | {"status": f"stopped: {exc}"}, started,
                    complete=False)
@@ -293,11 +372,22 @@ def panel_over_run(run: Path, pack: Pack, *, corpus: str | None = None,
                            "to finish"}
     finished = done_keys(run) | {(r["item_id"], r["repeat"]) for r in records
                                  if not r.get("error")}
-    stopped = bool(should_stop and should_stop()) and len(finished) < len(planned)
+    user_stop = bool(should_stop and should_stop())
+    stopped = user_stop and len(finished) < len(planned)
+    partial = not user_stop and progress["partial"] and len(finished) < len(planned)
     if stopped:
         rt = rt | {"status": "stopped: cancelled by the user"}
+    elif partial:
+        rt = rt | {"status": f"partial: sealed at {len(finished)} of {len(planned)}; "
+                             "the rest are reviewed next"}
     m = record(run, records, facts, rt, started, complete=len(finished) >= len(planned))
     out = write_evidence(run)
+    if partial:
+        return {"ok": True, "partial": True, "briefings": m["briefings"],
+                "planned": len(planned), "errors": m["errors"], "remaining":
+                len(planned) - len(finished), "report": str(run / "evidence" / "panel.md"),
+                "message": f"panel sealed at {len(finished)} of {len(planned)} briefings; "
+                           "the same call reviews the rest"}
     if stopped:
         return {"ok": True, "stopped": True, "briefings": m["briefings"],
                 "planned": len(planned), "errors": m["errors"],

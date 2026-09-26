@@ -327,6 +327,101 @@ def test_thinking_can_be_turned_off_for_one_role():
     assert {r for r, on in asked if not on} == {"Challenger"}
     assert rec["thinking_off"] == ["challenger"]
 
+
+def test_reference_figures_are_computed_from_the_case_file():
+    from evidence.panel_run import reference_figures
+
+    case = ("| Gross annual income | €24,951 |\n| Existing monthly credit commitments | €413 |\n"
+            "| Indicative monthly instalment | €347 |\n**608** *(range 0–999)*\n"
+            "| Credit file opened | July 2022 (44 months) |\n"
+            "| Delinquencies, last 24 months | 1 |\n| Most recent delinquency | 13 months ago |\n"
+            "| Income verified | No |")
+    f = reference_figures(case)
+    assert "€2,079.25" in f and "€760" in f and "36.55% — within the 40% limit" in f
+    assert "608 — at or above 600" in f and "44 months — not a thin file" in f
+    assert "13 months ago — none within the last 12 months" in f
+    assert reference_figures("no credit fields here") is None
+
+
+def test_v4_gives_the_challenger_the_reference_figures():
+    call, _ = scripted()
+    firsts = []
+
+    def watch(model, messages, tools=None, **kw):
+        if "Challenger" in messages[0]["content"][:40] and len(messages) == 2:
+            firsts.append(messages[1]["content"])
+        return call(model=model, messages=messages, tools=tools, **kw)
+
+    rec = panel.run_panel(BUNDLE | {"figures": "Debt service as a share: 33.20% — within"},
+                          call=watch, models=dict.fromkeys(("reader", "challenger", "arbiter"),
+                                                           "m"), up_front=True, figures=True)
+    assert rec["panel"] == panel.PANEL_VERSION_FIGURES and "REFERENCE FIGURES:" in firsts[0]
+
+
+def test_think_last_thinks_once_for_the_final_answer():
+    call, _ = scripted()
+    turns = []
+
+    def watch(model, messages, tools=None, **kw):
+        if "Challenger" in messages[0]["content"][:40]:
+            turns.append(kw.get("thinking", True))
+        return call(model=model, messages=messages, tools=tools, **kw)
+
+    rec = panel.run_panel(BUNDLE, call=watch, models=dict.fromkeys(
+        ("reader", "challenger", "arbiter"), "m"), up_front=True, think_last=True)
+    assert turns[:-1] == [False] * (len(turns) - 1) and turns[-1] is True and len(turns) >= 2
+    assert rec["think_last"] and not rec.get("error")
+
+
+def test_a_panel_is_sealed_at_its_quorum_and_the_rest_reviewed_later(stubbed, tmp_path,  # noqa: F811
+                                                                     monkeypatch):
+    from evidence import panel_run
+    from evidence.evidence import verify_run, write_evidence
+    from evidence.runner import run_pack
+
+    run = tmp_path / "run"
+    run_pack(stubbed, run, repeats=1, limit=6, corpus="EU", log=lambda s: None)
+    write_evidence(run, stubbed.obligations)
+    import time
+
+    call, _ = scripted()
+
+    def slow(base_url, api_key=None, **kw):  # a review takes time, as a real one does
+        time.sleep(0.05)
+        return call(**kw)
+
+    monkeypatch.setattr(panel, "chat", slow)
+    first = panel_run.panel_over_run(run, stubbed, corpus="EU", workers=1, log=lambda s: None,
+                                     quorum=0.5, grace_s=0)
+    assert first["ok"] and first["partial"] and 3 <= first["briefings"] < 6
+    assert first["remaining"] == 6 - first["briefings"]
+    m = json.loads((run / "panel" / "manifest.json").read_text())
+    assert m["complete"] is False and m["runtime"]["status"].startswith("partial")
+    assert verify_run(run, stubbed, recompute=True).ok
+    rest = panel_run.panel_over_run(run, stubbed, corpus="EU", log=lambda s: None)
+    assert rest["ok"] and not rest.get("partial") and rest["briefings"] == 6
+
+
+def test_a_challenger_that_loops_on_tools_still_answers():
+    calls = []
+
+    def looping(model, messages, tools=None, json_only=False, thinking=True, **_):
+        calls.append((bool(tools), thinking, json_only))
+        if tools:  # without reasoning it keeps looking things up
+            return _reply(tool_calls=[{"id": f"t{len(calls)}", "type": "function", "function": {
+                "name": "calculate", "arguments": '{"expression": "760 / 2079.25 * 100"}'}}])
+        if thinking:  # the reasoning turn ends without an answer
+            return _reply("")
+        return _reply(json.dumps({"findings": [], "checks_confirmed": [], "checks_disputed": [],
+                                  "summary": "nothing wrong found"}))
+
+    out = panel.run_agent("challenger", "You are the Challenger", "B", BUNDLE, call=looping,
+                          model="m", keys=("findings",), tools=["calculate"], steps_max=10,
+                          think_last=True)
+    assert out["parsed"]["summary"] == "nothing wrong found" and "error" not in out
+    assert sum(1 for t, _, _ in calls if t) == panel.THINK_LAST_STEPS - 1  # tool rounds capped
+    assert calls[-2:] == [(False, True, True), (False, False, True)]  # think, then answer only
+
 def test_panel_module_runs_on_the_standard_library_alone():
     import ast
     from pathlib import Path
@@ -393,7 +488,9 @@ def test_partial_panel_is_kept_marked_and_resumed(stubbed, tmp_path, monkeypatch
     calls_before = len(seen)
     monkeypatch.setattr("evidence.cli.load_pack", lambda p: stubbed)
     assert main(["panel", str(run), "--workers", "1"]) == 0
-    assert len(seen) - calls_before == 4  # reader, challenger x2, arbiter: one briefing
+    # one briefing: reader, challenger (a tool turn, its answer, then its one thinking turn
+    # for the final answer), arbiter
+    assert len(seen) - calls_before == 5
     s = summarise(run)
     assert s["complete"] is True and s["answered"] == 2
     assert verify_run(run, stubbed, recompute=True).ok

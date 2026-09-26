@@ -38,7 +38,7 @@ if nemoclaw "$SANDBOX" exec --no-tty -- test -f "$BOX/records.jsonl" >/dev/null 
   openshell sandbox download "$SANDBOX" "$BOX/records.jsonl" "$DIR/" 2>&1 | clean | tail -1
 fi
 openshell sandbox upload "$SANDBOX" "$DIR" /sandbox 2>&1 | clean | tail -1
-# Copy finished briefings out of the sandbox every 30 s and on exit, so the job
+# Copy finished briefings out of the sandbox every 10 s and on exit, so the job
 # directory (and from it the laptop) always holds what is done so far.
 fetch() { openshell sandbox download "$SANDBOX" "$BOX/records.jsonl" "$DIR/" >/dev/null 2>&1 || true; }
 trap fetch EXIT
@@ -48,7 +48,7 @@ nemoclaw "$SANDBOX" exec --no-tty -- python3 -u "$BOX/panel.py" --in "$BOX/bundl
 PANEL=$!
 pushed=0
 while kill -0 "$PANEL" 2>/dev/null; do
-  for _ in 1 2 3 4 5 6; do
+  for _ in 1 2; do  # a stop is checked every 5 s, results fetched every 10 s
     kill -0 "$PANEL" 2>/dev/null || break
     sleep 5
     # panel.py stops at its next turn. openshell, not nemoclaw: the nemoclaw exec running
