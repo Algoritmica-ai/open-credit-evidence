@@ -401,6 +401,27 @@ def test_a_panel_is_sealed_at_its_quorum_and_the_rest_reviewed_later(stubbed, tm
     rest = panel_run.panel_over_run(run, stubbed, corpus="EU", log=lambda s: None)
     assert rest["ok"] and not rest.get("partial") and rest["briefings"] == 6
 
+
+def test_a_challenger_that_loops_on_tools_still_answers():
+    calls = []
+
+    def looping(model, messages, tools=None, json_only=False, thinking=True, **_):
+        calls.append((bool(tools), thinking, json_only))
+        if tools:  # without reasoning it keeps looking things up
+            return _reply(tool_calls=[{"id": f"t{len(calls)}", "type": "function", "function": {
+                "name": "calculate", "arguments": '{"expression": "760 / 2079.25 * 100"}'}}])
+        if thinking:  # the reasoning turn ends without an answer
+            return _reply("")
+        return _reply(json.dumps({"findings": [], "checks_confirmed": [], "checks_disputed": [],
+                                  "summary": "nothing wrong found"}))
+
+    out = panel.run_agent("challenger", "You are the Challenger", "B", BUNDLE, call=looping,
+                          model="m", keys=("findings",), tools=["calculate"], steps_max=10,
+                          think_last=True)
+    assert out["parsed"]["summary"] == "nothing wrong found" and "error" not in out
+    assert sum(1 for t, _, _ in calls if t) == panel.THINK_LAST_STEPS - 1  # tool rounds capped
+    assert calls[-2:] == [(False, True, True), (False, False, True)]  # think, then answer only
+
 def test_panel_module_runs_on_the_standard_library_alone():
     import ast
     from pathlib import Path

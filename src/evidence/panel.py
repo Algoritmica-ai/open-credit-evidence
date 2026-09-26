@@ -164,6 +164,7 @@ TOOLS = {
 ROLE_TOOLS = {"reader": [], "challenger": list(TOOLS), "arbiter": []}
 UP_FRONT_TOOLS = ["calculate", "find_in_case_file"]
 UP_FRONT_STEPS = 10
+THINK_LAST_STEPS = 7  # without reasoning a model can loop on tools: six rounds, then answer
 
 CHALLENGER_UP_FRONT = (
     "You are the Challenger on a panel reviewing a credit-referral briefing written by an AI "
@@ -316,6 +317,8 @@ def run_agent(role: str, system: str, user: str, bundle: dict[str, Any], *, call
     """
     tools = ROLE_TOOLS[role] if tools is None else tools
     steps_max = steps_max or MAX_STEPS[role]
+    if think_last and thinking:
+        steps_max = min(steps_max, THINK_LAST_STEPS)
     # think_last: the turns that only fetch or compute run without reasoning; the agent then
     # thinks once, over everything it has, for its final answer
     final = False
@@ -368,6 +371,18 @@ def run_agent(role: str, system: str, user: str, bundle: dict[str, Any], *, call
             final = closing = True
             continue
         parsed = parse_json(text, keys)
+        if parsed is None and closing and think_last and think:
+            # the reasoning turn ended without an answer: ask once more, answer only
+            messages.append({"role": "user", "content": "Give your final answer now: the "
+                             "JSON object asked for, and nothing else."})
+            again = call(model=model, messages=messages, tools=None, json_only=True,
+                         thinking=False)
+            amsg = (again.get("choices") or [{}])[0].get("message") or {}
+            text = amsg.get("content") or ""
+            steps.append({"latency_ms": again.get("_latency_ms"), "usage": again.get("usage"),
+                          "id": again.get("id"), "json_only": True, "thinking": False,
+                          "reply": text[:6000], "fallback": True})
+            parsed = parse_json(text, keys)
         if parsed is None and not closing:  # empty or malformed: one constrained turn
             if text:
                 messages.append({"role": "assistant", "content": text})
