@@ -63,7 +63,7 @@ Synthetic Data Designer ──▶ scorecard ──▶ pack (documents + sealed m
 
 Guides: [local setup](docs/setup.md) · [underwriter guide to the UI](docs/underwriter-guide.md) ·
 [architecture and the end-to-end flow](docs/architecture.md) · [anchoring in Bitcoin](docs/anchoring.md) ·
-[capability checker (NeMo Evaluator)](docs/capabilities.md)
+[capability checker (NeMo Evaluator)](docs/capabilities.md) · [next steps](docs/next-steps.md)
 
 ```bash
 git clone https://github.com/Algoritmica-ai/open-credit-evidence.git
