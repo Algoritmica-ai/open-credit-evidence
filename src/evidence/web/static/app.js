@@ -438,6 +438,24 @@ async function viewResult(id) {
       ? `Reading each memo on its own, as a lone AI judge would, the first of our three AI reviewers gave them ${Math.round(100 * p.judge_mean_value)}% on average. Once the second checked them against the case file, the panel ${caught}. ${why}`
       : `A single AI reviewer gave these memos ${Math.round(100 * p.judge_mean_value)}% on average. Our panel of three AI reviewers ${caught}. ${why}`;
   const reports = (d.readers || []).filter((r) => r.available && r.name !== "business");
+  // Same case, different result: each case ran more than once; did its memos agree?
+  const repeats = d.manifest.repeats || 1;
+  const agree = Object.entries((d.summary && d.summary.repeat_agreement) || {}).filter(([k]) => CHECK[k]);
+  const flipping = [...new Set(agree.flatMap(([, a]) => a.flipping_items || []))];
+  const cases = agree.length ? agree[0][1].items : 0;
+  const caseName = (item) => (item.split(":")[2] || item);
+  const consistency = repeats < 2 ? `<section class="card stack tight"><h2 style="font-size:21px">Same case, different result</h2>
+      <p class="muted small">Each case ran once, so this test cannot show whether the assistant answers the same way every time. Run each case at least twice to see it.</p></section>`
+    : `<section class="card stack mid"><h2 style="font-size:21px">Same case, different result</h2>
+      <p style="font-weight:600">${flipping.length
+        ? `In ${flipping.length} of ${cases} cases, the assistant's memos did not agree: a check passed in one run and failed in another.`
+        : `In all ${cases} cases, every run of a case got the same result on every check.`}</p>
+      <p class="small muted">Each case ran ${repeats === 2 ? "twice" : `${repeats} times`}, each time as a fresh request. The assistant writes a different memo each time, so a mistake can show up in one run and not the next. The more cases that change, the less the assistant can be relied on to give the same answer twice.</p>
+      <table><thead><tr><th>Check</th><th>Cases whose result changed between runs</th></tr></thead><tbody>
+        ${agree.map(([k, a]) => `<tr><td>${esc(CHECK[k])}</td><td style="min-width:240px"><div class="row" style="gap:10px"><b style="white-space:nowrap">${a.items - a.stable} of ${a.items}</b>
+          <span class="bar grow warm" aria-hidden="true"><span style="width:${pct(a.items - a.stable, a.items)}%"></span></span></div>
+          ${(a.flipping_items || []).length ? `<div class="tiny muted" style="margin-top:4px">${a.flipping_items.map((it) => `<a href="#/review/${enc(id)}/memo/${enc(memoId(it, 0))}">${esc(caseName(it))}</a>`).join(", ")}</div>` : ""}</td></tr>`).join("")}
+      </tbody></table></section>`;
   $view.innerHTML = `<div class="stack" style="gap:28px">
     <div class="row wrap"><a class="link" href="#/">${ICON.back}Home</a>
       <span class="muted small">Test result · ${esc(date(d.manifest.finished_at))}${rulesName(d.manifest.pack) ? " · " + esc(rulesName(d.manifest.pack)) : ""} · ${h.memos} memos</span></div>
@@ -462,6 +480,7 @@ async function viewResult(id) {
           <details class="small"><summary>How</summary><p style="margin-top:6px">${esc(r.action)}</p></details></span></li>`).join("")}</ol>` : '<p class="muted">Nothing to change.</p>'}
         <p class="note-box blue small">Make one change, then test again. We put the two results side by side, so you can see it helped and nothing else got worse.</p></section>
     </div>
+    ${consistency}
     <details class="card"><summary style="font-size:17px">Show the technical detail</summary>
       <div class="stack" style="margin-top:16px">
         <table><thead><tr><th>Check</th><th>Memos that passed</th><th>Result</th></tr></thead><tbody>
@@ -584,6 +603,24 @@ function appStrip(id, memos, current) {
     ${nxt ? `<a class="btn small" href="${href(nxt)}" aria-label="Next application">${ICON.arrow}</a>` : '<span class="btn small" aria-hidden="true" style="opacity:.35">' + ICON.arrow + "</span>"}</nav>`;
 }
 
+// Every run of this case: the assistant got the same case each time as a fresh request.
+// Do its memos agree? Each run links to its memo, and any other run can be opened beside it.
+function runsRow(m) {
+  const runs = m.runs || [];
+  if (runs.length < 2) return "";
+  const words = (r) => (r.failing_checks.length ? `${plural(r.failing_checks.length, "check")} failed`
+    : r.lane === "green" ? "no problems found" : "flagged by the AI reviewers only");
+  const same = new Set(runs.map((r) => r.failing_checks.join(","))).size === 1;
+  return `<div class="runs note-box ${same ? "" : "amber"} stack tight">
+      <p class="small"><b>This case ran ${runs.length} times.</b> ${same
+        ? "Every run failed the same checks."
+        : "The runs disagree: the assistant wrote a different memo each time, and they did not fail the same checks."}</p>
+      <div class="row wrap" style="gap:8px">${runs.map((r) => r.memo === m.memo
+        ? `<span class="runchip on"><span class="lane-dot small ld-${r.lane}" aria-hidden="true"></span>Run ${r.repeat + 1} · ${words(r)} · this memo</span>`
+        : `<span class="runchip"><span class="lane-dot small ld-${r.lane}" aria-hidden="true"></span><a href="#/review/${enc(m.run_id || "")}" data-run-link="${esc(r.memo)}">Run ${r.repeat + 1}</a> · ${words(r)}${r.reviewed ? " · reviewed" : ""}
+            <button type="button" class="linkbtn" data-compare="${esc(r.memo)}">Compare</button></span>`).join("")}</div></div>`;
+}
+
 // The case file at a glance: its figures by group, each with its policy line; the ones a
 // finding is about are outlined and carry the finding's number.
 function factsPanel(facts, groups, cards) {
@@ -627,10 +664,10 @@ async function viewMemo(id, memo) {
   let signOff = false;
   let showRaise = false;
   let editName = !reviewer.get();
-  // The coach prepares a note on every finding as the memo opens; the note for an answer
-  // opens under the finding as soon as it is given. The first click on each finding is kept,
-  // so the review shows what the reviewer thought before any note was on screen.
-  const coach = { session: null, notes: null, reading: m.cards.length > 0, unavailable: "", turns: [], busy: false, error: "", draft: "" };
+  // The coach speaks only when asked: about one finding (after it is answered) or about all
+  // the answers. The first answer on each finding is kept, so the review shows what the
+  // reviewer thought before the coach said anything.
+  const coach = { session: null, turns: [], busy: null, error: "", draft: "" };
   const firstClick = {};
 
   // The memo and the subbar are drawn once; the findings column redraws on every answer.
@@ -648,14 +685,16 @@ async function viewMemo(id, memo) {
   const cleanup = () => { sub.remove(); window.removeEventListener("hashchange", cleanup); };
   window.addEventListener("hashchange", cleanup);
   main.className = "review-grid";
-  main.innerHTML = `${m.facts && m.facts.length ? `<aside class="factcol">${factsPanel(m.facts, m.groups, m.cards)}</aside>` : ""}<article class="stack mid">
+  const docsBtn = m.case_file.length ? `<button type="button" class="btn small" id="docs" style="align-self:flex-start">See the original documents</button>` : "";
+  main.innerHTML = `${m.facts && m.facts.length ? `<aside class="factcol stack mid">${factsPanel(m.facts, m.groups, m.cards)}${docsBtn}</aside>` : docsBtn ? `<aside class="factcol">${docsBtn}</aside>` : ""}<article class="stack mid">
       <div class="row wrap" style="justify-content:space-between;align-items:baseline;gap:12px">
-        <h1 style="font-size:26px">Application ${esc(m.case)} · memo ${m.repeat + 1}</h1>
+        <h1 style="font-size:26px">Application ${esc(m.case)} · run ${m.repeat + 1}${(m.runs || []).length > 1 ? ` of ${m.runs.length}` : ""}</h1>
         ${m.cards.length ? `<span class="small muted"><span class="legend-mark">text</span> the machine found a problem here · <span class="cfchip">Case file: …</span> what the case file says</span>` : ""}</div>
+      ${runsRow(m)}
       ${m.review ? `<p class="note-box amber small">Checked by ${esc(m.review.reviewer)} on ${esc(shortDate(m.review.submitted_at))}. Saving again records a new review.</p>` : ""}
       <div class="card stack mid" style="padding:28px 32px"><p class="eyebrow">The memo the assistant wrote</p>
-        <div class="memo-text">${highlight(m.text, m.cards, m.facts)}</div>
-        ${m.case_file.length ? `<details style="border-top:1px solid var(--line-2);padding-top:16px"><summary>Show the full case file</summary>${m.case_file.map((d) => `<h3 style="margin-top:16px">${esc(d.title)}</h3><div class="casefile">${esc(d.content)}</div>`).join("")}</details>` : ""}</div>
+        <div class="memo-text">${highlight(m.text, m.cards, m.facts)}</div></div>
+      <div id="other"></div>
     </article><aside class="stack mid" id="side"></aside>`;
   $view.appendChild(main);
   const side = main.querySelector("#side");
@@ -670,6 +709,35 @@ async function viewMemo(id, memo) {
   if (cur) cur.scrollIntoView({ block: "nearest", inline: "center" });
   const byFact = {};
   (m.facts || []).forEach((f) => (byFact[f.key] = f));
+  // other runs of this case: open one, or set its memo beside this one
+  main.querySelectorAll("[data-run-link]").forEach((a) => (a.href = `#/review/${enc(id)}/memo/${enc(a.dataset.runLink)}`));
+  main.querySelectorAll("[data-compare]").forEach((b) => (b.onclick = () => {
+    const r = m.runs.find((x) => x.memo === b.dataset.compare);
+    const box = main.querySelector("#other");
+    const open = box.dataset.memo === r.memo;
+    main.querySelectorAll("[data-compare]").forEach((x) => (x.textContent = "Compare"));
+    if (open) { box.innerHTML = ""; box.dataset.memo = ""; return; }
+    b.textContent = "Hide";
+    box.dataset.memo = r.memo;
+    box.innerHTML = `<div class="card stack mid other-run"><div class="row" style="justify-content:space-between;align-items:baseline">
+        <p class="eyebrow">Run ${r.repeat + 1} of this case, for comparison</p><a class="link small" href="#/review/${enc(id)}/memo/${enc(r.memo)}">Review this run</a></div>
+      <div class="memo-text">${highlight(r.text, r.cards, m.facts)}</div></div>`;
+    box.scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+  // the documents the assistant was given, as they were, in a window
+  const docs = main.querySelector("#docs");
+  if (docs) docs.onclick = () => {
+    const dlg = document.createElement("dialog");
+    dlg.className = "modal wide";
+    dlg.setAttribute("aria-label", "The original documents");
+    dlg.innerHTML = `<div class="row" style="justify-content:space-between;align-items:baseline"><h2>The documents the assistant was given</h2>
+        <button type="button" class="btn small" id="docs-close">Close</button></div>
+      ${m.case_file.map((d) => `<h3 style="margin-top:16px">${esc(d.title)}</h3><div class="casefile">${esc(d.content)}</div>`).join("")}`;
+    document.body.appendChild(dlg);
+    dlg.addEventListener("close", () => dlg.remove());
+    dlg.querySelector("#docs-close").onclick = () => dlg.close();
+    dlg.showModal();
+  };
 
   const answered = () => m.cards.filter((c) => state[c.card_id].action).length;
   const draw = () => {
@@ -684,7 +752,7 @@ async function viewMemo(id, memo) {
         <p>${esc(c.problem)}</p>
         ${c.sentence && !c.span ? `<p class="small muted" style="border-left:3px solid var(--line);padding-left:10px">“${esc(c.sentence)}”</p>` : ""}
         ${(c.facts || []).filter((k) => byFact[k]).length ? `<div class="versus">
-          ${c.memo_value ? `<div class="stack tight"><span class="tiny muted">The memo says</span><b class="memo-val">${esc(c.memo_value)}</b></div>` : ""}
+          ${c.memo_value ? `<div class="stack tight"><span class="tiny muted">The memo says</span><b class="memo-val${c.source === "numeric_fidelity" ? " struck" : ""}">${esc(c.memo_value)}</b></div>` : ""}
           ${(c.facts || []).filter((k) => byFact[k]).map((k) => { const f = byFact[k]; return `<div class="stack tight"><span class="tiny muted">Case file: ${esc(f.label.toLowerCase())}</span><b class="case-val st-${f.status}">${esc(f.value)}</b>${f.policy ? `<span class="tiny factpol st-${f.status}">${f.status === "outside" ? "Outside policy: " : f.status === "ok" ? "Within policy: " : ""}${esc(f.policy)}</span>` : ""}${f.derived ? `<span class="tiny muted">${esc(f.derived)}</span>` : ""}</div>`; }).join("")}</div>` : ""}
         ${c.evidence ? `<div class="proof"><span class="eyebrow">${c.known_answer ? "Proof" : "Why the reviewers think so"}</span><span>${esc(c.evidence)}</span></div>` : ""}
         <p class="tiny muted">${c.known_answer ? "Found by the rule check, which knows the right answer." : "Found by the AI reviewers."}</p>
@@ -697,7 +765,7 @@ async function viewMemo(id, memo) {
         ${st.action === "dispute" ? `<p class="small" style="font-weight:600">Why is the memo right?</p>
           <div class="answers chips">${Object.entries(REASON).map(([k, w]) => `<button type="button" data-r="${k}" aria-pressed="${st.reason === k}">${esc(w)}</button>`).join("")}</div>` : ""}
         ${st.action === "needs_more" ? '<p class="note-box amber small">Fine. A colleague from model risk will decide.</p>' : ""}
-        ${st.action ? coachNote(c.card_id, st.action) : ""}
+        ${st.action ? askCoach(c.card_id) : ""}
       </section>`;
     }).join("");
     const none = !m.cards.length ? `<section class="finding"><h3>Nothing was found in this memo</h3>
@@ -709,7 +777,7 @@ async function viewMemo(id, memo) {
       <label class="small" for="r-fix">How it should read <span class="muted">(optional)</span></label><input type="text" id="r-fix">
       <button class="btn small" id="r-add" style="align-self:flex-start">Add this problem</button></section>` : "";
     const num = (cid) => m.cards.findIndex((c) => c.card_id === cid) + 1;
-    const thread = coach.turns.map((t) => `${t.message ? `<div class="bubble me"><span class="eyebrow">You</span><p>${esc(t.message)}</p></div>` : ""}
+    const thread = coach.turns.filter((t) => !t.about).map((t) => `${t.message ? `<div class="bubble me"><span class="eyebrow">You</span><p>${esc(t.message)}</p></div>` : ""}
       <div class="bubble coachsays"><span class="eyebrow">Coach</span>
         ${t.challenges.length ? t.challenges.map((c) => `<div class="challenge">
           ${c.card_id ? `<a href="#" data-goto="${c.card_id}" class="small" style="font-weight:700">Finding ${[c.finding, ...(c.also || [])].join(" and ")}</a>` : '<span class="small" style="font-weight:700">Not in the findings</span>'}
@@ -717,14 +785,11 @@ async function viewMemo(id, memo) {
         ${t.reply ? `<p class="small">${esc(t.reply)}</p>` : ""}
         ${!t.challenges.length ? '<p class="small" style="color:var(--green);font-weight:600">No questions about your answers.</p>' : ""}</div>`).join("");
     const coachBox = m.cards.length ? `<section class="coach stack mid">
-        <div class="stack tight"><h3>Coach</h3><p class="tiny muted">A second opinion that points at the evidence; the decision is yours. It does not know the right answers, and it writes a note on every answer, so a note is not a sign the answer is wrong.</p></div>
-        ${coach.reading ? '<div class="row small"><span class="spinner" style="width:20px;height:20px" aria-hidden="true"></span>Reading the memo and the case file. Its notes open under each finding as you answer.</div>'
-          : coach.unavailable ? `<p class="small muted">The coach is not available for this memo (${esc(coach.unavailable)}). You can still answer and save.</p>`
-          : '<p class="small muted">Ready. Its note opens under each finding as you answer it.</p>'}
+        <div class="stack tight"><h3>Coach</h3><p class="tiny muted">Optional. Unsure about a finding? Answer it, then press <b>Ask the coach</b> under it. The coach points at the evidence and leaves the decision to you; it does not know the right answers.</p></div>
         ${thread}
-        ${coach.busy ? '<div class="row small"><span class="spinner" style="width:20px;height:20px" aria-hidden="true"></span>The coach is reading your answers…</div>' : ""}
+        ${coach.busy === "all" ? '<div class="row small"><span class="spinner" style="width:20px;height:20px" aria-hidden="true"></span>The coach is reading your answers…</div>' : ""}
         ${coach.error ? `<p class="error small">${esc(coach.error)}</p>` : ""}
-        ${!coach.turns.length && !coach.busy ? `<button class="btn small" id="coach-ask" style="align-self:flex-start" ${answered() < m.cards.length ? "disabled" : ""}>Check everything with the coach</button>${answered() < m.cards.length ? '<p class="tiny muted">Optional. Answer every finding first; the coach then looks at your answers together.</p>' : ""}` : ""}
+        ${!coach.busy && !thread ? `<button class="btn small" id="coach-ask" style="align-self:flex-start" ${answered() < m.cards.length ? "disabled" : ""}>Ask the coach about all my answers</button>${answered() < m.cards.length ? '<p class="tiny muted">Answer every finding first.</p>' : ""}` : ""}
         ${coach.turns.length && !coach.busy ? `<label class="small visually-hidden" for="coach-msg">Reply to the coach</label>
           <textarea id="coach-msg" placeholder="Reply to the coach, or change your answers above">${esc(coach.draft)}</textarea>
           <div class="row" style="gap:8px"><button class="btn small" id="coach-send">Send</button><button class="btn small" id="coach-again">Check my answers again</button></div>` : ""}
@@ -744,7 +809,7 @@ async function viewMemo(id, memo) {
     side.querySelectorAll("[data-card]").forEach((el) => {
       const cid = el.dataset.card;
       el.querySelectorAll("[data-a]").forEach((b) => (b.onclick = () => {
-        if (!firstClick[cid]) firstClick[cid] = { card_id: cid, action: b.dataset.a, at: new Date().toISOString(), note_ready: !!coach.notes };
+        if (!firstClick[cid]) firstClick[cid] = { card_id: cid, action: b.dataset.a, at: new Date().toISOString() };
         state[cid] = { ...state[cid], action: b.dataset.a };
         draw();
       }));
@@ -773,6 +838,7 @@ async function viewMemo(id, memo) {
     on("#save", save);
     on("#coach-ask", () => ask());
     on("#coach-again", () => ask());
+    side.querySelectorAll("[data-ask]").forEach((b) => (b.onclick = () => ask(null, b.dataset.ask)));
     on("#coach-send", () => { const t = side.querySelector("#coach-msg").value.trim(); if (t) ask(t); });
     const draft = side.querySelector("#coach-msg");
     if (draft) draft.oninput = () => (coach.draft = draft.value);
@@ -783,41 +849,28 @@ async function viewMemo(id, memo) {
     }));
     void num;
   };
-  prepareCoach();
 
-  const NOTE_FOR = { confirm: "if_wrong", dispute: "if_right", needs_more: "if_unsure" };
-  function coachNote(cid, action) {
-    if (coach.reading) return '<div class="coachnote tiny muted"><span class="eyebrow">Coach</span>Still reading this memo; the note opens here in a moment.</div>';
-    const n = coach.notes && coach.notes[cid];
-    if (!n || !(n.evidence || n[NOTE_FOR[action]])) return "";
-    return `<div class="coachnote" role="status"><span class="eyebrow">Coach</span>
-      ${n.evidence ? `<p class="small">${esc(n.evidence)}</p>` : ""}
-      ${n[NOTE_FOR[action]] ? `<p class="small" style="font-weight:600">${esc(n[NOTE_FOR[action]])}</p>` : ""}</div>`;
-  }
-
-  // Prepare the notes now, then the next memo's, so they are ready when it opens.
-  async function prepareCoach() {
-    if (!m.cards.length) return;
-    try {
-      const r = await api(`/api/review/${enc(id)}/coach/prepare`, { memo });
-      coach.session = coach.session || r.session_id;
-      coach.notes = r.notes || {};
-    } catch (e) { coach.unavailable = e.message; }
-    coach.reading = false;
-    if (side.isConnected) draw();
-    if (next && next.memo !== memo) api(`/api/review/${enc(id)}/coach/prepare`, { memo: next.memo }).catch(() => {});
+  // Under an answered finding: the coach's latest word on it, and the button to ask.
+  function askCoach(cid) {
+    const said = [...coach.turns].reverse().find((t) => t.about === cid);
+    const q = said ? said.challenges.filter((x) => x.card_id === cid || (x.also_card_ids || []).includes(cid)) : [];
+    return `${said ? `<div class="coachnote" role="status"><span class="eyebrow">Coach</span>
+        ${said.reply ? `<p class="small">${esc(said.reply)}</p>` : ""}
+        ${q.map((x) => `<p class="small" style="font-weight:600">${esc(x.question)}</p>${x.evidence ? `<p class="tiny muted">${esc(x.evidence)}</p>` : ""}`).join("")}</div>` : ""}
+      ${coach.busy === cid ? '<div class="row small"><span class="spinner" style="width:18px;height:18px" aria-hidden="true"></span>The coach is looking at the evidence…</div>'
+        : `<button type="button" class="btn small ghost" data-ask="${esc(cid)}" style="align-self:flex-start"${coach.busy ? " disabled" : ""}>${said ? "Ask the coach again" : "Ask the coach about this"}</button>`}`;
   }
 
   const verdictsNow = () => m.cards.map((c) => ({ card_id: c.card_id, ...state[c.card_id] }));
-  async function ask(message) {
-    coach.busy = true; coach.error = ""; draw();
+  async function ask(message, about) {
+    coach.busy = about || "all"; coach.error = ""; draw();
     try {
-      const r = await api(`/api/review/${enc(id)}/coach`, { memo, session_id: coach.session, verdicts: verdictsNow(), raised, message: message || null });
+      const r = await api(`/api/review/${enc(id)}/coach`, { memo, session_id: coach.session, verdicts: verdictsNow(), raised, message: message || null, about: about || null });
       coach.session = r.session_id;
-      coach.turns.push({ message: message || null, challenges: r.challenges, reply: r.reply });
+      coach.turns.push({ message: message || null, about: r.about || null, challenges: r.challenges, reply: r.reply });
       if (message) coach.draft = "";
     } catch (e) { coach.error = `The coach could not answer: ${e.message}`; }
-    coach.busy = false; draw();
+    coach.busy = null; draw();
     return coach.turns.length ? coach.turns[coach.turns.length - 1] : null;
   }
 

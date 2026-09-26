@@ -174,7 +174,8 @@ textarea { min-height: 88px; resize: vertical; }
 .legend-mark { background: var(--mark); box-shadow: inset 0 -2px 0 var(--mark-line); padding: 0 4px; border-radius: 3px; }
 .versus { display: flex; flex-wrap: wrap; gap: 10px 24px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); }
 .versus b { font-size: 18px; }
-.memo-val { color: var(--red); text-decoration: line-through; text-decoration-thickness: 1px; }
+.memo-val { color: var(--red); }
+.memo-val.struck { text-decoration: line-through; text-decoration-thickness: 1px; }
 .memo-text { font-size: 16px; line-height: 1.7; white-space: pre-wrap; }
 .memo-text mark { background: var(--mark); color: inherit; padding: 1px 3px; border-radius: 3px; box-shadow: inset 0 -2px 0 var(--mark-line); }
 .memo-text mark.on { outline: 2px solid var(--accent); }
@@ -253,3 +254,9 @@ textarea { min-height: 88px; resize: vertical; }
   .steps { flex-wrap: wrap; overflow: visible; }
   h1 { font-size: 26px; }
 }
+.btn.ghost { background: transparent; }
+dialog.modal.wide { width: min(880px, calc(100vw - 32px)); max-height: calc(100vh - 64px); }
+.runchip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); font-size: 13px; }
+.runchip.on { border-color: var(--accent); font-weight: 600; }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; }
+.other-run { padding: 24px 28px; border-style: dashed; }
