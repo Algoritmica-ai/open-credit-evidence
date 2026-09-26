@@ -256,8 +256,15 @@ def test_a_stopped_panel_keeps_what_finished_and_starts_nothing_new(stubbed, tmp
     run = tmp_path / "run"
     run_pack(stubbed, run, repeats=1, limit=3, corpus="EU", log=lambda s: None)
     write_evidence(run, stubbed.obligations)
+    import time
+
     call, _ = scripted()
-    monkeypatch.setattr(panel, "chat", lambda base_url, api_key=None, **kw: call(**kw))
+
+    def slow(base_url, api_key=None, **kw):  # a review takes time, as a real one does
+        time.sleep(0.05)
+        return call(**kw)
+
+    monkeypatch.setattr(panel, "chat", slow)
     first_done = lambda: (run / "panel" / "records.jsonl").is_file()  # noqa: E731
     res = panel_run.panel_over_run(run, stubbed, corpus="EU", workers=1, log=lambda s: None,
                                    should_stop=first_done)
