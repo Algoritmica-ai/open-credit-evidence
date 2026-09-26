@@ -490,9 +490,171 @@ def build_feedback(run: Path, queue_items: list[dict[str, Any]]) -> dict[str, An
                 "answer exists",
         "personal_data": "none: every case is generated",
     }
+    manifest["handover"] = build_handover(run, out, sft, prefs, judge, manifest)
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
                                        encoding="utf-8")
     return manifest
+
+
+# ------------------------------------------------------------------ fine-tune handover
+
+HANDOVER_README = """# Fine-tuning handover: {model}
+
+For the engineering team that owns the credit memo assistant. Everything here comes from
+test `{run}` and the people who reviewed its memos. No customer data: every case is
+generated from the credit policy.
+
+## Files
+
+- `sft_train.jsonl` ({sft_train} rows) and `sft_validation.jsonl` ({sft_val}): supervised
+  fine-tuning, chat format. `messages` holds the system prompt, the case file (user) and the
+  corrected memo (assistant).
+- `dpo_train.jsonl` ({dpo}): preference tuning (DPO). `prompt` is the chat so far (system and
+  user messages), `chosen_response` the corrected memo, `rejected_response` the assistant's
+  original. Flatten `prompt` with the model's chat template if the trainer wants a string.
+- `judge_labels.jsonl` ({labels}): findings labelled true or false, for training or checking
+  the AI reviewers, not the assistant.
+- `training_config.yaml`: a starting point for a LoRA run. The team owns the settings.
+- `manifest.json`: where every file came from, and its SHA-256.
+
+Every row carries its provenance: the memo, the SHA-256 of the sealed transcript it came
+from, and the review verdicts behind it. `evidence verify` on the test proves the source.
+
+## Most common confirmed mistakes
+
+{failures}
+
+## How the result is accepted
+
+1. Serve the tuned model at an endpoint the engine can reach.
+2. Generate new cases (never used for training): **Test**, then **Generate new cases**.
+3. Test the current model and the tuned model on those same new cases, and compare the two
+   (`evidence compare <before> <after>`, or **Earlier tests**, then **Compare**).
+4. Accept only if the comparison says the change helped and nothing got worse.
+
+## Size
+
+{size_note}
+"""
+
+TRAINING_CONFIG = """# A starting point for LoRA supervised fine-tuning.
+# The engineering team owns these settings; they are not tuned for this data.
+base_model: {model}
+finetuning: lora
+lora:
+  rank: 16
+  alpha: 32
+  dropout: 0.05
+training:
+  epochs: 3
+  learning_rate: 1.0e-4
+  batch_size: 8
+  max_seq_length: 8192
+data:
+  train: sft_train.jsonl
+  validation: sft_validation.jsonl
+  preference: dpo_train.jsonl   # for a DPO stage after SFT, if used
+acceptance: re-test on new cases and compare with the current model (README)
+"""
+
+
+def build_handover(run: Path, out: Path, sft: list[dict[str, Any]],
+                   prefs: list[dict[str, Any]], judge: list[dict[str, Any]],
+                   fb: dict[str, Any]) -> dict[str, Any]:
+    """``feedback/handover/``: the fine-tuning data in training formats, a starting
+    configuration and a README, for the team that fine-tunes the assistant."""
+    h = out / "handover"
+    h.mkdir(exist_ok=True)
+    m = json.loads((run / "manifest.json").read_text(encoding="utf-8"))
+    model = (m.get("sut") or {}).get("model_id") or "the assistant's model"
+
+    def split(row: dict[str, Any]) -> bool:  # a stable 10% for validation, by memo
+        memo = row["provenance"]["memo"]
+        return int(hashlib.sha256(memo.encode()).hexdigest(), 16) % 10 == 0
+
+    val = [r for r in sft if split(r)] if len(sft) >= 10 else []
+    train = [r for r in sft if r not in val]
+    dpo = [{"prompt": p["prompt"], "chosen_response": p["chosen"],
+            "rejected_response": p["rejected"], "provenance": p["provenance"]} for p in prefs]
+    files: dict[str, str] = {
+        "sft_train.jsonl": "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in train),
+        "sft_validation.jsonl": "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in val),
+        "dpo_train.jsonl": "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in dpo),
+        "judge_labels.jsonl": "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in judge),
+        "training_config.yaml": TRAINING_CONFIG.format(model=model),
+    }
+    n = len(sft)
+    size_note = (f"{n} corrected memos. A LoRA run usually wants a few hundred or more: "
+                 "review more memos, or several tests, before training on this alone."
+                 if n < 200 else f"{n} corrected memos.")
+    failures = "\n".join(f"- {k}: {v}" for k, v in fb["failure_summary"].items()) or "- none"
+    files["README.md"] = HANDOVER_README.format(
+        model=model, run=run.name, sft_train=len(train), sft_val=len(val), dpo=len(dpo),
+        labels=len(judge), failures=failures, size_note=size_note)
+    for name, body in files.items():
+        (h / name).write_text(body, encoding="utf-8")
+    manifest = {
+        "run": run.name, "built_at": fb["built_at"], "base_model": model,
+        "pack": m.get("pack", {}).get("pack_id"), "pack_version": m.get("pack", {}).get("version"),
+        "assistant_fingerprint": ((m.get("models") or {}).get("assistant") or {}).get(
+            "fingerprint"),
+        "counts": {"sft_train": len(train), "sft_validation": len(val), "dpo": len(dpo),
+                   "judge_labels": len(judge)},
+        "sha256": {name: hashlib.sha256((h / name).read_bytes()).hexdigest()
+                   for name in sorted(files)},
+        "personal_data": "none: every case is generated",
+    }
+    (h / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+                                     encoding="utf-8")
+    return {"dir": "feedback/handover", "counts": manifest["counts"]}
+
+
+# ------------------------------------------------------------------ the evaluator itself
+
+def evaluator(run: Path, queue_items: list[dict[str, Any]]) -> dict[str, Any]:
+    """How good the rule checks and the AI reviewers are, from what is known: the known
+    answers, and every settled review verdict. A panel flag on a memo that passes every rule
+    check is either a problem the rules miss or a false alarm; only a review can tell which."""
+    lab = labels(run, queue_items)
+    settled = [x for x in lab if _settled(x)]
+    with_panel = [q for q in queue_items if q["panel_flag"] is not None]
+    failing = [q for q in with_panel if q["failing_checks"]]
+    clean = [q for q in with_panel if not q["failing_checks"]]
+    by_memo: dict[str, list[dict[str, Any]]] = {}
+    for x in settled:
+        by_memo.setdefault(x["memo"], []).append(x)
+    real = alarm = 0
+    for q in clean:
+        if not q["panel_flag"]:
+            continue
+        panel = [x for x in by_memo.get(q["memo"], []) if x["card"]["source"] == "panel"]
+        if not panel:
+            continue
+        if any(_is_error(x) for x in panel):
+            real += 1
+        else:
+            alarm += 1
+    flagged_clean = sum(1 for q in clean if q["panel_flag"])
+    panel_settled = [x for x in settled if x["card"]["source"] == "panel"]
+    rule_settled = [x for x in settled if x["card"].get("known_answer")]
+    return {
+        "panel": {
+            "memos_with_a_rule_failure": len(failing),
+            "flagged_with_a_rule_failure": sum(1 for q in failing if q["panel_flag"]),
+            "memos_passing_every_rule": len(clean),
+            "flagged_passing_every_rule": flagged_clean,
+            "flags_on_rule_clean_memos_reviewed": real + alarm,
+            "problems_the_rules_missed": real,
+            "false_alarms": alarm,
+            "findings_settled": len(panel_settled),
+            "findings_confirmed": sum(1 for x in panel_settled if _is_error(x)),
+        },
+        "rule_checks": {
+            "findings_settled": len(rule_settled),
+            "findings_confirmed": sum(1 for x in rule_settled if _is_error(x)),
+            "shown_wrong": sum(1 for x in rule_settled if not _is_error(x)),
+        },
+    }
 
 
 def lines(s: dict[str, Any]) -> list[str]:

@@ -1,0 +1,14 @@
+# Figures from the Bank's Systems
+
+**Reference:** {{ application_id }}
+**Computed by:** the rules engine, policy PL-2026.1
+
+| Figure | Value | Policy | Within policy |
+|---|---|---|---|
+| Gross monthly income | {{ cur }}{{ "{:,.2f}".format(monthly_income) }} | — | — |
+| Total monthly debt service (existing commitments plus the proposed instalment) | {{ cur }}{{ "{:,.0f}".format(debt_service) }} | — | — |
+| Debt service as a share of gross monthly income | {{ "{:.1f}".format(dti_pct) }}% | at most 40% | {{ "Yes" if dti_pct <= 40 else "No" }} |
+| Bureau score | {{ bureau_score }} | 600 or above | {{ "Yes" if bureau_score >= 600 else "No" }} |
+| Missed payment in the last 12 months | {{ "Yes" if missed_12m else "No" }} | none | {{ "No" if missed_12m else "Yes" }} |
+| Credit file age | {{ file_age_months }} months | 24 months or more (else a thin file) | {{ "Yes" if file_age_months >= 24 else "No" }} |
+| Income verified | {{ income_verified }} | verified where available | — |

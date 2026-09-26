@@ -151,6 +151,7 @@ def meta() -> dict[str, Any]:
         "roles": roles,
         "has_key": bool(os.environ.get("NVIDIA_API_KEY")),
         "shared": SHARED,
+        "designer": DESIGNER,
         "limits": {"items": SHARED_MAX_ITEMS, "repeats": SHARED_MAX_REPEATS} if SHARED else None,
     }
 
@@ -178,6 +179,8 @@ def packs() -> list[dict[str, Any]]:
                     for o in p.obligations.get("obligations", [])
                 ],
                 "sdd": p.manifest.get("sdd"),
+                "bank_figures": bool(p.manifest.get("bank_figures")),
+                "built_at": p.manifest.get("built_at"),
                 "warnings": p.warnings,
             }
         )
@@ -384,6 +387,8 @@ def _build_worker(job_id: str, opts: dict[str, Any]) -> None:
             PACKS / opts["pack_id"],
             opts["pack_id"],
             opts.get("spec"),
+            opts.get("market", "sample"),
+            opts.get("bank_figures", False),
         )
         with _lock:
             job.update(
@@ -410,9 +415,15 @@ async def build_pack(
     keep: int = _FORM,
     seed: int = _FORM,
     spec: UploadFile | None = _OPTIONAL_FILE,
+    market: str = Form("sample"),
+    bank_figures: bool = Form(False),
 ) -> dict[str, Any]:
     """Generate a new pack from an SDD spec (uploaded, or the bundled recipe)."""
+    from evidence.packs.credit_underwriting import MARKETS
+
     pack_id = _safe_name(pack_id, "pack")
+    if market not in MARKETS:
+        raise HTTPException(400, f"market must be one of {sorted(MARKETS)}")
     if (PACKS / pack_id / "items.jsonl").is_file():
         raise HTTPException(400, f"pack {pack_id} already exists")
     spec_path = None
@@ -434,6 +445,8 @@ async def build_pack(
                 "keep": max(1, min(keep, 500)),
                 "seed": seed,
                 "spec": spec_path,
+                "market": market,
+                "bank_figures": bank_figures,
             },
         ),
         daemon=True,
@@ -498,6 +511,7 @@ def _job_worker(job_id: str, pack: Pack, out: Path, opts: dict[str, Any]) -> Non
             judge=opts["judge"],
             limit=opts["limit"],
             panel=opts["panel"],
+            setup=opts.get("setup", "as_is"),
             log=log,
             should_stop=lambda: job.get("cancel", False),
         )
@@ -554,6 +568,121 @@ def jobs() -> list[dict[str, Any]]:
     return sorted(rows, key=lambda r: r["started"] or "", reverse=True)
 
 
+def make_fresh_pack(from_pack: str, keep: int | None = None,
+                    bank_figures: bool = True) -> dict[str, Any]:
+    """New cases from the same recipe, market and size as ``from_pack``, with a new seed and
+    the figures the bank's systems compute. Checked to share no case file with any other
+    pack of the same family: the assistant has never seen them."""
+    import random
+
+    from evidence.packs.credit_underwriting import build
+
+    src = _pack(from_pack)
+    m = src.manifest
+    family = re.sub(r"-s\d+$", "", src.pack_id)
+    used = {int(x) for p in PACKS.glob(f"{family}-s*")
+            if (x := p.name.rsplit("-s", 1)[1]).isdigit()}
+    used.add(int((m.get("sdd") or {}).get("seed") or 0))
+    seed = next(s for s in iter(lambda: random.SystemRandom().randrange(1000, 100000), None)
+                if s not in used)
+    pack_id = f"{family}-s{seed}"
+    t0 = datetime.now(UTC)
+    keep = max(5, min(int(keep or len(src.items)), 200))
+    generated = max(int((m.get("sdd") or {}).get("generated") or 700), keep * 35)
+    manifest = build(generated, keep, seed, PACKS / pack_id, pack_id, None,
+                     m.get("market") or "sample", bank_figures=bank_figures)
+    fresh = _pack(pack_id)
+    seen = {c.content for p in PACKS.glob(f"{family}*/items.jsonl") if p.parent.name != pack_id
+            for it in load_pack(p.parent).items for c in it.context
+            if c.renderer == "application_form"}
+    shared = sum(1 for it in fresh.items for c in it.context
+                 if c.renderer == "application_form" and c.content in seen)
+    return {"pack_id": pack_id, "seed": seed, "from": src.pack_id, "items": manifest["items"],
+            "shared_with_other_packs": shared, "seconds": round(
+                (datetime.now(UTC) - t0).total_seconds(), 1), "links": SDD_LINKS}
+
+
+@app.post("/api/packs/fresh")
+def fresh_pack(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
+    """Generate new cases the assistant has never seen, with the Synthetic Data Designer."""
+    try:
+        return make_fresh_pack(str(payload.get("from", "")), payload.get("keep"),
+                               bool(payload.get("bank_figures", True)))
+    except ImportError as exc:
+        raise HTTPException(501, "the Synthetic Data Designer is not installed: "
+                            "pip install -e '.[generate]'") from exc
+
+
+def _retest_worker(job_id: str, from_run: str, setup: str) -> None:
+    """New cases, then the assistant as it is and with the change on those same cases,
+    then the comparison: the proof, or not, that the change helps."""
+    from evidence.evidence.compare import compare_runs
+
+    job = _jobs[job_id]
+
+    def phase(name: str, total: int = 0) -> None:
+        with _lock:
+            job.update(phase=name, done=0, total=total)
+
+    def log(line: str) -> None:
+        with _lock:
+            job["log"].append(line)
+            mm = re.match(r"\s*(\d+)/(\d+)", line)
+            if mm:
+                job["done"], job["total"] = int(mm.group(1)), int(mm.group(2))
+
+    try:
+        base = _read_json(_run_dir(from_run) / "manifest.json")
+        phase("cases")
+        fresh = make_fresh_pack(base["pack"]["pack_id"])
+        pack = _pack(fresh["pack_id"])
+        with _lock:
+            job.update(pack_id=fresh["pack_id"], seed=fresh["seed"],
+                       shared_with_other_packs=fresh["shared_with_other_packs"])
+        stamp = datetime.now(UTC).strftime("%Y-%m-%dT%H%M%SZ")
+        runs_made = {}
+        for name, which in (("before", "as_is"), ("after", setup)):
+            if job.get("cancel"):
+                break
+            phase(name, len(pack.items) * int(base.get("repeats") or 3))
+            out = RUNS / f"{fresh['pack_id']}-{stamp}-{name}"
+            mf = run_pack(pack, out, repeats=int(base.get("repeats") or 3), judge=False,
+                          setup=which, log=log, should_stop=lambda: job.get("cancel", False))
+            if mf["transcripts"]:
+                write_evidence(out, pack.obligations)
+            runs_made[name] = out.name
+            with _lock:
+                job[name] = out.name
+        if len(runs_made) == 2 and not job.get("cancel"):
+            phase("compare")
+            c = compare_runs(RUNS / runs_made["before"], RUNS / runs_made["after"])
+            with _lock:
+                job["verdict"] = c["verdict"]
+        with _lock:
+            job.update(status="cancelled" if job.get("cancel") else "done", phase="done")
+    except Exception as exc:  # noqa: BLE001 — the browser needs the message
+        with _lock:
+            job.update(status="error", error=f"{type(exc).__name__}: {exc}")
+
+
+@app.post("/api/retest")
+def retest(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
+    """Test a change on new cases: the assistant as it is and with the change, same cases."""
+    from evidence.contracts.item import SETUPS
+
+    from_run = _safe_name(str(payload.get("from_run", "")), "run")
+    _run_dir(from_run)
+    setup = str(payload.get("setup", "with_figures"))
+    if setup not in SETUPS or setup == "as_is":
+        raise HTTPException(400, f"setup must be one of {sorted(set(SETUPS) - {'as_is'})}")
+    job_id = uuid.uuid4().hex[:12]
+    _jobs[job_id] = {"status": "running", "kind": "retest", "phase": "cases", "done": 0,
+                     "total": 0, "log": [], "from_run": from_run, "setup": setup,
+                     "started": datetime.now(UTC).strftime("%Y-%m-%dT%H%M%SZ")}
+    threading.Thread(target=_retest_worker, args=(job_id, from_run, setup), daemon=True).start()
+    return {"job_id": job_id}
+
+
 @app.post("/api/run")
 def start_run(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
     pack = _pack(str(payload.get("pack", "")))
@@ -565,6 +694,9 @@ def start_run(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
         limit = min(limit or SHARED_MAX_ITEMS, SHARED_MAX_ITEMS)
     judge = bool(payload.get("judge", True))
     panel = bool(payload.get("panel", False)) and judge
+    setup = str(payload.get("setup", "as_is"))
+    if setup == "with_figures" and not any(i.has_bank_figures() for i in pack.items):
+        raise HTTPException(400, "these cases hold no figures from the bank's systems")
     corpus = payload.get("corpus", "EU")
     corpus = None if corpus in (None, "", "none") else _safe_name(str(corpus), "corpus")
     if not os.environ.get("NVIDIA_API_KEY") and endpoint_for("assistant").is_build:
@@ -590,7 +722,7 @@ def start_run(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
             pack,
             out,
             {"repeats": repeats, "judge": judge, "limit": limit, "corpus": corpus,
-             "panel": panel},
+             "panel": panel, "setup": setup},
         ),
         daemon=True,
     ).start()
@@ -889,7 +1021,7 @@ def review_queue(run_id: str) -> dict[str, Any]:
     run = _run_dir(run_id)
     q = _review_queue(run)
     done = review.reviews(run)
-    return {"summary": review.summary(run, q),
+    return {"summary": review.summary(run, q), "evaluator": review.evaluator(run, q),
             "memos": [{k: m[k] for k in ("memo", "case", "repeat", "lane", "failing_checks",
                                          "panel_flag")}
                       | {"findings": len(m["cards"]), "reviewed": m["memo"] in done}
@@ -967,6 +1099,20 @@ def review_feedback(run_id: str) -> dict[str, Any]:
     return manifest
 
 
+@app.get("/api/review/{run_id}/handover.zip")
+def review_handover(run_id: str) -> Response:
+    """The fine-tuning handover for the engineering team, as one zip."""
+    h = _run_dir(run_id) / "feedback" / "handover"
+    if not h.is_dir():
+        raise HTTPException(404, "build the feedback pack first")
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        for f in sorted(h.iterdir()):
+            z.write(f, f"{run_id}-handover/{f.name}")
+    return Response(buf.getvalue(), media_type="application/zip", headers={
+        "Content-Disposition": f'attachment; filename="{run_id}-fine-tuning-handover.zip"'})
+
+
 @app.get("/api/review/{run_id}/feedback/{name}")
 def review_feedback_file(run_id: str, name: str) -> FileResponse:
     if name not in ("sft.jsonl", "preferences.jsonl", "judge_labels.jsonl", "check_fixes.jsonl",
@@ -1008,6 +1154,28 @@ def advanced_slash() -> Response:
     return RedirectResponse("/advanced/")
 
 
+# The Synthetic Data Designer (src/sdd), which generates the test cases, starts with the UI
+# and is served at /sdd/: open a recipe (credit_underwriting among them), change it, run it.
+try:
+    from sdd.web.app import app as _designer
+
+    DESIGNER: dict[str, Any] | None = {"url": "/sdd/"}
+except ImportError:  # the generate extra is not installed: the evidence UI works without it
+    _designer, DESIGNER = None, None
+
+
+@app.get("/sdd")
+def designer_slash() -> Response:
+    from fastapi.responses import RedirectResponse
+
+    if _designer is None:
+        raise HTTPException(501, "the Synthetic Data Designer is not installed: "
+                            "pip install -e '.[web]'")
+    return RedirectResponse("/sdd/")
+
+
+if _designer is not None:
+    app.mount("/sdd", _designer, name="designer")
 app.mount("/", StaticFiles(directory=STATIC), name="static")
 
 

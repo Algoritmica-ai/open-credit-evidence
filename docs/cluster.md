@@ -212,9 +212,23 @@ with `ADAPTER=`) becomes the runtime judge, and Ultra is no longer needed.
 |---|---|
 | one | Lightning NIM, long-lived |
 | two | Super judge NIM (FP8, TP2) |
+| two | a second Super judge NIM, when free (`second_judge.sh`) |
 | one | Embedder NIM |
 | one–two | LoRA training (`nemo:26.08.00`) |
 | rest | interactive work |
+
+## A second judge
+
+The judge panel spends nearly all its time in the Super judge. With two GPUs free,
+`scripts/cluster/second_judge.sh [gpus] [port]` (default `5,7` and `8205`, from a login shell
+on the node: `bash -l`) starts a second Super NIM with the same pinned image, profile and
+settings, and once it answers lists it in `~/.config/stream-relay/upstreams`. The relay reads
+that file whenever it changes and sends requests to the judges in turn, moving on from one
+that refuses a connection. `second_judge.sh --stop` stops it and empties the file.
+
+A relay started before this version knows only the first judge: stop it once and the job's
+watchdog starts the new one. A watchdog from an older `servers.sbatch` does not restart the
+relay; start it by hand then, with the same `--upstream` and `--port`.
 
 ## One server per team
 

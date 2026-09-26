@@ -57,16 +57,20 @@ const RULES = {
   US: ["United States", "US rules", "Federal Reserve guidance SR 26-2 on model risk"],
 };
 const PACK_JURISDICTION = { "underwriter-de": "DE", "underwriter-sample": "IT" };
+const packFamily = (id) => String(id || "").replace(/-s\d+$/, "");
+const packSeed = (id) => (String(id || "").match(/-s(\d+)$/) || [])[1];
 function packName(pack) {
   const id = (pack && pack.pack_id) || pack || "";
-  if (id === "underwriter-de") return "Personal loans, Germany (in euros)";
-  if (id === "underwriter-sample") return "Personal loans, sample (in pounds)";
-  return id;
+  const fam = packFamily(id), seed = packSeed(id);
+  const base = fam === "underwriter-de" ? "Personal loans, Germany (in euros)"
+    : fam === "underwriter-sample" ? "Personal loans, sample (in pounds)" : fam;
+  return seed ? `${base}, new cases #${seed}` : base;
 }
-const rulesName = (pack) => (RULES[PACK_JURISDICTION[(pack && pack.pack_id) || pack]] || [])[1] || "";
+const rulesName = (pack) => (RULES[PACK_JURISDICTION[packFamily((pack && pack.pack_id) || pack)]] || [])[1] || "";
+const SETUP = { as_is: "As today: the case file only", with_figures: "With the figures your systems already calculate" };
 const LANE = {
   red: ["Check first", "The rule checks and the AI reviewers both found a problem."],
-  amber: ["Worth a look", "Only one of the two found a problem."],
+  amber: ["Worth a look", "Only one of the two found a problem. Your answers here show whether the AI reviewers raise false alarms."],
   green: ["Probably fine", "Nothing was found. Check two or three, to make sure the machine is not missing things."],
 };
 const REASON = {
@@ -115,7 +119,7 @@ function renderSteps(ov, active, testState) {
     '<span class="sep" aria-hidden="true"></span>',
     step("improve", 3, run ? `#/improve/${rid}` : "#/", improveState, improveWords, "Improve"),
   ].join("");
-  document.querySelector(".history").classList.toggle("on", active === "history");
+  document.querySelectorAll(".history").forEach((a) => a.classList.toggle("on", a.dataset.nav === active));
 }
 
 const overview = (run) => api(`/api/overview${run ? `?run=${enc(run)}` : ""}`);
@@ -182,15 +186,21 @@ async function viewHome() {
 
 // ----------------------------------------------------------------- new test
 
-async function viewNew() {
+async function viewNew(preselect) {
   const [ov, meta, packs] = await Promise.all([overview(), api("/api/meta"), api("/api/packs")]);
   renderSteps(ov, "test", "New");
   page("narrow");
   const usable = packs.filter((p) => !p.error && p.items);
   const byJ = {};
-  usable.forEach((p) => { const j = p.jurisdiction || PACK_JURISDICTION[p.pack_id] || "other"; (byJ[j] = byJ[j] || []).push(p); });
+  usable.forEach((p) => { const j = p.jurisdiction || PACK_JURISDICTION[packFamily(p.pack_id)] || "other"; (byJ[j] = byJ[j] || []).push(p); });
+  Object.values(byJ).forEach((l) => l.sort((a, b) => (packSeed(a.pack_id) ? 1 : 0) - (packSeed(b.pack_id) ? 1 : 0) || (b.built_at || "").localeCompare(a.built_at || "")));
+  let chosenPack = null;
   const js = Object.keys(byJ).sort((a, b) => (a === "DE" ? -1 : b === "DE" ? 1 : a.localeCompare(b)));
   let chosenJ = js[0];
+  if (preselect) {
+    const hit = usable.find((p) => p.pack_id === preselect);
+    if (hit) { chosenJ = hit.jurisdiction || PACK_JURISDICTION[packFamily(hit.pack_id)] || chosenJ; chosenPack = hit.pack_id; }
+  }
   const a = meta.roles.assistant;
   $view.innerHTML = `<div class="stack" style="gap:28px">
     <a class="link back" href="#/">${ICON.back}Home</a>
@@ -202,7 +212,10 @@ async function viewNew() {
       <p class="tiny muted">${a.where === "on-prem" ? "Runs on your own servers." : "Runs on NVIDIA's cloud."}</p></fieldset>
     <fieldset><legend>2. Which rules must its memos follow?</legend><div class="stack tight" id="rules"></div></fieldset>
     <fieldset><legend>3. Which test cases?</legend><div class="stack tight" id="cases"></div>
+      <div class="row wrap" style="gap:12px"><button class="btn" id="fresh">${ICON.plus}Generate new cases</button>
+        <span class="small muted" id="freshmsg">Cases the assistant has never seen, made from your credit policy by the Synthetic Data Designer. More options in <a href="#/cases">Case sets</a>.</span></div>
       <p class="small muted">Each case is given to the assistant three times, to check it answers the same way each time.</p></fieldset>
+    <fieldset id="setupbox" hidden><legend>4. What does the assistant get?</legend><div class="stack tight" id="setup"></div></fieldset>
     <label class="choice-card"><input type="checkbox" id="panel" checked>
       <span class="stack tight"><span class="t">Also get a second opinion from three AI reviewers</span>
       <span class="small muted">One reads each memo, one challenges it against the case file, one decides. It replaces the single AI judge. Adds time, and helps sort what a person should check first.</span></span></label>
@@ -218,25 +231,129 @@ async function viewNew() {
     }).join("");
     document.querySelectorAll("input[name=rules]").forEach((el) => (el.onchange = () => { chosenJ = el.value; drawCases(); }));
   };
+  const drawSetup = () => {
+    const p = (byJ[chosenJ] || []).find((x) => x.pack_id === chosenPack);
+    const box = document.getElementById("setupbox");
+    box.hidden = !(p && p.bank_figures);
+    document.getElementById("setup").innerHTML = Object.entries(SETUP).map(([k, w], i) => `<label class="choice-card">
+      <input type="radio" name="setup" value="${k}" ${i === 0 ? "checked" : ""}>
+      <span class="stack tight"><span class="t">${esc(w)}</span><span class="small muted">${k === "as_is" ? "What the assistant receives today." : "The recommended change: the debt ratio, income and policy limits your rules engine computes are added to the case file."}</span></span></label>`).join("");
+  };
   const drawCases = () => {
     const list = byJ[chosenJ] || [];
-    document.getElementById("cases").innerHTML = list.map((p, i) => `<label class="choice-card">
-      <input type="radio" name="cases" value="${esc(p.pack_id)}" ${i === 0 ? "checked" : ""}>
-      <span class="stack tight"><span class="t">${esc(packName(p))}</span><span class="small muted">${p.items} cases, each with a known right answer · ${p.items * 3} memos</span></span></label>`).join("");
+    if (!list.some((p) => p.pack_id === chosenPack)) chosenPack = list.length ? list[0].pack_id : null;
+    document.getElementById("cases").innerHTML = list.map((p) => `<label class="choice-card">
+      <input type="radio" name="cases" value="${esc(p.pack_id)}" ${p.pack_id === chosenPack ? "checked" : ""}>
+      <span class="stack tight"><span class="t">${esc(packName(p))}</span><span class="small muted">${p.items} cases, each with a known right answer · ${p.items * 3} memos${packSeed(p.pack_id) ? " · never used before" : ""}</span></span></label>`).join("");
+    document.querySelectorAll("input[name=cases]").forEach((el) => (el.onchange = () => { chosenPack = el.value; drawSetup(); }));
+    drawSetup();
   };
   drawRules();
   drawCases();
+  document.getElementById("fresh").onclick = async (ev) => {
+    const from = chosenPack || ((byJ[chosenJ] || [])[0] || {}).pack_id;
+    const msg = document.getElementById("freshmsg");
+    ev.target.disabled = true;
+    msg.textContent = "Generating new cases from your credit policy…";
+    try {
+      const f = await api("/api/packs/fresh", { from });
+      const fresh = (await api("/api/packs")).find((p) => p.pack_id === f.pack_id);
+      (byJ[chosenJ] = byJ[chosenJ] || []).unshift(fresh);
+      chosenPack = f.pack_id;
+      drawCases();
+      msg.innerHTML = `${f.items} new cases (set #${f.seed}) generated in ${f.seconds} s. ${f.shared_with_other_packs ? `<span class="error">${f.shared_with_other_packs} match earlier cases.</span>` : "None of them appears in an earlier test."} <a href="#/cases">How they are made</a>`;
+    } catch (e) { msg.innerHTML = `<span class="error">${esc(e.message)}</span>`; }
+    ev.target.disabled = false;
+  };
   document.getElementById("start").onclick = async (ev) => {
     const pack = (document.querySelector("input[name=cases]:checked") || {}).value;
     if (!pack) return;
     ev.target.disabled = true;
     try {
-      const j = await api("/api/run", { pack, repeats: 3, judge: true, panel: document.getElementById("panel").checked });
+      const setup = (document.querySelector("input[name=setup]:checked") || {}).value || "as_is";
+      const j = await api("/api/run", { pack, repeats: 3, judge: true, setup: document.getElementById("setupbox").hidden ? "as_is" : setup, panel: document.getElementById("panel").checked });
       location.hash = `#/running/${enc(j.job_id)}`;
     } catch (e) {
       document.getElementById("msg").textContent = e.message;
       ev.target.disabled = false;
     }
+  };
+}
+
+// ----------------------------------------------------------------- case sets
+
+async function viewCases() {
+  const [ov, packs, meta] = await Promise.all([overview(), api("/api/packs"), api("/api/meta")]);
+  renderSteps(ov, "cases");
+  page("");
+  const usable = packs.filter((p) => !p.error && p.items);
+  const families = [...new Set(usable.map((p) => packFamily(p.pack_id)))];
+  const designer = meta.designer;
+  const row = (p) => `<tr><td style="font-weight:600">${esc(packName(p))}</td><td>${p.items}</td>
+    <td>${esc(rulesName(p) || p.jurisdiction || "")}</td><td>${p.bank_figures ? "Yes" : '<span class="muted">No</span>'}</td>
+    <td class="muted">${esc(shortDate(p.built_at))}</td><td style="text-align:right"><a class="link" href="#/new/${enc(p.pack_id)}">Use in a test</a></td></tr>`;
+  $view.innerHTML = `<div class="stack">
+    <div class="stack tight"><h1>Case sets</h1>
+      <p class="muted" style="font-size:17px">Every test case is a made-up loan application with a known right answer, generated from your credit policy by the Synthetic Data Designer. No customer data is used, so a new set can be made at any time.</p></div>
+    <div class="grid2">
+      <section class="card stack mid"><h2>Create a case set</h2>
+        <label class="small" for="fam">Cases like</label>
+        <select id="fam">${families.map((f) => `<option value="${esc(f)}">${esc(packName(f))}</option>`).join("")}</select>
+        <label class="small" for="keep">How many cases</label>
+        <select id="keep"><option>20</option><option>50</option><option>100</option></select>
+        <label class="choice-card"><input type="checkbox" id="bank" checked><span class="stack tight"><span class="t">Include the figures your systems calculate</span>
+          <span class="small muted">A rules-engine summary in each case file. Needed to test the recommended change; the assistant only sees it when a test asks for it.</span></span></label>
+        <div class="row wrap" style="gap:12px"><button class="btn primary" id="create">Create case set</button><span class="small" id="cmsg"></span></div>
+      </section>
+      <section class="card stack mid"><h2>Design the recipe</h2>
+        <p class="small muted">The designer shows how cases are made: who applies, their incomes, debts and credit files, and how often each happens. Open the <b>credit_underwriting</b> recipe to see it or change it, then export the recipe to build a case set from it.</p>
+        ${designer ? `<a class="btn" href="${esc(designer.url)}" target="_blank" rel="noopener" style="align-self:flex-start">Open the Synthetic Data Designer</a>` : '<p class="small error">The Synthetic Data Designer is not installed on this server.</p>'}
+        <details><summary class="small">Build a case set from a recipe file</summary>
+          <div class="stack tight" style="margin-top:10px">
+            <label class="small" for="spec">Recipe (YAML) exported from the designer</label><input type="file" id="spec" accept=".yaml,.yml">
+            <label class="small" for="smarket">Market</label><select id="smarket"><option value="de">Germany (in euros)</option><option value="sample">Sample (in pounds)</option></select>
+            <div class="row wrap" style="gap:12px"><button class="btn" id="buildspec">Build case set</button><span class="small" id="smsg"></span></div></div></details>
+      </section>
+    </div>
+    <section class="card" style="padding:8px 20px"><table><thead><tr><th>Case set</th><th>Cases</th><th>Rules</th><th>Bank figures</th><th>Made</th><th><span class="visually-hidden">Use</span></th></tr></thead>
+      <tbody>${usable.map(row).join("")}</tbody></table></section>
+  </div>`;
+  document.getElementById("create").onclick = async (ev) => {
+    const msg = document.getElementById("cmsg");
+    const fam = document.getElementById("fam").value;
+    const from = (usable.find((p) => p.pack_id === fam) || usable.find((p) => packFamily(p.pack_id) === fam)).pack_id;
+    ev.target.disabled = true;
+    msg.textContent = "Generating…";
+    try {
+      const f = await api("/api/packs/fresh", { from, keep: +document.getElementById("keep").value, bank_figures: document.getElementById("bank").checked });
+      msg.innerHTML = `Made ${f.items} new cases (set #${f.seed}) in ${f.seconds} s. <a href="#/new/${enc(f.pack_id)}">Use them in a test</a>`;
+      setTimeout(() => viewCases().then(() => { document.getElementById("cmsg").innerHTML = msg.innerHTML; }), 50);
+    } catch (e) { msg.innerHTML = `<span class="error">${esc(e.message)}</span>`; ev.target.disabled = false; }
+  };
+  document.getElementById("buildspec").onclick = async (ev) => {
+    const msg = document.getElementById("smsg");
+    const file = document.getElementById("spec").files[0];
+    if (!file) { msg.textContent = "Choose a recipe file first."; return; }
+    const market = document.getElementById("smarket").value;
+    const form = new FormData();
+    const seed = Math.floor(1000 + Math.random() * 90000);
+    form.append("pack_id", `${market === "de" ? "underwriter-de" : "underwriter-sample"}-s${seed}`);
+    form.append("n", "700"); form.append("keep", "20"); form.append("seed", String(seed));
+    form.append("market", market); form.append("bank_figures", "true"); form.append("spec", file);
+    ev.target.disabled = true;
+    msg.textContent = "Building…";
+    try {
+      const r = await fetch("/api/packs/build", { method: "POST", body: form });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.detail || r.statusText);
+      for (let i = 0; i < 120; i++) {
+        const st = await api(`/api/run/${enc(j.job_id)}`);
+        if (st.status === "done") { msg.innerHTML = `Built. <a href="#/new/${enc(j.pack_id)}">Use it in a test</a>`; return; }
+        if (st.status === "error") throw new Error(st.error);
+        await new Promise((res) => setTimeout(res, 1000));
+      }
+    } catch (e) { msg.innerHTML = `<span class="error">${esc(e.message)}</span>`; }
+    ev.target.disabled = false;
   };
 }
 
@@ -571,10 +688,13 @@ async function viewMemo(id, memo) {
 // ----------------------------------------------------------------- improve
 
 async function viewImprove(id) {
-  const [q, adj, ov, fb] = await Promise.all([
+  const [q, adj, ov, fb, d] = await Promise.all([
     api(`/api/review/${enc(id)}`), api(`/api/review/${enc(id)}/adjudication`), overview(id),
-    api(`/api/review/${enc(id)}/feedback/manifest.json`).catch(() => null),
+    api(`/api/review/${enc(id)}/feedback/manifest.json`).catch(() => null), api(`/api/runs/${enc(id)}`),
   ]);
+  const d_model = (d.manifest.sut || {}).model_id || "the assistant's model";
+  const fixable = (d.recommendations || []).find((r) => r.cause === "miscalculated" || r.cause === "misread_threshold") || null;
+  const ev = q.evaluator || { panel: {}, rule_checks: {} };
   renderSteps(ov, "improve");
   page("");
   const s = q.summary;
@@ -613,15 +733,27 @@ async function viewImprove(id) {
         <div class="row wrap" style="gap:12px"><button class="btn primary large" id="build" ${canBuild ? "" : "disabled"}>${fb ? "Build it again" : "Build feedback pack"}</button>
           <span class="small muted" id="bmsg">${canBuild ? "" : adj.length ? `Available once the ${plural(adj.length, "disagreement")} ${adj.length === 1 ? "is" : "are"} settled.` : "Available once memos have been reviewed."}</span></div>
         ${fb ? `<div class="row wrap" style="gap:8px">${dl("sft.jsonl", "Corrected memos")}${dl("preferences.jsonl", "Before-and-after pairs")}${dl("judge_labels.jsonl", "Confirmed findings")}${dl("check_fixes.jsonl", "Rule-check fixes")}${dl("manifest.json", "Contents and fingerprints")}</div>` : ""}</section>
-      <section class="card stack mid"><div class="row" style="gap:12px"><span class="dot big ${fb ? "fill" : "todo"}">3</span><h2>Test again on new cases</h2></div>
-        <p class="small muted">When the model team has updated the assistant, run a new test with cases it has never seen. We put the two results side by side, so you can see whether the fix worked and nothing else got worse.</p>
-        <a class="btn${fb ? " primary" : ""}" href="#/new" style="align-self:flex-start">Start a re-test</a></section>
+      ${fb && fb.handover ? `<section class="card stack mid"><div class="row" style="gap:12px"><span class="dot big done">${ICON.check}</span><h2>Hand over for fine-tuning</h2></div>
+        <p class="small muted">One zip for the engineering team that fine-tunes the assistant: the corrected memos in training formats (${fb.handover.counts.sft_train} for training, ${fb.handover.counts.sft_validation} for validation, ${fb.handover.counts.dpo} preference pairs), the finding labels, a starting LoRA configuration for ${esc(d_model)}, and a README that says where every row came from and how the tuned model will be accepted: a re-test on new cases.</p>
+        <a class="btn primary" href="/api/review/${enc(id)}/handover.zip" style="align-self:flex-start">${ICON.down}Download the fine-tuning handover (zip)</a></section>` : ""}
+      <section class="card stack mid"><div class="row" style="gap:12px"><span class="dot big ${fb ? "fill" : "todo"}">3</span><h2>Test a change on new cases</h2></div>
+        <p class="small muted">Prove a change helps before anyone relies on it. We generate cases the assistant has never seen, run the assistant as it is and with the change on those same cases, and put the two side by side.</p>
+        ${fixable ? `<div class="note-box blue stack tight" style="gap:6px"><b>${esc(fixable.title)}</b><span class="small">${esc(fixable.action)}</span><span class="small muted">Your team can make this change today, without the vendor. Could fix up to ${plural(fixable.addresses.briefings, "memo")} in this test.</span></div>
+          <button class="btn primary" id="retest" style="align-self:flex-start">Test this change on new cases</button><span class="small error" id="rmsg"></span>` : ""}
+        <p class="small muted">A fine-tuned model from the engineering team is tested the same way: <a href="#/new">start a test</a> with <b>Generate new cases</b>, then compare it with the current model in <a href="#/history">Earlier tests</a>.</p></section>
     </div>
-    <aside class="card stack hide-sm" style="width:320px;flex-shrink:0;margin-top:8px;gap:16px"><h2 style="font-size:18px">How reliable was the review?</h2>
+    <aside class="stack hide-sm" style="width:320px;flex-shrink:0;margin-top:8px;gap:16px"><div class="card stack" style="gap:16px"><h2 style="font-size:18px">How reliable was the review?</h2>
       ${s.known_answer_verdicts ? `<div class="stack" style="gap:2px"><span style="font-size:30px;font-weight:700">${pct(s.agree_with_known_answer, s.known_answer_verdicts)}%</span><span class="small muted">of answers matched the known right answer (${s.agree_with_known_answer} of ${s.known_answer_verdicts})</span></div>
         <div class="stack" style="gap:2px;padding-top:14px;border-top:1px solid var(--line-2)"><span style="font-size:30px;font-weight:700${s.automation_bias_memos ? ";color:var(--red)" : ""}">${s.automation_bias_memos}</span><span class="small muted">${s.automation_bias_memos === 1 ? "memo was" : "memos were"} approved although ${s.automation_bias_memos === 1 ? "it" : "they"} had a known mistake. A high number means people trust the machine too much.</span></div>
         ${times ? `<div class="stack tight" style="padding-top:14px;border-top:1px solid var(--line-2)"><span class="small" style="font-weight:600">Time spent</span><ul class="small muted" style="margin:0;padding-left:18px">${times}</ul></div>` : ""}`
         : '<p class="small muted">Shown once memos have been reviewed. Every test case has a known right answer, so each answer can be checked.</p>'}
+    </div>
+    <div class="card stack" style="gap:14px"><h2 style="font-size:18px">How good are the checks and the AI reviewers?</h2>
+      ${ev.panel.memos_with_a_rule_failure != null ? `<p class="small"><b>${ev.panel.flagged_with_a_rule_failure} of ${ev.panel.memos_with_a_rule_failure}</b> <span class="muted">memos with a known mistake were flagged by the AI reviewers.</span></p>
+      <p class="small"><b>${ev.panel.flagged_passing_every_rule} of ${ev.panel.memos_passing_every_rule}</b> <span class="muted">memos that pass every rule check were flagged anyway: either a problem the rules miss or a false alarm.</span></p>
+      <p class="small">${ev.panel.flags_on_rule_clean_memos_reviewed ? `<b>${ev.panel.problems_the_rules_missed}</b> <span class="muted">real problems the rules missed,</span> <b>${ev.panel.false_alarms}</b> <span class="muted">false alarms, from the ${ev.panel.flags_on_rule_clean_memos_reviewed} of those a person has checked.</span>` : `<span class="muted">Review the memos in <a href="#/review/${enc(id)}">Worth a look</a> to tell the two apart.</span>`}</p>` : '<p class="small muted">Shown for tests with the AI reviewers’ second opinion.</p>'}
+      ${ev.rule_checks.findings_settled ? `<p class="small" style="padding-top:12px;border-top:1px solid var(--line-2)"><b>${ev.rule_checks.shown_wrong}</b> <span class="muted">of ${ev.rule_checks.findings_settled} rule-check findings shown to be wrong by a reviewer and model risk.</span></p>` : ""}
+    </div>
     </aside>
   </div>`;
   document.querySelectorAll("[data-v]").forEach((tr) => tr.querySelectorAll("[data-d]").forEach((b) => (b.onclick = async () => {
@@ -629,6 +761,12 @@ async function viewImprove(id) {
     await api(`/api/review/${enc(id)}/adjudicate`, { verdict_id: tr.dataset.v, decision: b.dataset.d, by: reviewer.get() || "model-risk" });
     viewImprove(id);
   })));
+  const rt = document.getElementById("retest");
+  if (rt) rt.onclick = async () => {
+    rt.disabled = true;
+    try { const j = await api("/api/retest", { from_run: id, setup: "with_figures" }); location.hash = `#/retest/${enc(j.job_id)}`; }
+    catch (e) { document.getElementById("rmsg").textContent = e.message; rt.disabled = false; }
+  };
   const build = document.getElementById("build");
   build.onclick = async () => {
     build.disabled = true;
@@ -638,6 +776,50 @@ async function viewImprove(id) {
       build.disabled = false;
     }
   };
+}
+
+// ----------------------------------------------------------------- re-test a change
+
+async function viewRetest(jobId) {
+  const ov = await overview();
+  renderSteps(ov, "improve");
+  page("narrow");
+  const tick = async () => {
+    if (!location.hash.startsWith("#/retest/")) return;
+    let j;
+    try { j = await api(`/api/run/${enc(jobId)}`); } catch (e) {
+      $view.innerHTML = `<div class="card stack mid"><h2>This re-test is no longer tracked</h2><p class="muted">The server was restarted. Finished tests are listed under Earlier tests.</p><a class="btn" href="#/history" style="align-self:flex-start">Earlier tests</a></div>`;
+      return;
+    }
+    const order = ["cases", "before", "after", "compare", "done"];
+    const at = order.indexOf(j.phase);
+    const state = (k) => (j.status === "error" && order.indexOf(k) === at ? "todo" : order.indexOf(k) < at || j.phase === "done" ? "done" : order.indexOf(k) === at ? "now" : "todo");
+    const line = (k, title, detail) => { const st = state(k); return `<li class="row" style="align-items:flex-start;padding:18px 0;border-bottom:1px solid var(--line-2)">
+      ${st === "done" ? `<span class="dot big done">${ICON.check}</span>` : st === "now" ? '<span class="spinner" aria-hidden="true"></span>' : '<span class="dot big todo"></span>'}
+      <span class="stack tight grow"><span style="font-size:17px;font-weight:600${st === "todo" ? ";color:var(--ink-2)" : ""}">${title}</span>
+      ${st === "now" && j.total ? `<span class="bar"><span style="width:${pct(j.done, j.total)}%"></span></span>` : ""}
+      <span class="small muted">${detail}</span></span></li>`; };
+    const words = WORDS_VERDICT[j.verdict];
+    let foot = j.cancel && j.status === "running" ? `<div class="row"><span class="spinner" aria-hidden="true"></span><p>Stopping.</p></div>`
+      : `<button class="btn" id="stop" style="align-self:flex-start">Stop</button>`;
+    if (j.status === "done" && j.before && j.after) foot = `<div class="note-box ${j.verdict === "ACCEPT" ? "" : j.verdict === "REJECT" ? "red" : "amber"}"><p><b>${esc(words ? words[0] : j.verdict)}</b></p></div>
+      <a class="btn primary large" href="#/compare/${enc(j.before)}/${enc(j.after)}" style="align-self:flex-start">See the comparison${ICON.arrow}</a>`;
+    if (j.status === "cancelled") foot = "<p>Stopped. What finished is kept under Earlier tests.</p>";
+    if (j.status === "error") foot = `<p class="error">The re-test stopped with an error: ${esc(j.error)}</p>`;
+    $view.innerHTML = `<div class="stack" style="gap:28px">
+      <div class="stack tight"><h1>Testing the change on new cases</h1>
+        <p class="muted" style="font-size:17px">${esc(SETUP[j.setup] || j.setup)}, against the assistant as it is today.</p></div>
+      <ol class="card" style="list-style:none;padding:8px 28px;margin:0">
+        ${line("cases", "New cases generated", j.seed ? `Set #${j.seed} from your credit policy, by the <a href="/sdd/" target="_blank" rel="noopener">Synthetic Data Designer</a>. ${j.shared_with_other_packs ? `${j.shared_with_other_packs} match earlier cases.` : "None appears in an earlier test."}` : "Cases the assistant has never seen")}
+        ${line("before", "The assistant as it is today", state("before") === "now" ? `${j.done} of ${j.total} memos` : "Writes a memo for every case; each is checked against the rules")}
+        ${line("after", "The assistant with the change", state("after") === "now" ? `${j.done} of ${j.total} memos` : "The same cases, with the figures your systems calculate")}
+        ${line("compare", "The two side by side", "Case by case: did the change help, and did anything get worse?")}
+      </ol>${foot}</div>`;
+    const stop = document.getElementById("stop");
+    if (stop) stop.onclick = async () => { if (confirm("Stop this re-test?")) { stop.disabled = true; await api(`/api/run/${enc(jobId)}/cancel`, {}); } };
+    if (j.status === "running") pollTimer = setTimeout(tick, 2000);
+  };
+  tick();
 }
 
 // ----------------------------------------------------------------- earlier tests
@@ -674,6 +856,12 @@ async function viewHistory() {
   };
 }
 
+const WORDS_VERDICT = {
+  ACCEPT: ["The change helped, and nothing got worse"],
+  REJECT: ["The change made something worse"],
+  INCONCLUSIVE: ["Something may have got worse. Not safe to accept yet"],
+  "NO EFFECT": ["No clear difference"],
+};
 const COMPARE = {
   ACCEPT: ["The change helped, and nothing got worse", "b-green"],
   REJECT: ["The change made something worse", "b-red"],
@@ -692,7 +880,9 @@ async function viewCompare(before, after) {
     <a class="link back" href="#/history">${ICON.back}Earlier tests</a>
     <section class="card stack mid"><span class="badge big ${cls}">${esc(words)}</span>
       <h1 style="font-size:30px">${esc(shortDate(c.before.finished_at))} compared with ${esc(shortDate(c.after.finished_at))}</h1>
-      ${c.changed.length ? `<p class="muted">What changed between the two: ${c.changed.map((x) => esc(x.what)).join(", ")}.</p>` : ""}
+      ${c.changed.filter((x) => x.what === "assistant setup").map((x) => `<p><b>The change:</b> ${esc(SETUP[x.before] || x.before)} → ${esc(SETUP[x.after] || x.after)}.</p>`).join("")}
+      ${c.changed.some((x) => x.what === "pack") ? "" : `<p class="muted">Both on the same cases${packSeed(c.after.pack) ? `: new set #${packSeed(c.after.pack)}, never used before` : ""}, compared case by case.</p>`}
+      ${c.changed.filter((x) => !["assistant setup", "engine commit"].includes(x.what)).length ? `<p class="muted small">Also different between the two: ${c.changed.filter((x) => !["assistant setup", "engine commit"].includes(x.what)).map((x) => esc(x.what)).join(", ")}.</p>` : ""}
       ${c.warnings.map((w) => `<p class="note-box amber small">${esc(w)}</p>`).join("")}</section>
     <section class="card"><table><thead><tr><th>Check</th><th>Before</th><th>After</th><th>Change</th></tr></thead><tbody>
       ${c.checks.map((k) => `<tr><td>${esc(CHECK[k.check] || k.check)}</td><td>${p(k.before)}</td><td>${p(k.after)}</td>
@@ -710,12 +900,14 @@ async function route() {
   const parts = location.hash.replace(/^#\/?/, "").split("/").map(decodeURIComponent);
   try {
     if (!parts[0]) return await viewHome();
-    if (parts[0] === "new") return await viewNew();
+    if (parts[0] === "new") return await viewNew(parts[1]);
+    if (parts[0] === "cases") return await viewCases();
     if (parts[0] === "running" && parts[1]) return await viewRunning(parts[1]);
     if (parts[0] === "result" && parts[1]) return await viewResult(parts[1]);
     if (parts[0] === "review" && parts[1] && parts[2] === "memo") return await viewMemo(parts[1], parts.slice(3).join("/"));
     if (parts[0] === "review" && parts[1]) return await viewQueue(parts[1]);
     if (parts[0] === "improve" && parts[1]) return await viewImprove(parts[1]);
+    if (parts[0] === "retest" && parts[1]) return await viewRetest(parts[1]);
     if (parts[0] === "history") return await viewHistory();
     if (parts[0] === "compare" && parts[2]) return await viewCompare(parts[1], parts[2]);
     location.hash = "#/";

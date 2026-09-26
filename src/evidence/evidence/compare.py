@@ -49,6 +49,7 @@ WATCHED = [
     ("assistant prompt version", ("sut", "prompt_version")),
     ("assistant parameters", ("sut", "params")),
     ("assistant model fingerprint", ("models", "assistant", "fingerprint")),
+    ("assistant setup", ("setup",)),
     ("judge model", ("judge", "model_id")),
     ("judge model fingerprint", ("models", "judge", "fingerprint")),
     ("repeats", ("repeats",)),
@@ -144,8 +145,12 @@ def compare_runs(before: Path, after: Path) -> dict[str, Any]:
                else "INCONCLUSIVE" if "possibly_worse" in statuses
                else "ACCEPT" if "improved" in statuses else "NO EFFECT")
 
-    changed = [{"what": label, "before": _get(ma, path), "after": _get(mb, path)}
-               for label, path in WATCHED if _get(ma, path) != _get(mb, path)]
+    def seen(m: dict[str, Any], path: tuple[str, ...]) -> Any:
+        v = _get(m, path)
+        return "as_is" if path == ("setup",) and v is None else v  # runs before setups
+
+    changed = [{"what": label, "before": seen(ma, path), "after": seen(mb, path)}
+               for label, path in WATCHED if seen(ma, path) != seen(mb, path)]
 
     ca = {c["cause"]: c["results"] for c in diagnose(ra)["causes"]}
     cb = {c["cause"]: c["results"] for c in diagnose(rb)["causes"]}
@@ -155,9 +160,11 @@ def compare_runs(before: Path, after: Path) -> dict[str, Any]:
 
     return {
         "before": {"run_id": ma["run_id"], "sut": _get(ma, ("sut", "model_id")),
-                   "finished_at": ma.get("finished_at")},
+                   "finished_at": ma.get("finished_at"), "pack": _get(ma, ("pack", "pack_id")),
+                   "setup": ma.get("setup", "as_is")},
         "after": {"run_id": mb["run_id"], "sut": _get(mb, ("sut", "model_id")),
-                  "finished_at": mb.get("finished_at")},
+                  "finished_at": mb.get("finished_at"), "pack": _get(mb, ("pack", "pack_id")),
+                  "setup": mb.get("setup", "as_is")},
         "rule": rule,
         "verdict": verdict,
         "changed": changed,

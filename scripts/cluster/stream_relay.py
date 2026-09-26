@@ -23,6 +23,12 @@ port + 2 and stops it with them.
 
     python3 stream_relay.py --upstream http://127.0.0.1:8201 --port 8203
 
+More than one judge server: list the others, one URL per line, in the upstreams
+file (``--upstreams-file``, default ``~/.config/stream-relay/upstreams``). The
+file is read again whenever it changes, so a second judge joins without a restart.
+Requests take turns across the servers; one that refuses a connection is left out
+for ``DOWN_S`` seconds.
+
 Standard library only: the node has Python 3 and nothing else.
 """
 
@@ -30,7 +36,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -39,6 +47,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 TIMEOUT = 900  # an agent turn with a long context can take minutes
+DOWN_S = 30  # a server that refused a connection is skipped this long
+DEFAULT_UPSTREAMS_FILE = "~/.config/stream-relay/upstreams"
 _OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # never via a proxy
 
 
@@ -107,8 +117,55 @@ def reassemble(stream: bytes) -> dict[str, Any]:
             "tool_calls": [calls[k] for k in sorted(calls)], "finish_reason": finish}
 
 
-def make_handler(upstream: str, log=print) -> type[BaseHTTPRequestHandler]:
-    upstream = upstream.rstrip("/")
+class Upstreams:
+    """The judge servers behind the relay: the one given on the command line and any
+    listed in the upstreams file. Each request starts at the next server in turn."""
+
+    def __init__(self, primary: str, file: str | None = None) -> None:
+        self.primary = primary.rstrip("/")
+        self.file = os.path.expanduser(file) if file else None
+        self._seen: float | None = None
+        self._extra: list[str] = []
+        self._next = 0
+        self._down: dict[str, float] = {}
+        self._lock = threading.Lock()
+
+    def all(self) -> list[str]:
+        if self.file:
+            try:
+                changed = os.stat(self.file).st_mtime
+            except OSError:
+                changed = None
+            if changed != self._seen:
+                self._seen = changed
+                self._extra = [] if changed is None else [
+                    x.strip().rstrip("/") for x in open(self.file, encoding="utf-8")
+                    if x.strip() and not x.lstrip().startswith("#")]
+        return [self.primary] + [u for u in self._extra if u != self.primary]
+
+    def order(self) -> list[str]:
+        """Every server, starting with the next in turn; those marked down go last."""
+        with self._lock:
+            ups = self.all()
+            self._next = (self._next + 1) % len(ups)
+            turn = ups[self._next:] + ups[:self._next]
+            now = time.time()
+            return ([u for u in turn if self._down.get(u, 0) <= now]
+                    + [u for u in turn if self._down.get(u, 0) > now])
+
+    def mark_down(self, url: str) -> None:
+        with self._lock:
+            self._down[url] = time.time() + DOWN_S
+
+
+def _refused(e: BaseException) -> bool:
+    """The server is not there: safe to send the request to another one."""
+    reason = getattr(e, "reason", e)
+    return isinstance(reason, (ConnectionRefusedError, ConnectionResetError))
+
+
+def make_handler(upstream: str | Upstreams, log=print) -> type[BaseHTTPRequestHandler]:
+    ups = upstream if isinstance(upstream, Upstreams) else Upstreams(upstream)
 
     class Relay(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.0"  # one response per connection; the stream ends at close
@@ -123,12 +180,29 @@ def make_handler(upstream: str, log=print) -> type[BaseHTTPRequestHandler]:
             self.end_headers()
             self.wfile.write(body)
 
+        def _open(self, method: str, data: bytes | None,
+                  headers: dict[str, str]) -> Any:
+            """Open the request on the next server in turn, moving on from one that is not
+            there. An HTTP error is the server's answer and is returned, not retried."""
+            last: BaseException | None = None
+            for url in ups.order():
+                req = urllib.request.Request(url + self.path, data=data, method=method,
+                                             headers=headers)
+                try:
+                    return _OPENER.open(req, timeout=TIMEOUT)
+                except urllib.error.HTTPError:
+                    raise
+                except (urllib.error.URLError, OSError) as e:
+                    last = e
+                    if not _refused(e):
+                        raise
+                    ups.mark_down(url)
+            raise urllib.error.URLError(f"no judge server answered: {last}")
+
         def _forward(self, method: str, data: bytes | None) -> None:
             """Pass the request through, streaming the response as it arrives."""
-            req = urllib.request.Request(upstream + self.path, data=data, method=method,
-                                         headers=self._headers())
             try:
-                resp = _OPENER.open(req, timeout=TIMEOUT)
+                resp = self._open(method, data, self._headers())
             except urllib.error.HTTPError as e:
                 resp = e
             except (urllib.error.URLError, OSError) as e:
@@ -160,7 +234,8 @@ def make_handler(upstream: str, log=print) -> type[BaseHTTPRequestHandler]:
             t0, self.status, how = time.time(), 0, "pass"
             try:
                 if self.path == "/relay/health":
-                    self._send(200, json.dumps({"ok": True, "upstream": upstream}).encode(),
+                    self._send(200, json.dumps({"ok": True, "upstream": ups.primary,
+                                                "upstreams": ups.all()}).encode(),
                                "application/json")
                     self.status = 200
                     return
@@ -174,12 +249,10 @@ def make_handler(upstream: str, log=print) -> type[BaseHTTPRequestHandler]:
                         body = {}
                 if method == "POST" and needs_relay(body):
                     how = "relay"
-                    req = urllib.request.Request(
-                        upstream + self.path, data=json.dumps(unstreamed(body)).encode(),
-                        method="POST", headers=self._headers() | {"Content-Type":
-                                                                  "application/json"})
                     try:
-                        with _OPENER.open(req, timeout=TIMEOUT) as r:
+                        with self._open("POST", json.dumps(unstreamed(body)).encode(),
+                                        self._headers() | {"Content-Type":
+                                                           "application/json"}) as r:
                             reply = json.loads(r.read())
                     except urllib.error.HTTPError as e:  # the NIM's own error, as it sent it
                         self.status = e.code
@@ -217,10 +290,14 @@ def main() -> None:
                     help="the judge NIM, without /v1")
     ap.add_argument("--host", default="0.0.0.0")
     ap.add_argument("--port", type=int, default=8203)
+    ap.add_argument("--upstreams-file", default=os.environ.get("RELAY_UPSTREAMS_FILE",
+                                                               DEFAULT_UPSTREAMS_FILE),
+                    help="more judge servers, one URL per line (read again when it changes)")
     a = ap.parse_args()
+    ups = Upstreams(a.upstream, a.upstreams_file)
     server = ThreadingHTTPServer((a.host, a.port), make_handler(
-        a.upstream, log=lambda s: print(s, file=sys.stderr, flush=True)))
-    print(f"relay on {a.host}:{a.port} -> {a.upstream}", file=sys.stderr, flush=True)
+        ups, log=lambda s: print(s, file=sys.stderr, flush=True)))
+    print(f"relay on {a.host}:{a.port} -> {', '.join(ups.all())}", file=sys.stderr, flush=True)
     server.serve_forever()
 
 

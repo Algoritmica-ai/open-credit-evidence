@@ -150,10 +150,16 @@ which rules, which cases, and optionally the three-agent panel) and gives the re
 words: what went wrong, what to change, the sealed report as a PDF. **Review** puts the
 flagged memos in three groups (check first, worth a look, probably fine) and asks one
 question per finding: is the memo wrong here? **Improve** settles disagreements, builds the
-feedback pack and starts the re-test. Earlier tests, and comparing two of them, are one click
-away. The full console (packs, corpora, runs, the tamper demo) is at `/advanced/`. A test
-started in the browser runs the panel in the NemoClaw sandbox when `EVIDENCE_PANEL_SSH` is
-set, else directly against the judge endpoint. To start it:
+feedback pack with a fine-tuning handover for the engineering team (training data in chat and
+DPO formats, a starting LoRA configuration, provenance, the acceptance test), shows how good
+the checks and the AI reviewers were, and tests a change on new cases: the assistant as it is
+and with the change, on cases it has never seen, compared case by case. **Case sets** creates
+new cases from the credit policy; the Synthetic Data Designer, which generates them, starts
+with the UI at `/sdd/` (vendored in `src/sdd`, synced by `scripts/sync_sdd.sh`), where the
+`credit_underwriting` recipe can be opened and changed. Earlier tests, and comparing two of
+them, are one click away. The full console (packs, corpora, runs, the tamper demo) is at
+`/advanced/`. A test started in the browser runs the panel in the NemoClaw sandbox when
+`EVIDENCE_PANEL_SSH` is set, else directly against the judge endpoint. To start it:
 
 ```bash
 .venv/bin/pip install -e ".[web]"
