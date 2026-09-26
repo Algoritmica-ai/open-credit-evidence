@@ -10,7 +10,7 @@
 #
 # The node is reached through the login host (pam_slurm_adopt: only a node where
 # the team has a job). The home directory is shared, so the job is copied once.
-# Finished briefings are copied back to the job directory every 30 s while the
+# Finished briefings are copied back to the job directory every 10 s while the
 # panel runs, and once more at the end, whatever happens. A STOP file in the job
 # directory stops the panel in the sandbox at its next turn; what finished comes back.
 set -uo pipefail
@@ -51,7 +51,7 @@ for attempt in 1 2 3; do
     "ssh -o BatchMode=yes $NODE 'bash -l ~/$REMOTE/panel_in_sandbox.sh ~/$REMOTE $MODEL $WORKERS'" &
   pid=$!
   while kill -0 "$pid" 2>/dev/null; do
-    for _ in 1 2 3 4 5 6; do
+    for _ in 1 2; do  # a stop is checked every 5 s, results fetched every 10 s
       kill -0 "$pid" 2>/dev/null || break
       sleep 5
       stop_if_asked

@@ -51,6 +51,14 @@ PANEL_VERSION = "panel-v2"
 # v3: the Challenger gets the case file and every check's evidence in its first message
 # instead of fetching them one tool call at a time; it keeps the calculator and a search.
 PANEL_VERSION_UP_FRONT = "panel-v3"
+# v4: v3 plus reference figures the engine computed exactly from the case file (the ratio,
+# the limits, the score, the file's age), so the Challenger compares instead of computing.
+PANEL_VERSION_FIGURES = "panel-v4"
+FIGURES_NOTE = (
+    "\n\nREFERENCE FIGURES are given below the case file: the engine computed them exactly "
+    "from the case file, and they are correct. Compare every figure and every claim about a "
+    "limit, the score, the file's age or missed payments with them. Use calculate only for "
+    "a figure they do not cover.")
 FIELDS = ("intelligible", "actionable", "overridable")
 MAX_PER_FIELD = 2
 # Model turns per agent, tool rounds included. The Challenger checks figures one
@@ -297,7 +305,8 @@ def parse_json(text: str, keys: tuple[str, ...]) -> dict[str, Any] | None:
 
 def run_agent(role: str, system: str, user: str, bundle: dict[str, Any], *, call: Chat,
               model: str, keys: tuple[str, ...], tools: list[str] | None = None,
-              steps_max: int | None = None, thinking: bool = True) -> dict[str, Any]:
+              steps_max: int | None = None, thinking: bool = True,
+              think_last: bool = False) -> dict[str, Any]:
     """One agent: model turns and tool rounds until it answers, recorded step by step.
 
     An answer that is empty (the turn's tokens went on reasoning) or not the JSON
@@ -307,7 +316,9 @@ def run_agent(role: str, system: str, user: str, bundle: dict[str, Any], *, call
     """
     tools = ROLE_TOOLS[role] if tools is None else tools
     steps_max = steps_max or MAX_STEPS[role]
-    extra = {} if thinking else {"thinking": False}
+    # think_last: the turns that only fetch or compute run without reasoning; the agent then
+    # thinks once, over everything it has, for its final answer
+    final = False
     messages: list[dict[str, Any]] = [{"role": "system", "content": system},
                                       {"role": "user", "content": user}]
     steps: list[dict[str, Any]] = []
@@ -317,8 +328,10 @@ def run_agent(role: str, system: str, user: str, bundle: dict[str, Any], *, call
             closing = True
             messages.append({"role": "user", "content": "Stop using tools. Give your final "
                              "answer now, as the JSON object asked for."})
+        think = thinking and (not think_last or final or closing)
         reply = call(model=model, messages=messages,
-                     tools=None if closing else (tools or None), json_only=closing, **extra)
+                     tools=None if closing else (tools or None), json_only=closing,
+                     **({} if think else {"thinking": False}))
         msg = (reply.get("choices") or [{}])[0].get("message") or {}
         calls = msg.get("tool_calls") or []
         step: dict[str, Any] = {"latency_ms": reply.get("_latency_ms"), "usage": reply.get(
@@ -343,7 +356,17 @@ def run_agent(role: str, system: str, user: str, bundle: dict[str, Any], *, call
             continue
         text = msg.get("content") or ""
         step["reply"] = text[:6000]
+        step["thinking"] = think
         steps.append(step)
+        if think_last and thinking and not (final or closing):  # now the one thinking turn
+            if text:
+                messages.append({"role": "assistant", "content": text})
+            messages.append({"role": "user", "content": "Check each finding once more against "
+                             "the reference figures and the case file: drop what does not hold, "
+                             "add what is missing. Give your final answer: the JSON object "
+                             "asked for, and nothing else."})
+            final = closing = True
+            continue
         parsed = parse_json(text, keys)
         if parsed is None and not closing:  # empty or malformed: one constrained turn
             if text:
@@ -400,7 +423,8 @@ def checks_block(bundle: dict[str, Any]) -> str:
 
 
 def run_panel(bundle: dict[str, Any], *, call: Chat, models: dict[str, str],
-              up_front: bool = False, thinking: dict[str, bool] | None = None) -> dict[str, Any]:
+              up_front: bool = False, thinking: dict[str, bool] | None = None,
+              figures: bool = False, think_last: bool = False) -> dict[str, Any]:
     """The three agents on one briefing, and the panel's record. ``up_front`` gives the
     Challenger the case file and the checks' evidence at the start (panel-v3); ``thinking``
     turns a role's model reasoning off where it says False."""
@@ -416,13 +440,16 @@ def run_panel(bundle: dict[str, Any], *, call: Chat, models: dict[str, str],
         reading = both.submit(run_agent, "reader", READER + regulation, briefing, bundle,
                               call=call, model=models["reader"],
                               keys=("intelligible", "actionable"), thinking=think["reader"])
-        if up_front:
+        figs = bundle.get("figures") if figures else None
+        if up_front or figs:
             challenging = both.submit(
-                run_agent, "challenger", CHALLENGER_UP_FRONT,
+                run_agent, "challenger", CHALLENGER_UP_FRONT + (FIGURES_NOTE if figs else ""),
                 f"{briefing}\n\nCASE FILE:\n{bundle.get('case_file', '')}\n\n"
-                f"DETERMINISTIC CHECKS (verdict, detail, evidence):\n{checks_block(bundle)}",
+                + (f"REFERENCE FIGURES:\n{figs}\n\n" if figs else "")
+                + f"DETERMINISTIC CHECKS (verdict, detail, evidence):\n{checks_block(bundle)}",
                 bundle, call=call, model=models["challenger"], keys=("findings",),
-                tools=UP_FRONT_TOOLS, steps_max=UP_FRONT_STEPS, thinking=think["challenger"])
+                tools=UP_FRONT_TOOLS, steps_max=UP_FRONT_STEPS, thinking=think["challenger"],
+                think_last=think_last)
         else:
             challenging = both.submit(run_agent, "challenger", CHALLENGER,
                                       f"{briefing}\n\nCHECKS RUN ON THIS BRIEFING:\n{listed}",
@@ -449,7 +476,7 @@ def run_panel(bundle: dict[str, Any], *, call: Chat, models: dict[str, str],
     disputed_all = [d for d in ch.get("checks_disputed") or [] if isinstance(d, dict)]
     # a verdict on a check counts only if the Challenger read that check's evidence: in v3
     # every check's evidence is in its first message
-    read = set(names) if up_front else {
+    read = set(names) if (up_front or figs) else {
         str((c.get("arguments") or {}).get("name")) for s in challenger["steps"]
         for c in s.get("tool_calls", []) if c.get("name") == "check_result"}
     confirmed = sorted({x for x in said if x in names and x in read})
@@ -461,7 +488,9 @@ def run_panel(bundle: dict[str, Any], *, call: Chat, models: dict[str, str],
                       | {str(d.get("name")) for d in disputed_all if d.get("name") not in names})
     return {
         "item_id": bundle["item_id"], "repeat": bundle["repeat"],
-        "panel": PANEL_VERSION_UP_FRONT if up_front else PANEL_VERSION,
+        "panel": (PANEL_VERSION_FIGURES if figs else PANEL_VERSION_UP_FRONT if up_front
+                  else PANEL_VERSION),
+        **({"think_last": True} if think_last else {}),
         **({"thinking_off": sorted(r for r, on in think.items() if not on)}
            if not all(think.values()) else {}),
         "value": (round(sum(scores.values()) / (MAX_PER_FIELD * len(scores)), 3)
@@ -487,7 +516,8 @@ def run_many(bundles: list[dict[str, Any]], *, call: Chat, models: dict[str, str
              write: Callable[[dict[str, Any]], None] = lambda r: None,
              log: Callable[[str], None] = print,
              should_stop: Callable[[], bool] | None = None, up_front: bool = False,
-             thinking: dict[str, bool] | None = None) -> list[dict[str, Any]]:
+             thinking: dict[str, bool] | None = None, figures: bool = False,
+             think_last: bool = False) -> list[dict[str, Any]]:
     """The panel on every bundle not already done, a few at a time; each record written as
     it finishes, so an interrupted run resumes. Once ``should_stop`` says so, no briefing
     starts and those in progress are dropped at their next turn; what finished is kept."""
@@ -505,7 +535,7 @@ def run_many(bundles: list[dict[str, Any]], *, call: Chat, models: dict[str, str
             return None
         try:
             return run_panel(b, call=guarded, models=models, up_front=up_front,
-                             thinking=thinking)
+                             thinking=thinking, figures=figures, think_last=think_last)
         except Stopped:
             return None
         except (urllib.error.URLError, OSError, ValueError) as e:
@@ -546,7 +576,11 @@ def main(argv: list[str] | None = None) -> int:
                     "--out)")
     ap.add_argument("--fetch-evidence", dest="up_front", action="store_false",
                     help="panel-v2: the Challenger fetches the case file and each check's "
-                    "evidence with tools (default: given up front, panel-v3)")
+                    "evidence with tools (default: given up front, with reference figures)")
+    ap.add_argument("--no-figures", dest="figures", action="store_false",
+                    help="panel-v3: no reference figures for the Challenger")
+    ap.add_argument("--think-throughout", dest="think_last", action="store_false",
+                    help="the Challenger reasons on every turn (default: once, for its answer)")
     a = ap.parse_args(argv)
     stop_file = a.stop_file or os.path.join(os.path.dirname(os.path.abspath(a.out)), "STOP")
     models = {r: getattr(a, f"{r}_model") or a.model for r in ("reader", "challenger",
@@ -571,7 +605,8 @@ def main(argv: list[str] | None = None) -> int:
 
         run_many(bundles, call=call, models=models, workers=a.workers, done=done, write=write,
                  log=lambda s: print(s, file=sys.stderr, flush=True),
-                 should_stop=lambda: os.path.exists(stop_file), up_front=a.up_front)
+                 should_stop=lambda: os.path.exists(stop_file), up_front=a.up_front,
+                 figures=a.up_front and a.figures, think_last=a.think_last)
     return 0
 
 

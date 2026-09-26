@@ -444,6 +444,7 @@ async function viewResult(id) {
     <section class="card stack mid" style="padding:32px 36px">${verdictBadge(dec.verdict, true)}
       <h1 style="font-size:34px;max-width:900px">${esc(lead)}</h1>
       <p class="muted" style="font-size:17px;max-width:900px">${esc(support)}</p>
+      ${p && p.complete === false && p.planned ? `<p class="note-box amber small">The AI reviewers have answered ${p.answered} of ${p.planned} memos so far; the rest are being reviewed now. Reload this page in a few minutes for the full second opinion.</p>` : ""}
       <div class="row wrap" style="gap:12px;margin-top:6px">
         ${flagged ? `<a class="btn primary large" href="#/review/${enc(id)}">Review the ${flagged} flagged memos${ICON.arrow}</a>` : ""}
         <a class="btn large" href="/api/runs/${enc(id)}/pdf/business">${ICON.down}Download the sealed report (PDF)</a></div></section>
