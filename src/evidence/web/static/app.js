@@ -753,18 +753,6 @@ function factsPanel(facts, groups, cards) {
     ${Object.entries(groups || {}).map(([g, name]) => { const list = facts.filter((f) => f.group === g); return list.length ? `<div class="factgroup"><span class="small" style="font-weight:700">${esc(name)}</span><div class="factgrid">${list.map(cell).join("")}</div></div>` : ""; }).join("")}</section>`;
 }
 
-function appNav(id, memos, current, status) {
-  // Every application in the test, by lane, to move between them. status(m) gives a short tag.
-  const groups = ["red", "amber", "green"].map((lane) => {
-    const list = memos.filter((m) => m.lane === lane);
-    if (!list.length) return "";
-    return `<div class="navgroup"><p class="eyebrow row" style="gap:6px"><span class="lane-dot small ld-${lane}" aria-hidden="true"></span>${LANE[lane][0]} <span class="muted">${list.filter((m) => m.reviewed).length}/${list.length}</span></p>
-      ${list.map((m) => { const tag = status(m); return `<a class="navitem${m.memo === current ? " on" : ""}" href="#/review/${enc(id)}/memo/${enc(m.memo)}"${m.memo === current ? ' aria-current="page"' : ""}>
-        <span class="grow">${esc(m.case)} <span class="muted">· ${m.repeat + 1}</span></span>${tag}</a>`; }).join("")}</div>`;
-  }).join("");
-  return `<nav class="appnav hide-md" aria-label="Applications"><p class="small" style="font-weight:700;margin-bottom:8px">Applications</p>${groups}</nav>`;
-}
-
 async function viewMemo(id, memo) {
   const [m, q, ov] = await Promise.all([api(`/api/review/${enc(id)}/memo?memo=${enc(memo)}`), api(`/api/review/${enc(id)}`), overview(id)]);
   renderSteps(ov, "review");
@@ -1020,97 +1008,169 @@ async function viewImprove(id) {
     api(`/api/review/${enc(id)}`), api(`/api/review/${enc(id)}/adjudication`), overview(id),
     api(`/api/review/${enc(id)}/feedback/manifest.json`).catch(() => null), api(`/api/runs/${enc(id)}`),
   ]);
-  const d_model = (d.manifest.sut || {}).model_id || "the assistant's model";
-  const ruling = new Set(adj.map((x) => x.memo));
-  const awaiting = new Set((fb && fb.memos_awaiting_correction) || []);
-  const improveTag = (x) => (ruling.has(x.memo) ? '<span class="badge b-amber navbadge">Ruling</span>'
-    : awaiting.has(x.memo) ? '<span class="badge b-blue navbadge">Correct</span>'
-    : x.reviewed ? `<span class="navtick" title="Reviewed">${ICON.check}</span>` : "");
-  const fixable = (d.recommendations || []).find((r) => r.cause === "miscalculated" || r.cause === "misread_threshold") || null;
-  const ev = q.evaluator || { panel: {}, rule_checks: {} };
   renderSteps(ov, "improve");
   page("");
-  const s = q.summary;
+  const s = q.summary, st = ov.stages, ev = q.evaluator || { panel: {}, rule_checks: {} };
+  const fix = q.to_correct || [];
+  const spots = fix.reduce((n, m) => n + m.spots.length, 0);
+  const model = (d.manifest.sut || {}).model_id || "the assistant's model";
+  const fixable = (d.recommendations || []).find((r) => r.cause === "miscalculated" || r.cause === "misread_threshold") || null;
   const canBuild = !adj.length && s.settled > 0;
+  const stale = !!(fb && q.last_change && q.last_change > fb.built_at);
+  const memoLink = (memo, words) => `<a href="#/review/${enc(id)}/memo/${enc(memo)}">${esc(words)}</a>`;
+  const runWords = (memo) => { const m = q.memos.find((x) => x.memo === memo); return m ? `${m.case} · run ${m.repeat + 1}` : caseOf(memo); };
+
+  // The five steps, and where each stands: done, next (the one to do now) or waiting.
+  const steps = [
+    { key: "settle", title: "Settle disagreements", done: s.reviewed > 0 && !adj.length, open: adj.length },
+    { key: "correct", title: "Write the corrections", done: s.reviewed > 0 && !spots, open: fix.length },
+    // a pack built before the last corrections or rulings is out of date: build it again
+    { key: "build", title: "Build the feedback pack", done: !!fb && !adj.length && !spots && !stale, open: 0 },
+    { key: "handover", title: "Hand over for fine-tuning", done: !!(fb && fb.handover) && !adj.length && !spots && !stale, open: 0 },
+    { key: "prove", title: "Prove the fix on new cases", done: false, open: 0 },
+  ];
+  const nextStep = !s.reviewed ? null : steps.find((x) => !x.done) || null;
+  const state = (x) => (x.done ? "done" : nextStep && nextStep.key === x.key ? "next" : "todo");
+  const dot = (x, n) => (state(x) === "done" ? `<span class="dot big done">${ICON.check}</span>` : `<span class="dot big ${state(x) === "next" ? "fill" : "todo"}">${n}</span>`);
+  const head = (x, n, extra) => `<div class="row" style="gap:12px">${dot(x, n)}<h2 style="font-size:21px">${x.title}</h2>
+      ${state(x) === "next" ? '<span class="badge b-blue" style="margin-left:auto">Do this next</span>' : x.done ? '<span class="small muted" style="margin-left:auto">Done</span>' : ""}${extra || ""}</div>`;
+
+  const headline = !s.reviewed ? "Nothing to improve from yet: no memo has been reviewed."
+    : adj.length ? `${plural(adj.length, "disagreement needs", "disagreements need")} a decision before the feedback pack can be built.`
+    : spots ? `${plural(fix.length, "memo needs its", "memos need their")} corrected wording before ${fix.length === 1 ? "it can teach" : "they can teach"} the assistant.`
+    : !fb ? "Everything is settled. Build the feedback pack for the model team."
+    : "The feedback pack is ready for the model team.";
+  const nextBtn = !s.reviewed ? `<a class="btn primary large" href="#/review/${enc(id)}">Go to Review${ICON.arrow}</a>`
+    : nextStep ? `<a class="btn primary large" href="#step-${nextStep.key}" data-jump="${nextStep.key}">${nextStep.title}${ICON.arrow}</a>` : "";
+  const partial = s.reviewed && st.flagged_checked < st.flagged
+    ? `<p class="note-box small">You have checked ${st.flagged_checked} of ${st.flagged} flagged memos. The pack can be built from what is checked so far, and built again as you check more. <a href="#/review/${enc(id)}">Continue the review</a></p>` : "";
+
+  const tile = (big, title, text, bad) => `<div class="card stack" style="gap:4px;padding:20px"><span class="small muted" style="font-weight:600">${title}</span>
+      <span style="font-size:30px;font-weight:700${bad ? ";color:var(--red)" : ""}">${big}</span><span class="small muted">${text}</span></div>`;
+  const trust = s.reviewed ? `<div class="stack tight"><h2 style="font-size:21px">Can the review be trusted?</h2>
+      <p class="small muted">Every test case has a known right answer, so the review itself is checked.</p></div>
+    <div class="grid3">
+      ${tile(s.known_answer_verdicts ? `${pct(s.agree_with_known_answer, s.known_answer_verdicts)}%` : "—", "Answers that match the known answer",
+        s.known_answer_verdicts ? `${s.agree_with_known_answer} of ${s.known_answer_verdicts} answers on findings the rule checks are sure of.` : "None of the answered findings has a known answer yet.")}
+      ${tile(s.automation_bias_memos, "Mistakes waved through", `${s.automation_bias_memos === 1 ? "Memo" : "Memos"} passed as right although ${s.automation_bias_memos === 1 ? "it has" : "they have"} a known mistake. Above zero means people trust the machine too much.`, s.automation_bias_memos > 0)}
+      ${tile(ev.panel.flags_on_rule_clean_memos_reviewed ? `${ev.panel.problems_the_rules_missed} <span style="font-size:17px;font-weight:600">real</span> · ${ev.panel.false_alarms} <span style="font-size:17px;font-weight:600">false</span>` : "—", "What the AI reviewers raised beyond the rules",
+        ev.panel.flags_on_rule_clean_memos_reviewed ? `Of ${ev.panel.flags_on_rule_clean_memos_reviewed} flags on memos that passed every rule check: real problems the rules missed, and false alarms.` : "Check memos in Worth a look to see whether their flags are real.")}
+    </div>` : "";
+
+  const settle = `<section class="card stack mid" id="step-settle">${head(steps[0], 1, adj.length ? `<span class="badge b-amber">${adj.length} left</span>` : "")}
+      <p class="small muted">Where a reviewer disagreed with the machine, was not sure, or found a problem of their own, someone from model risk decides who is right. Only settled answers go into the pack.</p>
+      ${adj.length ? adj.map((x) => `<div class="settle" data-v="${esc(x.verdict_id)}">
+          <div class="row wrap" style="justify-content:space-between;gap:8px"><b>${memoLink(x.memo, runWords(x.memo))}</b><span class="tiny muted">Reviewed by ${esc(x.reviewer)}</span></div>
+          <div class="grid2" style="gap:12px">
+            <div class="stack tight"><span class="tiny muted">The machine found</span><span>${x.verdict.action === "raise" ? '<span class="muted">Nothing here</span>' : esc(x.card.problem)}</span></div>
+            <div class="stack tight"><span class="tiny muted">The reviewer said</span><span>${esc(ACTION_WORDS[x.verdict.action] || x.verdict.action)}${x.verdict.action === "raise" ? `: ${esc(x.card.problem)}` : ""}${x.verdict.reason ? ` · “${esc(REASON[x.verdict.reason] || x.verdict.reason)}”` : ""}</span></div></div>
+          ${x.card.sentence ? `<p class="small muted" style="border-left:3px solid var(--line);padding-left:10px">“${esc(x.card.sentence)}”</p>` : ""}
+          <div class="row wrap" style="gap:8px"><span class="small" style="font-weight:600">Who is right?</span><button class="btn small" data-d="uphold">The reviewer</button><button class="btn small" data-d="reject">${x.verdict.action === "raise" ? "It is not a problem" : "The machine"}</button></div></div>`).join("")
+        : `<p class="small">${s.reviewed ? "Nothing to settle: every answer agrees with the machine or with the known answer." : "Nothing yet."}</p>`}</section>`;
+
+  const correct = `<section class="card stack mid" id="step-correct">${head(steps[1], 2, spots ? `<span class="badge b-amber">${plural(fix.length, "memo")}</span>` : "")}
+      <p class="small muted">A confirmed mistake teaches the assistant only once someone writes how the memo should have read. Write it here: the assistant is trained on the corrected memo.</p>
+      ${fix.length ? fix.map((m) => `<div class="stack tight fixmemo"><b>${memoLink(m.memo, `${m.case} · run ${m.repeat + 1}`)}</b>
+          ${m.spots.map((sp, k) => `<div class="fixspot stack tight" data-memo="${esc(m.memo)}" data-cards="${esc(sp.card_ids.join(" "))}">
+            ${sp.problems.map((pr) => `<span class="small" style="color:var(--red)">${esc(pr)}</span>`).join("")}
+            ${sp.sentence ? `<p class="small" style="border-left:3px solid var(--mark-line);padding-left:10px;background:var(--mark)">Now: “${esc(sp.sentence)}”</p>` : ""}
+            <label class="small" for="fx-${esc(m.memo)}-${k}"><b>${sp.sentence ? "How should it read?" : "What should the memo add?"}</b></label>
+            <textarea id="fx-${esc(m.memo)}-${k}" placeholder="${sp.sentence ? "The sentence as it should read" : "The missing point, in a sentence"}">${sp.sentence ? esc(sp.sentence) : ""}</textarea>
+            <div class="row" style="gap:10px"><button class="btn small primary" data-save>Save correction</button><span class="small" data-msg></span></div></div>`).join("")}</div>`).join("")
+        : `<p class="small">${s.reviewed ? "Every confirmed mistake has its corrected wording." : "Nothing yet."}</p>`}</section>`;
+
   const c = fb ? fb.counts : null;
-  const n = (k) => (c ? c[k] : "—");
-  const content = (count, title, text) => `<div class="stack" style="gap:4px;padding:16px;border:1px solid var(--line-2);border-radius:12px">
-    <span style="font-size:26px;font-weight:700">${count}</span><span style="font-weight:600">${title}</span><span class="tiny muted">${text}</span></div>`;
+  const count = (k) => (c ? c[k] : "—");
+  const small = (n, title, text) => `<div class="stack" style="gap:2px;padding:14px;border:1px solid var(--line-2);border-radius:12px"><span style="font-size:24px;font-weight:700">${n}</span><span class="small" style="font-weight:600">${title}</span><span class="tiny muted">${text}</span></div>`;
+  const dl = (f, words) => `<a class="btn small" href="/api/review/${enc(id)}/feedback/${f}">${ICON.down}${words}</a>`;
+  const build = `<section class="card stack mid" id="step-build">${head(steps[2], 3)}
+      <p class="small muted">Everything settled becomes one sealed pack${fb ? `, last built ${esc(when(fb.built_at))}` : ""}. It holds no customer data, and its fingerprint shows any later change.</p>
+      <div class="grid4">
+        ${small(count("sft.jsonl"), "Corrected memos", "Each memo as it should have been written.")}
+        ${small(count("preferences.jsonl"), "Before-and-after pairs", "The original beside the correction.")}
+        ${small(count("judge_labels.jsonl"), "Confirmed findings", "What counts as a real mistake.")}
+        ${small(count("check_fixes.jsonl"), "Rule-check fixes", "Where a rule check was itself wrong.")}</div>
+      ${fb && (spots || stale) ? `<p class="note-box amber small">${spots ? `${plural(fix.length, "memo is", "memos are")} left out of this pack until ${fix.length === 1 ? "its correction is" : "their corrections are"} written. Then build it again.` : "Answers, rulings or corrections have changed since it was built. Build it again so the pack has them."}</p>` : ""}
+      <div class="row wrap" style="gap:12px"><button class="btn ${state(steps[2]) === "next" || (fb && spots === 0 && !steps[2].done) ? "primary " : ""}" id="build" ${canBuild ? "" : "disabled"}>${fb ? "Build it again" : "Build the feedback pack"}</button>
+        <span class="small muted" id="bmsg">${canBuild ? (spots ? `${plural(fix.length, "memo")} without corrected wording will be left out.` : "") : adj.length ? `Once the ${plural(adj.length, "disagreement")} ${adj.length === 1 ? "is" : "are"} settled.` : "Once memos have been reviewed."}</span></div>
+      ${fb ? `<details><summary class="small">The files in the pack</summary><div class="row wrap" style="gap:8px;margin-top:10px">${dl("sft.jsonl", "Corrected memos")}${dl("preferences.jsonl", "Before-and-after pairs")}${dl("judge_labels.jsonl", "Confirmed findings")}${dl("check_fixes.jsonl", "Rule-check fixes")}${dl("manifest.json", "Contents and fingerprints")}</div></details>` : ""}</section>`;
+
+  const handover = `<section class="card stack mid" id="step-handover">${head(steps[3], 4)}
+      <p class="small muted">One zip for the engineering team that fine-tunes the assistant (${esc(model)}): the corrected memos in training formats${fb && fb.handover ? ` (${fb.handover.counts.sft_train} for training, ${fb.handover.counts.sft_validation} for checking, ${fb.handover.counts.dpo} before-and-after pairs)` : ""}, the confirmed findings, a starting configuration, and a README that says where every row came from and how the tuned model will be accepted.</p>
+      ${fb && fb.handover ? `<a class="btn primary" href="/api/review/${enc(id)}/handover.zip" style="align-self:flex-start">${ICON.down}Download the handover (zip)</a>` : '<p class="small muted">Available once the feedback pack is built.</p>'}</section>`;
+
+  const prove = `<section class="card stack mid" id="step-prove">${head(steps[4], 5)}
+      <p class="small muted">A change is accepted only when it helps on cases the assistant has never seen. We generate new cases, run the assistant as it is and with the change on the same cases, and put the two side by side.</p>
+      <div class="grid2" style="gap:12px">
+        <div class="stack tight" style="padding:16px;border:1px solid var(--line-2);border-radius:12px"><b>A change your team can make today</b>
+          ${fixable ? `<span class="small">${esc(fixable.title)}.</span><span class="small muted">Could fix up to ${plural(fixable.addresses.briefings, "memo")} in this test.</span>
+            <button class="btn primary small" id="retest" style="align-self:flex-start;margin-top:6px">Test this change on new cases</button><span class="small error" id="rmsg"></span>`
+            : '<span class="small muted">This test points to no change your team can make without the vendor.</span>'}</div>
+        <div class="stack tight" style="padding:16px;border:1px solid var(--line-2);border-radius:12px"><b>The fine-tuned model, when it comes back</b>
+          <span class="small muted">Run a new test on new cases with the tuned model, then compare it with this test in Earlier tests.</span>
+          <div class="row wrap" style="gap:8px;margin-top:6px"><a class="btn small" href="#/new">Start a new test</a><a class="btn small" href="#/history">Earlier tests</a></div></div></div></section>`;
+
   const secs = s.seconds_per_memo_by_lane || {};
   const t = (v) => (v == null ? null : v >= 60 ? `${Math.floor(v / 60)} min ${Math.round(v % 60)} s` : `${Math.round(v)} s`);
   const times = ["red", "amber", "green"].filter((l) => secs[l] != null).map((l) => `<li>${LANE[l][0]}: ${t(secs[l])} per memo</li>`).join("");
-  const dl = (f, words) => `<a class="btn small" href="/api/review/${enc(id)}/feedback/${f}">${ICON.down}${words}</a>`;
-  $view.innerHTML = `<div class="row" style="gap:32px;align-items:flex-start">
-    ${appNav(id, q.memos, null, improveTag)}
-    <div class="stack grow">
-      <div class="stack tight"><h1>Improve the assistant</h1>
-        <p class="muted" style="font-size:17px">Your review becomes a feedback pack: the material the model team needs to fix the assistant. Then you test again on new cases to prove the fix worked.</p></div>
-      ${!s.reviewed ? `<div class="note-box amber row wrap"><p class="grow">Nobody has reviewed a memo in this test yet. Start with the review.</p><a class="btn" href="#/review/${enc(id)}">Go to Review</a></div>` : ""}
-      <section class="card stack mid"><div class="row" style="gap:12px"><span class="dot big ${adj.length ? "fill" : "done"}">${adj.length ? "1" : ICON.check}</span><h2>Settle disagreements</h2>
-        ${adj.length ? `<span class="badge b-amber">${adj.length} left</span>` : ""}</div>
-        <p class="small muted">Where a reviewer disagreed with the machine, was unsure, or found a new problem, someone from model risk makes the final call. Only settled answers go into the pack.</p>
-        ${adj.length ? `<table><thead><tr><th>Memo</th><th>The machine found</th><th>The reviewer said</th><th>Who is right?</th></tr></thead><tbody>${adj.map((x) => `<tr data-v="${esc(x.verdict_id)}">
-          <td><a href="#/review/${enc(id)}/memo/${enc(x.memo)}">${esc(caseOf(x.memo))}</a></td>
-          <td>${x.verdict.action === "raise" ? '<span class="muted">Nothing</span>' : esc(x.card.problem)}</td>
-          <td>${esc(ACTION_WORDS[x.verdict.action] || x.verdict.action)}${x.verdict.action === "raise" ? `: ${esc(x.card.problem)}` : ""}${x.verdict.reason ? `<div class="tiny muted">“${esc(REASON[x.verdict.reason] || x.verdict.reason)}”</div>` : ""}<div class="tiny muted">${esc(x.reviewer)}</div></td>
-          <td><div class="row" style="gap:6px"><button class="btn small" data-d="uphold">Reviewer</button><button class="btn small" data-d="reject">${x.verdict.action === "raise" ? "Not a problem" : "Machine"}</button></div></td></tr>`).join("")}</tbody></table>`
-          : `<p class="small">${s.reviewed ? "Nothing to settle." : "Nothing yet."}</p>`}</section>
-      <section class="card stack mid"><div class="row" style="gap:12px"><span class="dot big ${fb ? "done" : canBuild ? "fill" : "todo"}">${fb ? ICON.check : "2"}</span><h2>Build the feedback pack</h2></div>
-        <p class="small muted">What the model team receives${fb ? ` (built ${esc(shortDate(fb.built_at))})` : ""}:</p>
-        <div class="grid2" style="gap:12px">
-          ${content(n("sft.jsonl"), "Corrected memos", "Each memo as it should have been written.")}
-          ${content(n("preferences.jsonl"), "Before-and-after pairs", "The original next to the corrected memo, so the model learns the difference.")}
-          ${content(n("judge_labels.jsonl"), "Confirmed findings", "Teach the AI reviewers what counts as a real mistake.")}
-          ${content(n("check_fixes.jsonl"), "Fixes to the rule checks", "Where a reviewer showed a rule check was itself wrong.")}</div>
-        ${fb && fb.memos_awaiting_correction.length ? `<p class="note-box amber small">${plural(fb.memos_awaiting_correction.length, "memo has", "memos have")} a confirmed mistake but no corrected wording, so ${fb.memos_awaiting_correction.length === 1 ? "it is" : "they are"} not yet a corrected memo. Open ${fb.memos_awaiting_correction.length === 1 ? "it" : "them"} in Review and write how the sentence should read.</p>` : ""}
-        <div class="note-box small"><span style="color:var(--green);display:flex">${ICON.lock}</span><p>No customer data. The pack is sealed with a fingerprint, so any later change shows.</p></div>
-        <div class="row wrap" style="gap:12px"><button class="btn primary large" id="build" ${canBuild ? "" : "disabled"}>${fb ? "Build it again" : "Build feedback pack"}</button>
-          <span class="small muted" id="bmsg">${canBuild ? "" : adj.length ? `Available once the ${plural(adj.length, "disagreement")} ${adj.length === 1 ? "is" : "are"} settled.` : "Available once memos have been reviewed."}</span></div>
-        ${fb ? `<div class="row wrap" style="gap:8px">${dl("sft.jsonl", "Corrected memos")}${dl("preferences.jsonl", "Before-and-after pairs")}${dl("judge_labels.jsonl", "Confirmed findings")}${dl("check_fixes.jsonl", "Rule-check fixes")}${dl("manifest.json", "Contents and fingerprints")}</div>` : ""}</section>
-      ${fb && fb.handover ? `<section class="card stack mid"><div class="row" style="gap:12px"><span class="dot big done">${ICON.check}</span><h2>Hand over for fine-tuning</h2></div>
-        <p class="small muted">One zip for the engineering team that fine-tunes the assistant: the corrected memos in training formats (${fb.handover.counts.sft_train} for training, ${fb.handover.counts.sft_validation} for validation, ${fb.handover.counts.dpo} preference pairs), the finding labels, a starting LoRA configuration for ${esc(d_model)}, and a README that says where every row came from and how the tuned model will be accepted: a re-test on new cases.</p>
-        <a class="btn primary" href="/api/review/${enc(id)}/handover.zip" style="align-self:flex-start">${ICON.down}Download the fine-tuning handover (zip)</a></section>` : ""}
-      <section class="card stack mid"><div class="row" style="gap:12px"><span class="dot big ${fb ? "fill" : "todo"}">3</span><h2>Test a change on new cases</h2></div>
-        <p class="small muted">Prove a change helps before anyone relies on it. We generate cases the assistant has never seen, run the assistant as it is and with the change on those same cases, and put the two side by side.</p>
-        ${fixable ? `<div class="note-box blue stack tight" style="gap:6px"><b>${esc(fixable.title)}</b><span class="small">${esc(fixable.action)}</span><span class="small muted">Your team can make this change today, without the vendor. Could fix up to ${plural(fixable.addresses.briefings, "memo")} in this test.</span></div>
-          <button class="btn primary" id="retest" style="align-self:flex-start">Test this change on new cases</button><span class="small error" id="rmsg"></span>` : ""}
-        <p class="small muted">A fine-tuned model from the engineering team is tested the same way: <a href="#/new">start a test</a> with <b>Generate new cases</b>, then compare it with the current model in <a href="#/history">Earlier tests</a>.</p></section>
-    </div>
-    <aside class="stack hide-sm" style="width:320px;flex-shrink:0;margin-top:8px;gap:16px"><div class="card stack" style="gap:16px"><h2 style="font-size:18px">How reliable was the review?</h2>
-      ${s.known_answer_verdicts ? `<div class="stack" style="gap:2px"><span style="font-size:30px;font-weight:700">${pct(s.agree_with_known_answer, s.known_answer_verdicts)}%</span><span class="small muted">of answers matched the known right answer (${s.agree_with_known_answer} of ${s.known_answer_verdicts})</span></div>
-        <div class="stack" style="gap:2px;padding-top:14px;border-top:1px solid var(--line-2)"><span style="font-size:30px;font-weight:700${s.automation_bias_memos ? ";color:var(--red)" : ""}">${s.automation_bias_memos}</span><span class="small muted">${s.automation_bias_memos === 1 ? "memo was" : "memos were"} approved although ${s.automation_bias_memos === 1 ? "it" : "they"} had a known mistake. A high number means people trust the machine too much.</span></div>
-        ${times ? `<div class="stack tight" style="padding-top:14px;border-top:1px solid var(--line-2)"><span class="small" style="font-weight:600">Time spent</span><ul class="small muted" style="margin:0;padding-left:18px">${times}</ul></div>` : ""}
-        ${s.coach ? `<div class="stack tight" style="padding-top:14px;border-top:1px solid var(--line-2)"><span class="small" style="font-weight:600">The coach</span>
-          <p class="small muted">Used on ${plural(s.coach.memos, "memo")}; ${plural(s.coach.answers_changed, "answer")} changed after its questions.</p>
-          ${s.coach.known_answer_findings ? `<p class="small">Agreement with the known answers: <b>${pct(s.coach.agreed_before_coach, s.coach.known_answer_findings)}%</b> before the coach, <b>${pct(s.coach.agreed_after_coach, s.coach.known_answer_findings)}%</b> after.</p>` : ""}</div>` : ""}`
-        : '<p class="small muted">Shown once memos have been reviewed. Every test case has a known right answer, so each answer can be checked.</p>'}
-    </div>
-    <div class="card stack" style="gap:14px"><h2 style="font-size:18px">How good are the checks and the AI reviewers?</h2>
-      ${ev.panel.memos_with_a_rule_failure != null ? `<p class="small"><b>${ev.panel.flagged_with_a_rule_failure} of ${ev.panel.memos_with_a_rule_failure}</b> <span class="muted">memos with a known mistake were flagged by the AI reviewers.</span></p>
-      <p class="small"><b>${ev.panel.flagged_passing_every_rule} of ${ev.panel.memos_passing_every_rule}</b> <span class="muted">memos that pass every rule check were flagged anyway: either a problem the rules miss or a false alarm.</span></p>
-      <p class="small">${ev.panel.flags_on_rule_clean_memos_reviewed ? `<b>${ev.panel.problems_the_rules_missed}</b> <span class="muted">real problems the rules missed,</span> <b>${ev.panel.false_alarms}</b> <span class="muted">false alarms, from the ${ev.panel.flags_on_rule_clean_memos_reviewed} of those a person has checked.</span>` : `<span class="muted">Review the memos in <a href="#/review/${enc(id)}">Worth a look</a> to tell the two apart.</span>`}</p>` : '<p class="small muted">Shown for tests with the AI reviewers’ second opinion.</p>'}
-      ${ev.rule_checks.findings_settled ? `<p class="small" style="padding-top:12px;border-top:1px solid var(--line-2)"><b>${ev.rule_checks.shown_wrong}</b> <span class="muted">of ${ev.rule_checks.findings_settled} rule-check findings shown to be wrong by a reviewer and model risk.</span></p>` : ""}
-    </div>
-    </aside>
+  const more = s.reviewed ? `<details class="card"><summary>More about this review</summary><div class="stack mid" style="margin-top:12px">
+      <p class="small">${plural(s.reviewed, "memo")} reviewed by ${esc((s.reviewers || []).join(", ") || "—")}; ${plural(s.settled, "answer")} settled${s.upheld ? `, ${s.upheld} decided for the reviewer` : ""}${s.rejected ? `, ${s.rejected} for the machine` : ""}.</p>
+      ${times ? `<div class="small"><b>Time spent</b><ul class="muted" style="margin:4px 0 0;padding-left:18px">${times}</ul></div>` : ""}
+      ${ev.rule_checks.findings_settled ? `<p class="small"><b>Rule checks:</b> ${ev.rule_checks.shown_wrong} of ${ev.rule_checks.findings_settled} of their findings were shown to be wrong.</p>` : ""}
+      ${ev.panel.memos_with_a_rule_failure != null ? `<p class="small"><b>AI reviewers:</b> flagged ${ev.panel.flagged_with_a_rule_failure} of the ${ev.panel.memos_with_a_rule_failure} memos with a known mistake.</p>` : ""}
+      ${s.coach ? `<p class="small"><b>Coach:</b> asked on ${plural(s.coach.memos, "memo")}; ${plural(s.coach.answers_changed, "answer")} changed after it spoke${s.coach.known_answer_findings ? `; agreement with the known answers ${pct(s.coach.agreed_before_coach, s.coach.known_answer_findings)}% before, ${pct(s.coach.agreed_after_coach, s.coach.known_answer_findings)}% after` : ""}.</p>` : ""}
+    </div></details>` : "";
+
+  $view.innerHTML = `<div class="stack" style="gap:28px">
+    <div class="row wrap"><a class="link" href="#/result/${enc(id)}">${ICON.back}Test result</a>
+      <span class="muted small"><b>${esc(testName(ov.run))}</b> · started ${esc(when(ov.run.started_at || ov.run.finished_at))}</span></div>
+    <section class="card stack mid" style="padding:32px 36px"><p class="eyebrow">Improve the assistant</p>
+      <h1 style="font-size:32px;max-width:900px">${esc(headline)}</h1>
+      <p class="muted" style="font-size:17px;max-width:900px">Your review answers become a feedback pack: the corrected memos the model team trains the assistant on. A re-test on new cases then proves the fix worked.</p>
+      <ol class="stepline">${steps.map((x, k) => `<li class="${state(x)}"><a href="#step-${x.key}" data-jump="${x.key}">${state(x) === "done" ? ICON.check : `<span>${k + 1}</span>`}${x.title}${x.open ? ` <span class="badge b-amber">${x.open}</span>` : ""}</a></li>`).join("")}</ol>
+      ${partial}
+      ${nextBtn ? `<div class="row wrap" style="gap:12px">${nextBtn}</div>` : ""}</section>
+    ${trust}
+    ${s.reviewed ? `${settle}${correct}${build}${handover}${prove}${more}` : ""}
   </div>`;
-  document.querySelectorAll("[data-v]").forEach((tr) => tr.querySelectorAll("[data-d]").forEach((b) => (b.onclick = async () => {
+
+  // in-page jumps (the hash is the router's)
+  $view.querySelectorAll("[data-jump]").forEach((a) => (a.onclick = (e) => {
+    e.preventDefault();
+    const el = document.getElementById(`step-${a.dataset.jump}`);
+    if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1400); }
+  }));
+  $view.querySelectorAll("[data-v]").forEach((box) => box.querySelectorAll("[data-d]").forEach((b) => (b.onclick = async () => {
     b.disabled = true;
-    await api(`/api/review/${enc(id)}/adjudicate`, { verdict_id: tr.dataset.v, decision: b.dataset.d, by: reviewer.get() || "model-risk" });
+    await api(`/api/review/${enc(id)}/adjudicate`, { verdict_id: box.dataset.v, decision: b.dataset.d, by: reviewer.get() || "model-risk" });
     viewImprove(id);
   })));
+  $view.querySelectorAll(".fixspot").forEach((box) => (box.querySelector("[data-save]").onclick = async (ev2) => {
+    const text = box.querySelector("textarea").value.trim();
+    const msg = box.querySelector("[data-msg]");
+    const before = box.querySelector("p") ? box.querySelector("p").textContent.replace(/^Now: “|”$/g, "") : "";
+    if (!text || text === before) { msg.innerHTML = '<span class="error">Change the wording to how it should read.</span>'; return; }
+    ev2.target.disabled = true;
+    try {
+      await api(`/api/review/${enc(id)}/correct`, { memo: box.dataset.memo, card_ids: box.dataset.cards.split(" "), correction: text, by: reviewer.get() || "reviewer" });
+      const y = window.scrollY;
+      await viewImprove(id);
+      window.scrollTo(0, y);
+    } catch (e) { msg.innerHTML = `<span class="error">${esc(e.message)}</span>`; ev2.target.disabled = false; }
+  }));
   const rt = document.getElementById("retest");
   if (rt) rt.onclick = async () => {
     rt.disabled = true;
     try { const j = await api("/api/retest", { from_run: id, setup: "with_figures" }); location.hash = `#/retest/${enc(j.job_id)}`; }
     catch (e) { document.getElementById("rmsg").textContent = e.message; rt.disabled = false; }
   };
-  const build = document.getElementById("build");
-  build.onclick = async () => {
-    build.disabled = true;
+  const bt = document.getElementById("build");
+  if (bt) bt.onclick = async () => {
+    bt.disabled = true;
     document.getElementById("bmsg").textContent = "Building…";
-    try { await api(`/api/review/${enc(id)}/feedback`, {}); viewImprove(id); } catch (e) {
+    try { await api(`/api/review/${enc(id)}/feedback`, {}); await viewImprove(id); document.getElementById("step-build").scrollIntoView({ block: "start" }); } catch (e) {
       document.getElementById("bmsg").innerHTML = `<span class="error">${esc(e.message)}</span>`;
-      build.disabled = false;
+      bt.disabled = false;
     }
   };
 }

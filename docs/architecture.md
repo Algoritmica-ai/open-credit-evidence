@@ -16,6 +16,70 @@ Cases are generated from a declared process so the material facts are known
 before the assistant is asked anything. That sealed knowledge is what makes
 omission and fidelity checking possible.
 
+The engine then closes the loop: people review what the checks found, their
+answers become a feedback pack that improves the assistant, and a new test on
+cases it has never seen proves whether it did. For running it, see
+[setup](setup.md); for the screens, the [underwriter guide](underwriter-guide.md).
+
+## The end-to-end flow
+
+```mermaid
+flowchart LR
+    policy["Credit policy<br/>(SDD recipe)"] --> gen["1 Generate cases<br/>Synthetic Data Designer<br/>+ scorecard"]
+    gen --> pack[("Case set<br/>packs/…<br/>answer key kept apart")]
+    pack --> run["2 Run the assistant<br/>one fresh call<br/>per case × run"]
+    run --> checks["3 Rule checks<br/>6 deterministic checks<br/>per memo"]
+    run --> panel["4 Second opinion<br/>Reader · Challenger · Arbiter<br/>(judge model)"]
+    checks --> evidence[("Sealed test<br/>runs/…<br/>decision · reports · checksums")]
+    panel --> evidence
+    evidence --> review["5 Review<br/>lanes · case-file figures<br/>coach on request"]
+    review --> improve["6 Improve<br/>settle · correct · build"]
+    improve --> fb[("Feedback pack<br/>+ fine-tuning handover")]
+    fb --> tune["Model team<br/>fine-tunes or<br/>changes the setup"]
+    tune --> retest["7 Prove it<br/>new cases, before vs after"]
+    retest --> gen
+```
+
+Each step, what it produces and where it lives:
+
+| # | Step | What happens | Produces | Code |
+|---|---|---|---|---|
+| 1 | Generate cases | The Synthetic Data Designer draws applicants from the credit-underwriting recipe; a fixed scorecard decides each; the referred ones are kept, with the facts the decision turned on, the fields that must not count (decoys), and what would change the outcome | A case set: `items.jsonl`, `manifest.json`, the answer key (gitignored) | `src/sdd/` (vendored, served at `/sdd/`), `src/evidence/packs/`, `specs/credit_underwriting.yaml` |
+| 2 | Run the assistant | Every case, each run, is one separate, stateless call: the task prompt as the system message, the case documents as the user message. Nothing carries over between calls | One transcript per memo, fingerprinted | `runner.py`, `adapters/nvidia_build.py` |
+| 3 | Rule checks | Six checks mark every memo against the case file and the case's known facts. No model is involved, so the same memo always gets the same result | `results.jsonl`; per check a pass rate, and how many cases got different results between runs | `checks/`, `aggregate.py` |
+| 4 | Second opinion (optional) | Three agents on the judge model: a Reader scores the memo as an underwriter would; a Challenger checks it against the case file with tools and the engine's reference figures; an Arbiter decides and flags memos for a person | `panel/records.jsonl` and every agent's conversation | `panel.py`, `panel_run.py`; in the NemoClaw sandbox via `scripts/cluster/panel_nemoclaw.sh` |
+| — | Seal and decide | The results become a decision against the bank's thresholds (GO / GO WITH CONDITIONS / NO-GO), root causes, recommendations and one report per reader; every file is hashed into `checksums.sha256` | `evidence/`, `checksums.sha256` | `evidence/` |
+| 5 | Review | Memos are sorted into lanes (both the checks and the AI reviewers flagged / one of them / neither). A person answers each finding: is the memo wrong here? The screen sets the case file's figures beside the memo and each finding; the coach answers only when asked | `review/records.jsonl`: answers, reasons, corrections, first answers, the coach conversation | `review.py`, `facts.py`, `coach.py` |
+| 6 | Improve | Model risk settles disagreements; people write the corrected wording of confirmed mistakes; the feedback pack is built from settled answers only | `feedback/`: corrected memos, before-and-after pairs, finding labels, rule-check fixes, and the fine-tuning handover zip | `review.py` (`labels`, `to_correct`, `build_feedback`, `build_handover`) |
+| 7 | Prove it | A change (the bank's own, such as handing the assistant its computed figures, or a fine-tuned model) is tested on new cases: as it is and with the change, same cases, compared case by case | Two sealed runs and a comparison: ACCEPT / REJECT / INCONCLUSIVE / NO EFFECT | `evidence/compare.py`; the re-test job in `web/app.py` |
+
+What keeps the evidence honest:
+
+- **No production data.** Every case is generated; nothing personal is in a test, a review
+  or a feedback pack.
+- **The answer key never reaches a model.** The assistant, the AI reviewers and the coach
+  see the case documents only. The checks and the review's agreement figures use the key.
+- **Sealed and re-derivable.** A review, a ruling, a correction or a rebuilt pack re-seals
+  the run; `evidence verify --recompute` re-runs every check from the transcripts.
+- **Repeats measure consistency.** A case run more than once shows whether the assistant
+  answers the same way; the decision adds a condition when more than 10% of cases change
+  result between runs.
+- **Human answers stay human.** The coach speaks only when asked, and the review records the
+  first answer on each finding before it did, so its influence is measured, not hidden.
+
+## Where the models run
+
+| Role | Model | Used by |
+|---|---|---|
+| Assistant | Nemotron 3.5 Lightning | Step 2: the system under test |
+| Judge | Nemotron 3 Super 120B-A12B | Step 4 (the three agents), the coach, the readability judge |
+| Embedder | Nemotron 3 Embed 1B | Retrieval over regulation texts for the judge's citations |
+
+Each role is an OpenAI-compatible endpoint: NVIDIA's cloud, or NIMs on the team's GPU node
+(`scripts/cluster/servers.sbatch`, see [cluster.md](cluster.md)). A small relay
+(`stream_relay.py`) streams the judge's replies to the sandbox and spreads the panel's calls
+over a second judge when one is running.
+
 ## Parts
 
 | Part | Module | Responsibility |
@@ -30,7 +94,12 @@ omission and fidelity checking possible.
 | Regulations | `src/evidence/regulations.py`, `regulations/` | Jurisdiction rule packs: evidence-presence checks selected by the pack's regulatory context |
 | Evidence | `src/evidence/evidence/` | Aggregation by obligation, the report, checksums, the verifier |
 | CLI | `src/evidence/cli.py` | `evidence run · report · verify · rules · checks · ui` |
-| Web UI | `src/evidence/web/` | A thin FastAPI layer over the same functions; static HTML, no build step. Pack → cases → run → evidence → verify; packs can be built from a spec or uploaded; runs execute on a worker thread, are polled, and can be cancelled |
+| Judge panel | `src/evidence/panel.py`, `panel_run.py` | The second opinion: Reader, Challenger (with tools), Arbiter; standard library only, so the same file runs in the engine or a NemoClaw sandbox |
+| Review | `src/evidence/review.py` | The review queue and its lanes, verdicts, rulings, corrections, the feedback pack and the fine-tuning handover |
+| Case facts | `src/evidence/facts.py` | The figures a memo turns on, read from the case file and worked out exactly, and which of them each finding is about |
+| Coach | `src/evidence/coach.py` | An on-request conversation with the judge model about a reviewer's answers; never sees the answer key |
+| Case designer | `src/sdd/` | The Synthetic Data Designer, vendored from its own repository (`scripts/sync_sdd.sh`) and served at `/sdd/` |
+| Web UI | `src/evidence/web/` | A thin FastAPI layer over the same functions; static HTML, no build step. Home → Test → Review → Improve, plus case sets and earlier tests; tests and re-tests run on worker threads, are polled, and can be stopped. The full console is at `/advanced/` |
 
 Generation never scores briefings. Marking never invents what "material"
 means. Model access never sees scorecard internals — only the documents and the

@@ -154,3 +154,18 @@ def test_a_correction_keeps_the_memo_formatting(run, q):
     rec = review.submit(run, m["memo"], "r1", [{"card_id": c["card_id"], "action": "confirm",
                                                 "correction": "  " + fix + "  "}], queue_items=q)
     assert rec["verdicts"][0]["correction"] == fix  # trimmed, nothing else changed
+
+
+def test_a_quote_in_other_words_lands_on_the_memo_sentence_it_paraphrases():
+    from evidence.review import _corrected, locate
+
+    memo = ("**What Would Need to Change:**\nFor the application to fall within policy without "
+            "underwriter discretion, the **Total Monthly Debt Service** must be reduced to "
+            "**€891.80 or less** (40% of gross monthly income).\n\nTo achieve this, reduce it.")
+    quote = ("To fall within policy, the Total Monthly Debt Service must be reduced to €891.80 "
+             "or less (40% of gross monthly income).")
+    a, b = locate(memo, quote)
+    assert memo[a:b].startswith("For the application") and memo[a:b].endswith("income).")
+    assert locate(memo, "The bureau score of 652 is below the 600 threshold for review.") is None
+    fixed, n = _corrected(memo, [(quote, "It must fall to €743.17 or less.")])
+    assert n == 1 and "€743.17" in fixed and "€891.80" not in fixed and "To achieve" in fixed

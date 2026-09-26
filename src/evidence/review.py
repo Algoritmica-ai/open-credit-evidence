@@ -101,7 +101,40 @@ def locate(text: str, quote: str) -> tuple[int, int] | None:
             else:
                 hi = mid - 1
         m = find(hi) if hi >= 20 else None
-    return (m.start(), m.end()) if m else None
+    return (m.start(), m.end()) if m else _closest_sentence(text, quote)
+
+
+_WORD = re.compile(r"[a-z]{3,}|\d[\d,.]*\d|\d")
+_COMMON = {"the", "and", "for", "that", "this", "with", "are", "was", "which", "from", "its",
+           "has", "have", "not", "but", "per", "than", "any", "all", "must", "would", "will"}
+
+
+def _words(s: str) -> set[str]:
+    return {w.rstrip(".,") for w in _WORD.findall(_fold(s))} - _COMMON
+
+
+def _closest_sentence(text: str, quote: str) -> tuple[int, int] | None:
+    """An AI reviewer may quote a memo sentence in its own words ("To fall within policy,
+    the debt service must be reduced to €891.80" for "For the application to fall within
+    policy …, the **debt service** must be reduced to **€891.80**"). The memo sentence that
+    holds most of the quote's words and figures, when it holds nearly all of them."""
+    want = _words(quote)
+    if len(want) < 5:
+        return None
+    best: tuple[float, int, int] | None = None
+    start = 0
+    for m in [*_BREAK.finditer(text), None]:
+        end = m.start() if m else len(text)
+        share = len(want & _words(text[start:end])) / len(want)
+        if text[start:end].strip() and (best is None or share > best[0]):
+            best = (share, start, end)
+        start = m.end() if m else end
+    if best is None or best[0] < 0.8:
+        return None
+    a, b = best[1], best[2]
+    while a < b and text[a].isspace():
+        a += 1
+    return a, b
 
 
 _BREAK = re.compile(r"\n|(?<=[.!?])\s")  # a line break, or a full stop and a space
@@ -425,10 +458,92 @@ def _corrected(text: str, fixes: list[tuple[str, str]]) -> tuple[str, int]:
         if sentence and sentence in text:
             text = text.replace(sentence, correction, 1)
             applied += 1
+        elif sentence and (span := locate(text, sentence)):
+            # a quote that differs from the memo in formatting only (an AI reviewer's quote
+            # without the bold marks): replace the memo's own sentence
+            a, b = sentence_span(text, *span)
+            text = text[:a] + correction + text[b:]
+            applied += 1
         elif not sentence:
             text = text.rstrip() + "\n\n" + correction + "\n"
             applied += 1
     return text, applied
+
+
+def _uncorrected(x: dict[str, Any], by_sentence: dict[str, str]) -> bool:
+    return not x["verdict"].get("correction") and (
+        not x["card"].get("sentence") or not any(x["card"]["sentence"] in k for k in by_sentence))
+
+
+def _fixes(errors: list[dict[str, Any]]) -> tuple[dict[str, str], list[str], bool]:
+    """A memo's corrections: one per sentence (findings on the same sentence share it), and
+    additions for errors with no sentence (something left out); True when an error has none."""
+    by_sentence: dict[str, str] = {}
+    additions: list[str] = []
+    for x in errors:
+        sentence, fix = x["card"].get("sentence") or "", x["verdict"].get("correction") or ""
+        if sentence and fix:
+            by_sentence.setdefault(sentence, fix)
+        elif fix:
+            additions.append(fix)
+    # a quote that sits inside a longer corrected quote is corrected by it
+    by_sentence = {k: v for k, v in by_sentence.items()
+                   if not any(k != o and k in o for o in by_sentence)}
+    return by_sentence, additions, any(_uncorrected(x, by_sentence) for x in errors)
+
+
+def last_change(run: Path) -> str | None:
+    """When a review answer, a correction or a ruling was last recorded: a feedback pack
+    built before then is out of date."""
+    times = [r.get("submitted_at") for r in _read_jsonl(run / "review" / "records.jsonl")]
+    times += [a.get("at") for a in _read_jsonl(run / "review" / "adjudications.jsonl")]
+    return max((t for t in times if t), default=None)
+
+
+def to_correct(run: Path, queue_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Memos with a settled mistake that has no corrected wording yet: they become training
+    examples once a person writes how the memo should read. One entry per sentence."""
+    lab = [x for x in labels(run, queue_items) if _settled(x) and _is_error(x)]
+    by_memo = {q["memo"]: q for q in queue_items}
+    out = []
+    for memo in sorted({x["memo"] for x in lab}, key=lambda m: (by_memo[m]["case"],
+                                                                  by_memo[m]["repeat"])):
+        errors = [x for x in lab if x["memo"] == memo]
+        by_sentence, _, missing = _fixes(errors)
+        if not missing:
+            continue
+        spots: dict[str, dict[str, Any]] = {}
+        for x in errors:
+            if not _uncorrected(x, by_sentence):
+                continue
+            key = x["card"].get("sentence") or ""
+            spot = spots.setdefault(key, {"sentence": key, "card_ids": [], "problems": []})
+            spot["card_ids"].append(x["card"]["card_id"])
+            spot["problems"].append(x["card"]["problem"])
+        q = by_memo[memo]
+        out.append({"memo": memo, "case": q["case"], "repeat": q["repeat"],
+                    "spots": list(spots.values())})
+    return out
+
+
+def correct(run: Path, memo: str, card_ids: list[str], correction: str, by: str) -> dict:
+    """Add how the memo should read to findings already confirmed in its latest review. The
+    review is recorded again unchanged but for the correction, with who wrote it."""
+    rec = reviews(run).get(memo)
+    if rec is None:
+        raise ValueError(f"{memo!r} has not been reviewed")
+    text = _wording(correction)
+    if not text:
+        raise ValueError("write how the memo should read")
+    known = {v["card_id"] for v in rec["verdicts"]}
+    if not card_ids or not set(card_ids) <= known:
+        raise ValueError("those findings are not in this memo's review")
+    new = {**rec, "submitted_at": _now(), "corrected_by": _clean(by) or "reviewer",
+           "verdicts": [v | {"correction": text} if v["card_id"] in card_ids else v
+                        for v in rec["verdicts"]]}
+    with (run / "review" / "records.jsonl").open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(new, ensure_ascii=False, sort_keys=True) + "\n")
+    return new
 
 
 def build_feedback(run: Path, queue_items: list[dict[str, Any]]) -> dict[str, Any]:
@@ -454,23 +569,7 @@ def build_feedback(run: Path, queue_items: list[dict[str, Any]]) -> dict[str, An
         errors = [x for x in mine if _is_error(x)]
         for x in errors:
             failures[x["card"]["kind"]] = failures.get(x["card"]["kind"], 0) + 1
-        # One correction per sentence: findings on the same sentence share it. An error
-        # with no sentence (something left out) is corrected by an addition.
-        by_sentence: dict[str, str] = {}
-        additions: list[str] = []
-        for x in errors:
-            sentence, fix = x["card"].get("sentence") or "", x["verdict"].get("correction") or ""
-            if sentence and fix:
-                by_sentence.setdefault(sentence, fix)
-            elif fix:
-                additions.append(fix)
-        # a quote that sits inside a longer corrected quote is corrected by it
-        by_sentence = {k: v for k, v in by_sentence.items()
-                       if not any(k != o and k in o for o in by_sentence)}
-        missing = any(not x["verdict"].get("correction") and
-                      (not x["card"].get("sentence")
-                       or not any(x["card"]["sentence"] in k for k in by_sentence))
-                      for x in errors)
+        by_sentence, additions, missing = _fixes(errors)
         # a memo becomes a training target only when every error in it was corrected
         if errors and missing:
             uncorrected.append(memo)
