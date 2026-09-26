@@ -140,3 +140,22 @@ def test_a_copy_of_a_run_verifies_with_its_anchors(run, tmp_path):
     shutil.copytree(run, copy)
     assert verify_run(copy).ok and anchor.verify(copy)["ok"]
     assert (copy / "anchors" / "001.ots").read_bytes() == (run / "anchors" / "001.ots").read_bytes()
+
+
+def test_an_explorer_that_stalls_does_not_hold_up_the_check(monkeypatch):
+    import threading
+    import time as _time
+
+    stalled = threading.Event()
+
+    def block(api, height):
+        if "slow" in api:
+            stalled.wait(30)  # accepts the connection, then never answers
+        return {"hash": "00", "merkle_root": "ab", "time": "t", "source": api}
+
+    monkeypatch.setattr(anchor, "_block", block)
+    monkeypatch.setenv("EVIDENCE_ANCHOR_EXPLORERS", "https://slow.example,https://fast.example")
+    t0 = _time.monotonic()
+    b = anchor._lookup(1, deadline=1.0)
+    assert _time.monotonic() - t0 < 5 and b["sources"] == ["https://fast.example"]
+    stalled.set()
