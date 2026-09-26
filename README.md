@@ -61,12 +61,15 @@ Synthetic Data Designer ──▶ scorecard ──▶ pack (documents + sealed m
 
 ## Quick start
 
+Guides: [local setup](docs/setup.md) · [underwriter guide to the UI](docs/underwriter-guide.md) ·
+[architecture and the end-to-end flow](docs/architecture.md)
+
 ```bash
 git clone https://github.com/Algoritmica-ai/open-credit-evidence.git
 cd open-credit-evidence
 python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 cp .env.example .env            # points all three roles at the team's node (VPN); no key needed
-.venv/bin/pytest -q             # 40 tests, no network
+.venv/bin/pytest -q             # no network needed
 ```
 
 The catch, with no model involved:
@@ -144,21 +147,22 @@ sandbox, where its calls go through OpenShell's managed inference route
 (`scripts/cluster/panel_nemoclaw.sh`; the route reaches the judge NIM through
 `scripts/cluster/stream_relay.py`).
 
-In a browser, for business users, in three steps. The home page shows the assistant's
-status from its latest test and the one next step. **Test** starts a test (which assistant,
-which rules, which cases, and optionally the three-agent panel) and gives the result in plain
-words: what went wrong, what to change, the sealed report as a PDF. **Review** puts the
-flagged memos in three groups (check first, worth a look, probably fine) and asks one
-question per finding: is the memo wrong here? A **coach** (its own conversation with the judge model, without the answer key) reads each memo as it opens and prepares a note on every finding; the note for an answer opens under the finding as soon as the reviewer gives it, pointing at the evidence and asking a question where the answer does not fit it. The review keeps each first click, from before any note was shown, and the final answers, so the coach's effect is measured. A sidebar lists every application. **Improve** settles disagreements, builds the
-feedback pack with a fine-tuning handover for the engineering team (training data in chat and
-DPO formats, a starting LoRA configuration, provenance, the acceptance test), shows how good
-the checks and the AI reviewers were, and tests a change on new cases: the assistant as it is
-and with the change, on cases it has never seen, compared case by case. **Case sets** creates
-new cases from the credit policy; the Synthetic Data Designer, which generates them, starts
-with the UI at `/sdd/` (vendored in `src/sdd`, synced by `scripts/sync_sdd.sh`), where the
-`credit_underwriting` recipe can be opened and changed. Earlier tests, and comparing two of
-them, are one click away. The full console (packs, corpora, runs, the tamper demo) is at
-`/advanced/`. A test started in the browser runs the panel in the NemoClaw sandbox when
+In a browser, for business users, in three steps. The home page starts a new test, shows
+the latest test's steps and lists the tests waiting for review. **Test** asks which
+assistant, which rules and which cases (new ones generated on the spot, with how many and
+how many times each is run), and gives the result in plain words: what went wrong, what to
+change, how often the same case got a different result between runs, and the sealed report
+as a PDF. **Review** sorts the flagged memos into three groups and shows each memo between
+the case file's figures and its findings, with the case file's number beside every
+highlighted sentence, and every run of the same case; one question per finding: is the
+memo wrong here? A **coach** on the judge model answers when asked, about one finding or all
+of them, and never sees the answer key. **Improve** settles disagreements, collects the
+corrected wording of confirmed mistakes, builds the feedback pack with a fine-tuning handover
+(training data in chat and DPO formats, a starting LoRA configuration, provenance, the
+acceptance test) and tests a change on new cases, compared case by case. **Case sets**
+creates cases from the credit policy with the Synthetic Data Designer, which starts with the
+UI at `/sdd/` (vendored in `src/sdd`, synced by `scripts/sync_sdd.sh`). The full console is
+at `/advanced/`. A test started in the browser runs the panel in the NemoClaw sandbox when
 `EVIDENCE_PANEL_SSH` is set, else directly against the judge endpoint. To start it:
 
 ```bash
@@ -202,7 +206,7 @@ which endpoint produced it. See [`docs/models.md`](docs/models.md) and
 | `notebooks/` | Executed notebooks: the three models on one case; the on-prem setup |
 | `runs/` | A committed evidence pack from a real run |
 | `examples/nemo_evaluator/` | The same pack as a NeMo Evaluator benchmark, with a gate policy |
-| `docs/` | Architecture, contracts, models, cluster, regulations, the Verifier's Law framing, the deck |
+| `docs/` | Setup, the underwriter guide, architecture, contracts, models, cluster, regulations, the Verifier’s Law framing, the deck |
 
 ## What it claims, and what it does not
 
