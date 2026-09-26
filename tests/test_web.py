@@ -281,6 +281,11 @@ def test_review_endpoints_on_a_copy_of_a_committed_run(tmp_path, monkeypatch):
     memo = q["memos"][0]["memo"]
     m = c.get(f"/api/review/{src.name}/memo", params={"memo": memo}).json()
     assert m["cards"] and m["case_file"] and m["text"]
+    # the case file at a glance, and the figures each finding is about
+    keys = {f["key"] for f in m["facts"]}
+    assert {"dti", "income_monthly", "score"} <= keys and set(m["groups"]) >= {"afford"}
+    assert all(set(c["facts"]) <= keys for c in m["cards"]) and any(c["facts"] for c in m["cards"])
+    assert all(d["title"] != "Rules engine" for d in m["case_file"])  # only what it was given
     bad = c.post(f"/api/review/{src.name}/submit",
                  json={"memo": memo, "reviewer": "t",
                        "verdicts": [{"card_id": m["cards"][0]["card_id"], "action": "dispute"}]})

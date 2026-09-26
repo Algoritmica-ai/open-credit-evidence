@@ -537,8 +537,21 @@ async function viewQueue(id) {
 
 // ----------------------------------------------------------------- review: one memo
 
-function highlight(text, cards) {
-  // Findings on the same sentence share one highlight that carries all their numbers.
+// Short names for the case-file figures, for the chips beside the memo's sentences.
+const FACT_SHORT = {
+  dti: "debt ratio", debt_service: "debt service", income: "annual income", income_monthly: "monthly income",
+  commitments: "commitments", instalment: "instalment", room: "largest instalment within 40%", score: "bureau score",
+  file_age: "credit file", missed: "missed payments", verified: "income verified", amount: "amount", term: "term",
+  purpose: "purpose", employment: "employment", tenure: "time in role", age_band: "age band", dependants: "dependants",
+  title: "title", employer: "employer", postcode: "postcode",
+};
+const factChip = (f) => `<span class="cfchip st-${f.status}" data-fact="${esc(f.key)}">Case file: ${esc(FACT_SHORT[f.key] || f.label)} <b>${esc(f.value)}</b>${f.status === "outside" ? " · outside policy" : f.status === "no_bearing" ? " · not a factor" : ""}</span>`;
+
+function highlight(text, cards, facts) {
+  // Findings on the same sentence share one highlight that carries all their numbers,
+  // followed by the case file's figures those findings are about.
+  const byKey = {};
+  (facts || []).forEach((f) => (byKey[f.key] = f));
   let html = esc(text);
   const marks = [];
   cards.forEach((c, i) => {
@@ -551,9 +564,38 @@ function highlight(text, cards) {
     html = html.replace(s, `\u0000${marks.length - 1}\u0000`);
   });
   marks.forEach((m, k) => {
-    html = html.replace(`\u0000${k}\u0000`, `<mark data-cards="${m.cards.map((x) => x[0]).join(" ")}"><sup>${m.cards.map((x) => x[1]).join(",")}</sup>${m.s}</mark>`);
+    const keys = [...new Set(m.cards.flatMap((x) => (cards.find((c) => c.card_id === x[0]).facts || [])))].filter((key) => byKey[key]);
+    const chips = keys.map((key) => factChip(byKey[key])).join("");
+    html = html.replace(`\u0000${k}\u0000`, `<mark data-cards="${m.cards.map((x) => x[0]).join(" ")}"><sup>${m.cards.map((x) => x[1]).join(",")}</sup>${m.s}</mark>${chips ? ` ${chips}` : ""}`);
   });
   return html.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/^\s*[*-]\s{1,4}/gm, "• ").replace(/^#{1,4}\s*(.+)$/gm, "<b>$1</b>");
+}
+
+function appStrip(id, memos, current) {
+  // Every application in the test in one row, by lane: move between them without losing
+  // the page's width. Ticked when reviewed; the open one is highlighted.
+  const all = ["red", "amber", "green"].flatMap((lane) => memos.filter((m) => m.lane === lane));
+  const i = all.findIndex((m) => m.memo === current);
+  const href = (m) => `#/review/${enc(id)}/memo/${enc(m.memo)}`;
+  const prev = i > 0 ? all[i - 1] : null, nxt = i >= 0 && i < all.length - 1 ? all[i + 1] : null;
+  return `<nav class="appstrip" aria-label="Applications">
+    ${prev ? `<a class="btn small" href="${href(prev)}" aria-label="Previous application">${ICON.back}</a>` : '<span class="btn small" aria-hidden="true" style="opacity:.35">' + ICON.back + "</span>"}
+    <div class="stripscroll">${all.map((m, k) => `${k === 0 || all[k - 1].lane !== m.lane ? `<span class="striplane"><span class="lane-dot small ld-${m.lane}" aria-hidden="true"></span>${LANE[m.lane][0]}</span>` : ""}<a class="stripitem${m.memo === current ? " on" : ""}${m.reviewed ? " done" : ""}" href="${href(m)}"${m.memo === current ? ' aria-current="page"' : ""} title="Application ${esc(m.case)}, memo ${m.repeat + 1}${m.reviewed ? " (reviewed)" : ""}">${m.reviewed ? ICON.check : ""}${esc(m.case.replace(/^APP0*/, ""))}<span class="muted">·${m.repeat + 1}</span></a>`).join("")}</div>
+    ${nxt ? `<a class="btn small" href="${href(nxt)}" aria-label="Next application">${ICON.arrow}</a>` : '<span class="btn small" aria-hidden="true" style="opacity:.35">' + ICON.arrow + "</span>"}</nav>`;
+}
+
+// The case file at a glance: its figures by group, each with its policy line; the ones a
+// finding is about are outlined and carry the finding's number.
+function factsPanel(facts, groups, cards) {
+  if (!facts || !facts.length) return "";
+  const nums = {};
+  cards.forEach((c, i) => (c.facts || []).forEach((k) => (nums[k] = [...(nums[k] || []), i + 1])));
+  const cell = (f) => `<div class="fact st-${f.status}${nums[f.key] ? " hit" : ""}" data-fact="${esc(f.key)}">
+      <span class="factlabel">${nums[f.key] ? `<span class="factnum">${nums[f.key].join(",")}</span> ` : ""}${esc(f.label)}</span><b>${esc(f.value)}</b>
+      ${f.policy || f.derived ? `<span class="tiny factpol">${f.derived ? `${esc(f.derived)}${f.policy ? " · " : ""}` : ""}${f.policy ? `${f.status === "outside" ? "outside policy: " : f.status === "ok" ? "within policy: " : ""}${esc(f.policy)}` : ""}</span>` : ""}</div>`;
+  return `<section class="facts" aria-label="The case file at a glance"><p class="eyebrow">The case file at a glance</p>
+      <span class="tiny muted" style="margin-top:-8px">From the documents the assistant was given; ratios worked out exactly. Numbers mark the findings about a figure.</span>
+    ${Object.entries(groups || {}).map(([g, name]) => { const list = facts.filter((f) => f.group === g); return list.length ? `<div class="factgroup"><span class="small" style="font-weight:700">${esc(name)}</span><div class="factgrid">${list.map(cell).join("")}</div></div>` : ""; }).join("")}</section>`;
 }
 
 function appNav(id, memos, current, status) {
@@ -571,7 +613,7 @@ function appNav(id, memos, current, status) {
 async function viewMemo(id, memo) {
   const [m, q, ov] = await Promise.all([api(`/api/review/${enc(id)}/memo?memo=${enc(memo)}`), api(`/api/review/${enc(id)}`), overview(id)]);
   renderSteps(ov, "review");
-  page("wide");
+  page("wide review");
   const started = Date.now();
   const laneList = q.memos.filter((x) => x.lane === m.lane);
   const pos = laneList.findIndex((x) => x.memo === memo) + 1;
@@ -596,23 +638,38 @@ async function viewMemo(id, memo) {
   $view.innerHTML = "";
   const sub = document.createElement("div");
   sub.className = "subbar";
-  sub.innerHTML = `<a class="link" href="#/review/${enc(id)}">${ICON.back}All flagged memos</a>
+  sub.className = "subbar sticky";
+  sub.innerHTML = `<div class="row wrap" style="gap:20px;width:100%"><a class="link" href="#/review/${enc(id)}">${ICON.back}All flagged memos</a>
     <span class="row small" style="gap:8px"><span class="lane-dot small ld-${m.lane}" aria-hidden="true"></span><b>${LANE[m.lane][0]}</b> · memo ${pos} of ${laneList.length}</span>
-    <span class="bar grow hide-sm" aria-hidden="true"><span style="width:${pct(laneList.filter((x) => x.reviewed).length, laneList.length)}%"></span></span>`;
+    <span class="bar grow hide-sm" aria-hidden="true"><span style="width:${pct(laneList.filter((x) => x.reviewed).length, laneList.length)}%"></span></span>
+    <span class="small muted">${q.memos.filter((x) => x.reviewed).length} of ${q.memos.length} reviewed</span></div>
+    ${appStrip(id, q.memos, memo)}`;
   $view.before(sub);
   const cleanup = () => { sub.remove(); window.removeEventListener("hashchange", cleanup); };
   window.addEventListener("hashchange", cleanup);
   main.className = "review-grid";
-  const tick = (x) => (x.reviewed ? `<span class="navtick" title="Reviewed">${ICON.check}</span>` : "");
-  main.innerHTML = `${appNav(id, q.memos, memo, tick)}<article class="card stack mid" style="padding:32px 36px">
-      <p class="eyebrow">Memo written by the assistant</p>
-      <h1 style="font-size:26px">Application ${esc(m.case)} · memo ${m.repeat + 1}</h1>
+  main.innerHTML = `${m.facts && m.facts.length ? `<aside class="factcol">${factsPanel(m.facts, m.groups, m.cards)}</aside>` : ""}<article class="stack mid">
+      <div class="row wrap" style="justify-content:space-between;align-items:baseline;gap:12px">
+        <h1 style="font-size:26px">Application ${esc(m.case)} · memo ${m.repeat + 1}</h1>
+        ${m.cards.length ? `<span class="small muted"><span class="legend-mark">text</span> the machine found a problem here · <span class="cfchip">Case file: …</span> what the case file says</span>` : ""}</div>
       ${m.review ? `<p class="note-box amber small">Checked by ${esc(m.review.reviewer)} on ${esc(shortDate(m.review.submitted_at))}. Saving again records a new review.</p>` : ""}
-      <div class="memo-text">${highlight(m.text, m.cards)}</div>
-      ${m.case_file.length ? `<details style="border-top:1px solid var(--line-2);padding-top:16px"><summary>Show the case file</summary>${m.case_file.map((d) => `<h3 style="margin-top:16px">${esc(d.title)}</h3><div class="casefile">${esc(d.content)}</div>`).join("")}</details>` : ""}
+      <div class="card stack mid" style="padding:28px 32px"><p class="eyebrow">The memo the assistant wrote</p>
+        <div class="memo-text">${highlight(m.text, m.cards, m.facts)}</div>
+        ${m.case_file.length ? `<details style="border-top:1px solid var(--line-2);padding-top:16px"><summary>Show the full case file</summary>${m.case_file.map((d) => `<h3 style="margin-top:16px">${esc(d.title)}</h3><div class="casefile">${esc(d.content)}</div>`).join("")}</details>` : ""}</div>
     </article><aside class="stack mid" id="side"></aside>`;
   $view.appendChild(main);
   const side = main.querySelector("#side");
+  // the findings stay in view beside the memo: below the header and the strip, scrolling on their own
+  const place = () => {
+    const top = Math.max(88, sub.getBoundingClientRect().bottom + 16);
+    main.querySelectorAll("aside").forEach((a) => { a.style.top = `${top}px`; a.style.maxHeight = `calc(100vh - ${top + 16}px)`; });
+  };
+  place();
+  window.addEventListener("resize", place);
+  const cur = sub.querySelector(".stripitem.on");
+  if (cur) cur.scrollIntoView({ block: "nearest", inline: "center" });
+  const byFact = {};
+  (m.facts || []).forEach((f) => (byFact[f.key] = f));
 
   const answered = () => m.cards.filter((c) => state[c.card_id].action).length;
   const draw = () => {
@@ -626,6 +683,9 @@ async function viewMemo(id, memo) {
         ${challenged.has(c.card_id) ? '<p class="tiny" style="color:var(--accent);font-weight:600">The coach asked about this answer.</p>' : ""}
         <p>${esc(c.problem)}</p>
         ${c.sentence && !c.span ? `<p class="small muted" style="border-left:3px solid var(--line);padding-left:10px">“${esc(c.sentence)}”</p>` : ""}
+        ${(c.facts || []).filter((k) => byFact[k]).length ? `<div class="versus">
+          ${c.memo_value ? `<div class="stack tight"><span class="tiny muted">The memo says</span><b class="memo-val">${esc(c.memo_value)}</b></div>` : ""}
+          ${(c.facts || []).filter((k) => byFact[k]).map((k) => { const f = byFact[k]; return `<div class="stack tight"><span class="tiny muted">Case file: ${esc(f.label.toLowerCase())}</span><b class="case-val st-${f.status}">${esc(f.value)}</b>${f.policy ? `<span class="tiny factpol st-${f.status}">${f.status === "outside" ? "Outside policy: " : f.status === "ok" ? "Within policy: " : ""}${esc(f.policy)}</span>` : ""}${f.derived ? `<span class="tiny muted">${esc(f.derived)}</span>` : ""}</div>`; }).join("")}</div>` : ""}
         ${c.evidence ? `<div class="proof"><span class="eyebrow">${c.known_answer ? "Proof" : "Why the reviewers think so"}</span><span>${esc(c.evidence)}</span></div>` : ""}
         <p class="tiny muted">${c.known_answer ? "Found by the rule check, which knows the right answer." : "Found by the AI reviewers."}</p>
         <p style="font-weight:700;margin-top:4px">Is the memo wrong here?</p>
@@ -692,8 +752,9 @@ async function viewMemo(id, memo) {
       const fix = el.querySelector("[data-fix]");
       if (fix) fix.oninput = () => (state[cid].correction = fix.value);
       const mk = () => document.querySelector(`mark[data-cards~="${cid}"]`);
-      el.onmouseenter = () => { const m = mk(); if (m) m.classList.add("on"); };
-      el.onmouseleave = () => { const m = mk(); if (m) m.classList.remove("on"); };
+      const figs = () => ((m.cards.find((c) => c.card_id === cid) || {}).facts || []).flatMap((k) => [...main.querySelectorAll(`[data-fact="${k}"]`)]);
+      el.onmouseenter = () => { const x = mk(); if (x) x.classList.add("on"); figs().forEach((f) => f.classList.add("on")); };
+      el.onmouseleave = () => { const x = mk(); if (x) x.classList.remove("on"); figs().forEach((f) => f.classList.remove("on")); };
     });
     const on = (sel, fn) => { const el = side.querySelector(sel); if (el) el.onclick = fn; };
     on("#ok", () => { signOff = true; showRaise = false; draw(); });

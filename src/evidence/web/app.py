@@ -1066,20 +1066,25 @@ def review_queue(run_id: str) -> dict[str, Any]:
 @app.get("/api/review/{run_id}/memo")
 def review_memo(run_id: str, memo: str) -> dict[str, Any]:
     """One memo to review: its text, its findings as cards, the case file, any earlier review."""
-    from evidence import review
+    from evidence import facts, review
 
     run = _run_dir(run_id)
     m = next((x for x in _review_queue(run) if x["memo"] == memo), None)
     if m is None:
         raise HTTPException(404, "memo not in this run")
-    pack_id = _read_json(run / "manifest.json")["pack"]["pack_id"]
+    manifest = _read_json(run / "manifest.json")
     try:
-        item = next(i for i in _pack(pack_id).items if i.item_id == m["item_id"])
+        item = next(i for i in _pack(manifest["pack"]["pack_id"]).items
+                    if i.item_id == m["item_id"])
+        seen = item.for_setup(manifest.get("setup") or "as_is")  # what the assistant saw
         case_file = [{"title": d.renderer.replace("_", " ").capitalize(), "content": d.content}
-                     for d in item.context]
-    except (HTTPException, StopIteration):
-        case_file = []
-    return m | {"case_file": case_file, "review": review.reviews(run).get(memo),
+                     for d in seen.context]
+        figures = facts.case_facts(seen.documents_text())
+    except (HTTPException, StopIteration, ValueError):
+        case_file, figures = [], []
+    cards = [c | {"facts": facts.link(c, figures)} for c in m["cards"]]
+    return m | {"cards": cards, "case_file": case_file, "facts": figures,
+                "groups": facts.GROUPS, "review": review.reviews(run).get(memo),
                 "reasons": list(review.REASONS)}
 
 
