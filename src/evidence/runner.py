@@ -137,12 +137,17 @@ def run_pack(
     corpus: Corpus | str | None = "EU",
     panel: bool = False,
     workers: int | None = None,
+    setup: str = "as_is",
 ) -> dict[str, Any]:
     """Execute the pack. Returns the run manifest; writes transcripts and results.jsonl.
 
     ``panel`` says the three-agent panel will review these briefings: the single
     judge is then skipped (the panel's Reader, scoring each briefing alone, is the
     lone-judge view) and the manifest says so.
+
+    ``setup`` is what the assistant is given (see ``SETUPS``): ``with_figures`` adds the
+    figures the bank's systems compute, where the pack carries them. The checks and
+    verification judge each memo against what the assistant was given.
 
     ``workers`` memos are written and judged at once (default ``EVIDENCE_WORKERS``, else
     8); the checks are pure computation and take no time next to the model calls.
@@ -158,11 +163,14 @@ def run_pack(
     into the same directory resumes from the transcripts on disk.
     """
     judge = judge and not panel
+    if setup == "with_figures" and not any(it.has_bank_figures() for it in pack.items):
+        raise ValueError("this pack's case files hold no figures from the bank's systems; "
+                         "generate new cases with them first")
     workers = workers or int(os.environ.get("EVIDENCE_WORKERS", "8"))
     out.mkdir(parents=True, exist_ok=True)
     (out / "transcripts").mkdir(exist_ok=True)
     run_id = out.name
-    items = pack.items[:limit] if limit else pack.items
+    items = [it.for_setup(setup) for it in (pack.items[:limit] if limit else pack.items)]
     started = _now()
 
     results_path = out / "results.jsonl"
@@ -397,6 +405,7 @@ def run_pack(
         },
         "sut": sut_block,
         "judge": judge_block,
+        "setup": setup,
         **({"single_judge": "skipped: the three-agent panel reviews these briefings"}
            if panel else {}),
         "checks": checks if checks is not None else pack.checks_declared(),

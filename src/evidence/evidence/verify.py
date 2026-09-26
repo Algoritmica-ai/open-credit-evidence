@@ -79,7 +79,9 @@ def verify_integrity(run: Path) -> Verification:
 def verify_recompute(run: Path, pack: Pack, v: Verification | None = None) -> Verification:
     """Re-run every deterministic check from the transcripts and compare with results.jsonl."""
     v = v or Verification(ok=True)
-    items = {i.item_id: i for i in pack.items}
+    # each memo is checked against what the assistant was given under the run's setup
+    setup = json.loads((run / "manifest.json").read_text(encoding="utf-8")).get("setup", "as_is")
+    items = {i.item_id: i.for_setup(setup) for i in pack.items}
     recorded: dict[tuple[str, int, str], dict[str, Any]] = {}
     for line in (run / "results.jsonl").read_text(encoding="utf-8").splitlines():
         if line:

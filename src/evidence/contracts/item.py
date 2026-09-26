@@ -18,6 +18,17 @@ class _Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+# What the assistant under test is given. "as_is": the case file as the bank sends it today.
+# "with_figures": the case file plus the figures the bank's own systems already compute (a
+# rules-engine document, present in packs generated with bank figures). An assistant
+# setup is a change the bank makes on its side; the cases and the known answers stay the same.
+SETUPS = {
+    "as_is": "the case file, as the bank sends it today",
+    "with_figures": "the case file plus the figures the bank's systems already compute",
+}
+BANK_FIGURES = "rules_engine"  # the renderer of the document the with_figures setup adds
+
+
 class ItemContext(_Strict):
     """One rendered document, exactly as the assistant under test receives it."""
 
@@ -97,3 +108,16 @@ class BenchmarkItem(_Strict):
     def documents_text(self) -> str:
         """Every document the assistant saw, joined — what numeric checks resolve against."""
         return "\n\n".join(c.content for c in self.context)
+
+    def has_bank_figures(self) -> bool:
+        return any(c.renderer == BANK_FIGURES for c in self.context)
+
+    def for_setup(self, setup: str) -> BenchmarkItem:
+        """The item as the assistant receives it under an assistant setup. The same item
+        goes to the checks and to verification, so each judges what the assistant saw."""
+        if setup not in SETUPS:
+            raise ValueError(f"unknown assistant setup {setup!r}; one of {sorted(SETUPS)}")
+        if setup == "with_figures" or not self.has_bank_figures():
+            return self
+        return self.model_copy(update={"context": [c for c in self.context
+                                                   if c.renderer != BANK_FIGURES]})

@@ -405,7 +405,10 @@ def localise(df: pd.DataFrame, market: str) -> pd.DataFrame:
 
 
 def render_documents(row: pd.Series, f: dict[str, float], env: Environment,
-                     currency: str = "£", market: str = "sample") -> list[ItemContext]:
+                     currency: str = "£", market: str = "sample",
+                     bank_figures: bool = False) -> list[ItemContext]:
+    """The case file. With ``bank_figures`` it also holds what the bank's rules engine
+    computes from the same data: the assistant sees it only in the with_figures setup."""
     received = date(2026, 3, 31)
     opened_year = 2026 - int(row.file_age_months // 12)
     opened_month = ((3 - int(row.file_age_months % 12)) - 1) % 12 + 1
@@ -432,8 +435,17 @@ def render_documents(row: pd.Series, f: dict[str, float], env: Environment,
         "delinquency_recency_months",
     ):
         ctx[k] = int(ctx[k])
+    ctx |= {
+        "monthly_income": float(row.gross_annual) / 12,
+        "debt_service": float(row.existing_credit_monthly) + f["_instalment"],
+        "dti_pct": f["_dti"] * 100,
+        "missed_12m": bool(row.delinquencies_24m > 0 and row.delinquency_recency_months <= 12),
+    }
+    names = ["application_form", "bureau_summary", "lending_policy"]
+    if bank_figures:
+        names.append("rules_engine")
     docs = []
-    for name in ("application_form", "bureau_summary", "lending_policy"):
+    for name in names:
         content = env.get_template(f"{name}.md.j2").render(**ctx).strip() + "\n"
         leak = OUTCOME_WORDS.search(content)
         if leak:
@@ -458,7 +470,7 @@ PROMPT = (
 
 def build(
     n: int, keep: int, seed: int, out: Path, pack_id: str, spec: Path | None = None,
-    market: str = "sample",
+    market: str = "sample", bank_figures: bool = False,
 ) -> dict[str, Any]:
     """Generate, decide, attribute, render, write. ``spec`` defaults to the bundled recipe;
     ``market`` (see MARKETS) sets the currency and the jurisdiction overlay."""
@@ -508,7 +520,7 @@ def build(
                 domain="credit_underwriting",
                 task="case_review",
                 prompt=PROMPT,
-                context=render_documents(row, f, env, mk["currency"], market),
+                context=render_documents(row, f, env, mk["currency"], market, bank_figures),
                 deterministic_checks=[
                     "material_omission",
                     "numeric_fidelity",
@@ -571,6 +583,7 @@ def build(
         "version": mk["version"],
         "market": market,
         "currency": mk["currency"],
+        **({"bank_figures": True} if bank_figures else {}),
         "domain": "credit_underwriting",
         "domain_version": "0.1",
         "sdd": {
@@ -793,8 +806,11 @@ def main() -> None:
     ap.add_argument("--spec", type=Path, default=None, help="SDD spec (default: bundled)")
     ap.add_argument("--market", choices=sorted(MARKETS), default="sample",
                     help="currency and jurisdiction overlay (default: sample)")
+    ap.add_argument("--bank-figures", action="store_true",
+                    help="add the figures the bank's rules engine computes to each case file "
+                         "(shown to the assistant only in the with_figures setup)")
     a = ap.parse_args()
-    m = build(a.n, a.keep, a.seed, a.out, a.pack_id, a.spec, a.market)
+    m = build(a.n, a.keep, a.seed, a.out, a.pack_id, a.spec, a.market, a.bank_figures)
     keys = ("pack_id", "population", "items", "items_sha256")
     print(json.dumps({k: m[k] for k in keys}, indent=2))
 

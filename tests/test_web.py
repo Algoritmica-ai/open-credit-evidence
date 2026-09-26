@@ -6,6 +6,7 @@ Runs use the same stubbed model as the runner tests, so a whole run — start,
 poll, evidence, verify, tamper demo — completes here without a network.
 """
 
+import json
 import time
 from pathlib import Path
 
@@ -295,6 +296,15 @@ def test_review_endpoints_on_a_copy_of_a_committed_run(tmp_path, monkeypatch):
     assert fb["counts"]["judge_labels.jsonl"] >= 1
     assert c.get(f"/api/review/{src.name}/feedback/manifest.json").status_code == 200
     assert c.get("/api/overview").json()["stages"]["feedback_built"]
+    import io
+    import zipfile
+
+    z = zipfile.ZipFile(io.BytesIO(c.get(f"/api/review/{src.name}/handover.zip").content))
+    names = {n.split("/", 1)[1] for n in z.namelist()}
+    assert {"sft_train.jsonl", "dpo_train.jsonl", "judge_labels.jsonl", "training_config.yaml",
+            "README.md", "manifest.json"} <= names
+    ev = c.get(f"/api/review/{src.name}").json()["evaluator"]
+    assert ev["panel"]["memos_with_a_rule_failure"] + ev["panel"]["memos_passing_every_rule"] == 60
     d = c.get(f"/api/runs/{src.name}").json()
     assert d["panel"]["briefings"] == 60 and d["headline"]["memos"] == 60
     assert "Credit Evidence" in c.get("/").text
@@ -366,3 +376,79 @@ def test_a_test_can_be_stopped_during_the_panel(client, monkeypatch):
         time.sleep(0.02)
     assert j["status"] == "cancelled" and j["transcripts"] == 2 and "panel_error" not in j
     assert client.post(f"/api/runs/{job['run_id']}/verify", json={}).json()["ok"]
+
+
+def _with_bank_figures(src, dst, pack_id):
+    """A copy of a pack whose case files carry a rules-engine document, as fresh packs do."""
+    import hashlib
+    import shutil
+
+    shutil.copytree(src, dst)
+    items = [json.loads(x) for x in (dst / "items.jsonl").read_text().splitlines()]
+    for it in items:
+        it["item_id"] = it["item_id"].replace(src.name + ":", pack_id + ":", 1)
+        it["pack"] = pack_id
+        it["context"].append({"renderer": "rules_engine", "variant": "complete",
+                              "content": "# Figures from the Bank's Systems\n\n| Debt service "
+                                         "as a share of gross monthly income | 47.0% |"})
+    (dst / "items.jsonl").write_text("".join(json.dumps(it) + "\n" for it in items))
+    m = json.loads((dst / "manifest.json").read_text())
+    m.update(pack_id=pack_id, bank_figures=True,
+             items_sha256=hashlib.sha256((dst / "items.jsonl").read_bytes()).hexdigest())
+    (dst / "manifest.json").write_text(json.dumps(m))
+
+
+def test_a_change_is_tested_on_new_cases_as_it_is_and_with_the_change(client, monkeypatch,
+                                                                       tmp_path):
+    seen = []
+
+    def fake_fresh(from_pack):
+        pid = "underwriter-sample-s4242"
+        _with_bank_figures(web.PACKS / from_pack, web.PACKS / pid, pid)
+        return {"pack_id": pid, "seed": 4242, "from": from_pack, "items": 20,
+                "shared_with_other_packs": 0, "seconds": 0.1, "links": web.SDD_LINKS}
+
+    def chat(role, system, user, **_):
+        seen.append("Figures from the Bank" in user)
+        return ChatResponse("Debt service 47% exceeds the 40% policy limit.", "stub", "p",
+                            {"seed": 7}, 3, 5, 5, "a", "http://stub/v1")
+
+    monkeypatch.setattr(web, "make_fresh_pack", fake_fresh)
+    base = client.post("/api/run", json={"pack": "underwriter-sample", "repeats": 1, "limit": 2,
+                                         "judge": False}).json()
+    for _ in range(200):
+        if client.get(f"/api/run/{base['job_id']}").json()["status"] != "running":
+            break
+        time.sleep(0.05)
+    monkeypatch.setattr("evidence.runner.chat", chat)
+    assert client.post("/api/retest", json={"from_run": base["run_id"], "setup": "as_is"}
+                       ).status_code == 400
+    job = client.post("/api/retest", json={"from_run": base["run_id"]}).json()
+    for _ in range(400):
+        j = client.get(f"/api/run/{job['job_id']}").json()
+        if j["status"] != "running":
+            break
+        time.sleep(0.05)
+    assert j["status"] == "done" and j["verdict"] and j["seed"] == 4242, j
+    b = client.get(f"/api/runs/{j['before']}").json()["manifest"]
+    a = client.get(f"/api/runs/{j['after']}").json()["manifest"]
+    assert (b["setup"], a["setup"]) == ("as_is", "with_figures")
+    assert b["pack"]["pack_id"] == a["pack"]["pack_id"] == "underwriter-sample-s4242"
+    assert seen.count(True) == seen.count(False) == 20  # the figures went to one side only
+    for r in (j["before"], j["after"]):
+        assert client.post(f"/api/runs/{r}/verify", json={"recompute": True}).json()["ok"]
+    c = client.get("/api/compare", params={"before": j["before"], "after": j["after"]}).json()
+    assert [x["what"] for x in c["changed"] if x["what"] != "engine commit"] == [
+        "assistant setup"]
+
+
+def test_new_cases_come_from_the_synthetic_data_designer(client):
+    pytest.importorskip("sdd")
+    import shutil
+
+    shutil.copytree(ROOT / "packs" / "underwriter-de", web.PACKS / "underwriter-de")
+    f = client.post("/api/packs/fresh", json={"from": "underwriter-de"}).json()
+    assert f["pack_id"].startswith("underwriter-de-s") and f["shared_with_other_packs"] == 0
+    listed = {p["pack_id"]: p for p in client.get("/api/packs").json()}
+    assert listed[f["pack_id"]]["bank_figures"] and listed[f["pack_id"]]["items"] == 20
+    assert f["links"]["space"].startswith("https://huggingface.co/spaces/")

@@ -152,3 +152,36 @@ def test_header_names_in_any_case_reach_the_nim(servers):
         r = c.getresponse()
         assert r.status == 200, (name, r.read())
         r.read()
+
+
+def test_requests_take_turns_across_judge_servers_and_skip_one_that_is_gone(tmp_path):
+    hits = {"a": 0, "b": 0}
+
+    def named(name):
+        class Named(FakeNIM):
+            def do_POST(self):  # noqa: N802
+                hits[name] += 1
+                super().do_POST()
+        return Named
+
+    a, b = _serve(named("a")), _serve(named("b"))
+    extra = tmp_path / "upstreams"
+    ups = relay.Upstreams(f"http://127.0.0.1:{a.server_port}", str(extra))
+    rel = _serve(relay.make_handler(ups, log=lambda s: None))
+    url = f"http://127.0.0.1:{rel.server_port}"
+    try:
+        for _ in range(2):  # one server until the file names the second
+            assert _post(url, {"messages": []})[0] == 200
+        assert hits == {"a": 2, "b": 0}
+        extra.write_text(f"# the second judge\nhttp://127.0.0.1:{b.server_port}\n")
+        for _ in range(4):
+            assert _post(url, {"messages": [], "stream": True, "tools": TOOLS})[0] == 200
+        assert hits["a"] == 4 and hits["b"] == 2  # alternating, streamed tool calls included
+        b.shutdown()
+        b.server_close()
+        for _ in range(3):  # the second is gone: every request still answered, by the first
+            assert _post(url, {"messages": []})[0] == 200
+        assert hits["a"] == 7
+    finally:
+        rel.shutdown()
+        a.shutdown()
