@@ -24,12 +24,14 @@ evidence = "evidence.cli:main"
 sdd = "sdd.cli:app"  # the Synthetic Data Designer, vendored in src/sdd
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.5", "httpx>=0.27"]
+dev = ["pytest>=8", "ruff>=0.5", "httpx>=0.27", "opentimestamps>=0.4.5"]
+# Anchoring a run's seal in Bitcoin through OpenTimestamps (evidence.anchor); optional.
+anchor = ["opentimestamps>=0.4.5"]
 # The Synthetic Data Designer (src/sdd) generates the test cases; the web UI serves it at /sdd/.
 generate = ["numpy>=1.26", "scipy>=1.11", "duckdb>=0.10", "typer>=0.12", "openpyxl>=3.1",
             "scikit-learn>=1.3"]
 web = ["fastapi>=0.110", "uvicorn[standard]>=0.29", "python-multipart>=0.0.9",
-       "credit-evidence-engine[generate]"]
+       "credit-evidence-engine[generate,anchor]"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

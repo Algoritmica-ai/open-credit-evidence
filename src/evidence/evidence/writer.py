@@ -76,10 +76,20 @@ def _sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+ANCHORS = "anchors"  # the proofs that anchor the seal (evidence.anchor): outside it
+
+
+def sealed_files(run: Path) -> list[Path]:
+    """Every file the seal covers: all of the run but the seal itself and its anchors."""
+    return sorted(p for p in run.rglob("*") if p.is_file() and p.name != CHECKSUMS
+                  and p.relative_to(run).parts[0] != ANCHORS)
+
+
 def seal(run: Path) -> int:
-    """Write checksums.sha256 over every file in the run (except itself). Returns the count."""
+    """Write checksums.sha256 over every file in the run (except itself and its anchors).
+    Returns the count."""
     lines = []
-    for path in sorted(p for p in run.rglob("*") if p.is_file() and p.name != CHECKSUMS):
+    for path in sealed_files(run):
         lines.append(f"{_sha256_file(path)}  {path.relative_to(run).as_posix()}")
     (run / CHECKSUMS).write_text("\n".join(lines) + "\n", encoding="utf-8")
     return len(lines)

@@ -68,7 +68,19 @@ def _cmd_run(a: argparse.Namespace) -> int:
         if not p["ok"]:
             return 1
         print(f"panel    {p['report']}")
+    _anchor_now(out, "test")
     return 0
+
+
+def _anchor_now(run: Path, what: str) -> None:
+    """Anchor the run's seal in Bitcoin (OpenTimestamps) when anchoring is on."""
+    from evidence import anchor
+
+    rec = anchor.anchor(run, what)
+    if rec:
+        print(f"anchored {rec['status']}: seal {rec['seal'][:16]}… sent to "
+              f"{len(rec.get('calendars') or [])} calendar(s); confirmed in Bitcoin within "
+              f"a few hours (evidence anchor {run} --upgrade)")
 
 
 def _print_decision(run: Path) -> None:
@@ -141,7 +153,54 @@ def _cmd_verify(a: argparse.Namespace) -> int:
     print(v.message + ("   OK" if v.ok else "   FAIL"))
     for d in (v.disagreements + v.derived)[:20]:
         print(f"  {d}")
-    return 0 if v.ok else 1
+    anchored = True
+    if (Path(a.run) / "anchors").is_dir():
+        from evidence import anchor
+
+        res = anchor.verify(Path(a.run))
+        anchored = res["ok"]
+        print(f"anchors  {res['message']}" + ("   OK" if res["ok"] else "   FAIL"))
+        for r in res["anchors"]:
+            _print_anchor(r)
+    return 0 if v.ok and anchored else 1
+
+
+def _print_anchor(r: dict) -> None:
+    b = r.get("block") or {}
+    where = (f"Bitcoin block {b['height']:,}, {b['time']}" if b.get("time")
+             else f"Bitcoin block {b['height']:,} (not checked: {b.get('unchecked')})" if b
+             else r.get("state"))
+    print(f"  {r['n']:03d} {r['what']:14} {r['at']}  {where}")
+    print(f"      {r['unchanged']} files unchanged since; {len(r['changed'])} changed, "
+          f"{len(r['added'])} added, {len(r['removed'])} removed")
+    for p in r["problems"]:
+        print(f"      FAIL {p}")
+
+
+def _cmd_anchor(a: argparse.Namespace) -> int:
+    from evidence import anchor
+
+    run = Path(a.run)
+    if not anchor.enabled():
+        print("anchoring is off (EVIDENCE_ANCHOR=off) or the opentimestamps package is not "
+              "installed (pip install -e '.[anchor]')", file=sys.stderr)
+        return 1
+    if a.upgrade:
+        for rec in anchor.upgrade(run):
+            print(f"  {rec['n']:03d} {rec['what']}: {rec['status']}"
+                  + (f", Bitcoin block {rec['bitcoin']['height']:,}" if rec["bitcoin"] else ""))
+    elif not a.status:
+        rec = anchor.anchor(run, a.what)
+        if rec is None:
+            print(f"{run} is not sealed", file=sys.stderr)
+            return 1
+        print(f"  {rec['n']:03d} {rec['what']}: {rec['status']} "
+              f"({len(rec.get('calendars') or [])} calendar(s))")
+    for r in anchor.status(run):
+        b = r["bitcoin"] or {}
+        print(f"{r['n']:03d}  {r['what']:14} {r['at']}  {r['status']}"
+              + (f"  block {b['height']:,}" if b else "") + f"  seal {r['seal'][:16]}…")
+    return 0
 
 
 def _cmd_compare(a: argparse.Namespace) -> int:
@@ -386,6 +445,14 @@ def main(argv: list[str] | None = None) -> int:
     v.add_argument("--recompute", action="store_true")
     v.add_argument("--pack")
     v.set_defaults(fn=_cmd_verify)
+
+    an = sub.add_parser("anchor", help="anchor a run's seal in Bitcoin with OpenTimestamps")
+    an.add_argument("run")
+    an.add_argument("--what", default="manual", help="the milestone's label (default: manual)")
+    an.add_argument("--upgrade", action="store_true",
+                    help="fetch complete proofs for pending anchors; send failed ones again")
+    an.add_argument("--status", action="store_true", help="list the anchors, change nothing")
+    an.set_defaults(fn=_cmd_anchor)
 
     u = sub.add_parser("rules", help="evaluate the jurisdiction rule pack for a pack's context")
     u.add_argument("pack")

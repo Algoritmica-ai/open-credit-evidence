@@ -142,6 +142,7 @@ All are optional and go in `.env` or the shell.
 | `EVIDENCE_PANEL_SSH` | not set | Runs the AI reviewers inside the NemoClaw sandbox on the cluster (for example `"codefest rtx-3se-06-04"`); see [cluster.md](cluster.md) |
 | `EVIDENCE_CHROME` | found automatically | The Chrome or Chromium used to print PDFs |
 | `EVIDENCE_MODELS_FILE` | `models.json` | The node's model fingerprints (image digests, weights hashes), written by the servers job |
+| `EVIDENCE_ANCHOR` | `on` | `off` stops anchoring each test's seal in Bitcoin; see [anchoring](anchoring.md) for its other settings |
 
 ## Where your data goes
 
@@ -151,6 +152,7 @@ Everything stays in the project folder (or the `--root` folder):
 |---|---|
 | `packs/` | Case sets. `underwriter-de` and `underwriter-sample` come with the code; generated sets are named like `underwriter-de-s78137` |
 | `runs/` | One folder per test: the memos, the check results, the review, the feedback pack, and `checksums.sha256`, which seals it all |
+| `runs/<test>/anchors/` | The Bitcoin proofs of the test's seal ([anchoring](anchoring.md)); copied with the test |
 | `runs/test-numbers.json` | The short test numbers shown in the UI (Test 1, Test 2, …) |
 
 To tidy up, move old runs or case sets to a folder outside the project. Don't delete them:
