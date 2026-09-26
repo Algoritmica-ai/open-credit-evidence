@@ -130,7 +130,7 @@ def run_direct(bundle_list: list[dict[str, Any]], *, workers: int, log: Any,
 
     records = panel.run_many(bundle_list, call=call, models=models, workers=workers, log=log,
                              write=(lambda r: sink([r])) if sink else (lambda r: None),
-                             should_stop=should_stop)
+                             should_stop=should_stop, up_front=True)
     return records, {"kind": "direct", "endpoint": ep.base_url, "models": models}
 
 

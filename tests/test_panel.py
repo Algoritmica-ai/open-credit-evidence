@@ -293,6 +293,40 @@ def test_the_sandbox_panel_stops_when_a_stop_file_appears(tmp_path):
                      str(tmp_path / "records.jsonl"), "--base-url", "http://unreachable.invalid"])
     assert rc == 0 and (tmp_path / "records.jsonl").read_text() == ""
 
+
+def test_v3_gives_the_challenger_the_case_file_and_the_checks_up_front():
+    call, seen = scripted()
+    firsts = []
+
+    def watch(model, messages, tools=None, **kw):
+        if "Challenger" in messages[0]["content"][:40] and len(messages) == 2:
+            firsts.append({"user": messages[1]["content"], "tools": tools, "kw": kw})
+        return call(model=model, messages=messages, tools=tools, **kw)
+
+    rec = panel.run_panel(BUNDLE, call=watch, models=dict.fromkeys(
+        ("reader", "challenger", "arbiter"), "m"), up_front=True)
+    assert rec["panel"] == panel.PANEL_VERSION_UP_FRONT and not rec.get("error")
+    first = firsts[0]
+    assert "CASE FILE:" in first["user"] and "52800" in first["user"].replace(",", "")
+    assert "claims above 40%, states 33.2%" in first["user"]  # every check's evidence
+    assert first["tools"] == ["calculate", "find_in_case_file"] and "thinking" not in first["kw"]
+    assert rec["checks_confirmed"] == ["claim_consistency"] and rec["unread_check_verdicts"] == []
+
+
+def test_thinking_can_be_turned_off_for_one_role():
+    call, _ = scripted()
+    asked = []
+
+    def watch(model, messages, tools=None, **kw):
+        asked.append((messages[0]["content"].split()[3], kw.get("thinking", True)))
+        return call(model=model, messages=messages, tools=tools, **kw)
+
+    rec = panel.run_panel(BUNDLE, call=watch, models=dict.fromkeys(
+        ("reader", "challenger", "arbiter"), "m"), up_front=True,
+        thinking={"challenger": False})
+    assert {r for r, on in asked if not on} == {"Challenger"}
+    assert rec["thinking_off"] == ["challenger"]
+
 def test_panel_module_runs_on_the_standard_library_alone():
     import ast
     from pathlib import Path

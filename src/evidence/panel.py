@@ -48,6 +48,9 @@ from collections.abc import Callable
 from typing import Any
 
 PANEL_VERSION = "panel-v2"
+# v3: the Challenger gets the case file and every check's evidence in its first message
+# instead of fetching them one tool call at a time; it keeps the calculator and a search.
+PANEL_VERSION_UP_FRONT = "panel-v3"
 FIELDS = ("intelligible", "actionable", "overridable")
 MAX_PER_FIELD = 2
 # Model turns per agent, tool rounds included. The Challenger checks figures one
@@ -151,6 +154,33 @@ TOOLS = {
     },
 }
 ROLE_TOOLS = {"reader": [], "challenger": list(TOOLS), "arbiter": []}
+UP_FRONT_TOOLS = ["calculate", "find_in_case_file"]
+UP_FRONT_STEPS = 10
+
+CHALLENGER_UP_FRONT = (
+    "You are the Challenger on a panel reviewing a credit-referral briefing written by an AI "
+    "assistant for a human underwriter. Your job is to find what is wrong with it: figures "
+    "that are not in the case file or are computed wrongly, claims that contradict the "
+    "briefing's own figures (for example a limit said to be breached when the stated ratio "
+    "is below it), factors given the wrong way round, material facts left out, and reasons "
+    "that are not real factors.\n\n"
+    "The case file and the verdict and evidence of every deterministic check run on this "
+    "briefing are given below. A figure the briefing derives (monthly from annual, a sum, a "
+    "ratio) is correct if the arithmetic from case-file figures gives it: work it out with "
+    "the calculate tool, never in your head, and report it only if the result differs. A "
+    "difference that rounding explains (under half a percentage point, or a few units on a "
+    "figure the briefing rounds) is not an error. Monthly figures come from annual ones "
+    "divided by 12. Use find_in_case_file if you need a line of the case file again.\n"
+    "The checks are exact but narrow. Confirm a check only if you can see the problem "
+    "yourself; dispute it only if the case file shows it is wrong, and say why. Use only "
+    "the check names given. Do not report a figure you have not verified with a tool.\n\n"
+    "When you are done, answer with one JSON object and nothing else: "
+    '{"findings": [{"claim": "what the briefing says", "problem": "what is wrong", '
+    '"evidence": "what the case file or the calculation shows", "source": "case_file or '
+    'check:<name>", "severity": "material or minor"}], "checks_confirmed": ["<check name>"], '
+    '"checks_disputed": [{"name": "<check name>", "why": "..."}], '
+    '"summary": "one or two sentences"}'
+)
 
 
 # --------------------------------------------------------------------------- tools
@@ -211,7 +241,7 @@ def run_tool(name: str, args: dict[str, Any], bundle: dict[str, Any]) -> str:
 def chat(base_url: str, model: str, messages: list[dict[str, Any]],
          tools: list[str] | None = None, api_key: str | None = None,
          max_tokens: int = MAX_TOKENS, use_env_proxy: bool = False,
-         json_only: bool = False) -> dict[str, Any]:
+         json_only: bool = False, thinking: bool = True) -> dict[str, Any]:
     """One unstreamed chat completion from an OpenAI-compatible server.
 
     A self-hosted server is called directly, never through a proxy. Inside a
@@ -227,6 +257,8 @@ def chat(base_url: str, model: str, messages: list[dict[str, Any]],
                          for n in tools]
     if json_only:
         body["response_format"] = {"type": "json_object"}
+    if not thinking:  # Nemotron reasoning off for this call (the chat template's switch)
+        body["chat_template_kwargs"] = {"enable_thinking": False}
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
@@ -264,7 +296,8 @@ def parse_json(text: str, keys: tuple[str, ...]) -> dict[str, Any] | None:
 
 
 def run_agent(role: str, system: str, user: str, bundle: dict[str, Any], *, call: Chat,
-              model: str, keys: tuple[str, ...]) -> dict[str, Any]:
+              model: str, keys: tuple[str, ...], tools: list[str] | None = None,
+              steps_max: int | None = None, thinking: bool = True) -> dict[str, Any]:
     """One agent: model turns and tool rounds until it answers, recorded step by step.
 
     An answer that is empty (the turn's tokens went on reasoning) or not the JSON
@@ -272,8 +305,9 @@ def run_agent(role: str, system: str, user: str, bundle: dict[str, Any], *, call
     constrains the reply to valid JSON. So is the last turn, if the agent is
     still calling tools when its turns run out.
     """
-    tools = ROLE_TOOLS[role]
-    steps_max = MAX_STEPS[role]
+    tools = ROLE_TOOLS[role] if tools is None else tools
+    steps_max = steps_max or MAX_STEPS[role]
+    extra = {} if thinking else {"thinking": False}
     messages: list[dict[str, Any]] = [{"role": "system", "content": system},
                                       {"role": "user", "content": user}]
     steps: list[dict[str, Any]] = []
@@ -284,7 +318,7 @@ def run_agent(role: str, system: str, user: str, bundle: dict[str, Any], *, call
             messages.append({"role": "user", "content": "Stop using tools. Give your final "
                              "answer now, as the JSON object asked for."})
         reply = call(model=model, messages=messages,
-                     tools=None if closing else (tools or None), json_only=closing)
+                     tools=None if closing else (tools or None), json_only=closing, **extra)
         msg = (reply.get("choices") or [{}])[0].get("message") or {}
         calls = msg.get("tool_calls") or []
         step: dict[str, Any] = {"latency_ms": reply.get("_latency_ms"), "usage": reply.get(
@@ -359,8 +393,18 @@ def passages_block(passages: list[dict[str, Any]]) -> str:
                        for p in passages)
 
 
-def run_panel(bundle: dict[str, Any], *, call: Chat, models: dict[str, str]) -> dict[str, Any]:
-    """The three agents on one briefing, and the panel's record."""
+def checks_block(bundle: dict[str, Any]) -> str:
+    """Every check's verdict, detail and evidence, as check_result gives them one by one."""
+    return "\n\n".join(run_tool("check_result", {"name": c["name"]}, bundle)[:TOOL_RESULT_CHARS]
+                         for c in bundle.get("checks") or []) or "no checks were run"
+
+
+def run_panel(bundle: dict[str, Any], *, call: Chat, models: dict[str, str],
+              up_front: bool = False, thinking: dict[str, bool] | None = None) -> dict[str, Any]:
+    """The three agents on one briefing, and the panel's record. ``up_front`` gives the
+    Challenger the case file and the checks' evidence at the start (panel-v3); ``thinking``
+    turns a role's model reasoning off where it says False."""
+    think = {"reader": True, "challenger": True, "arbiter": True} | (thinking or {})
     passages = bundle.get("passages") or []
     given = {p["passage_id"] for p in passages}
     regulation = "\n\nREGULATION PASSAGES:\n\n" + passages_block(passages) if passages else ""
@@ -371,11 +415,19 @@ def run_panel(bundle: dict[str, Any], *, call: Chat, models: dict[str, str]) -> 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as both:
         reading = both.submit(run_agent, "reader", READER + regulation, briefing, bundle,
                               call=call, model=models["reader"],
-                              keys=("intelligible", "actionable"))
-        challenging = both.submit(run_agent, "challenger", CHALLENGER,
-                                  f"{briefing}\n\nCHECKS RUN ON THIS BRIEFING:\n{listed}",
-                                  bundle, call=call, model=models["challenger"],
-                                  keys=("findings",))
+                              keys=("intelligible", "actionable"), thinking=think["reader"])
+        if up_front:
+            challenging = both.submit(
+                run_agent, "challenger", CHALLENGER_UP_FRONT,
+                f"{briefing}\n\nCASE FILE:\n{bundle.get('case_file', '')}\n\n"
+                f"DETERMINISTIC CHECKS (verdict, detail, evidence):\n{checks_block(bundle)}",
+                bundle, call=call, model=models["challenger"], keys=("findings",),
+                tools=UP_FRONT_TOOLS, steps_max=UP_FRONT_STEPS, thinking=think["challenger"])
+        else:
+            challenging = both.submit(run_agent, "challenger", CHALLENGER,
+                                      f"{briefing}\n\nCHECKS RUN ON THIS BRIEFING:\n{listed}",
+                                      bundle, call=call, model=models["challenger"],
+                                      keys=("findings",), thinking=think["challenger"])
         reader, challenger = reading.result(), challenging.result()
     brief = {
         "reader": reader["parsed"] or {"error": reader.get("error")},
@@ -385,7 +437,8 @@ def run_panel(bundle: dict[str, Any], *, call: Chat, models: dict[str, str]) -> 
         "arbiter", ARBITER + regulation,
         f"{briefing}\n\nREADER:\n{json.dumps(brief['reader'], ensure_ascii=False)}\n\n"
         f"CHALLENGER:\n{json.dumps(brief['challenger'], ensure_ascii=False)}",
-        bundle, call=call, model=models["arbiter"], keys=("intelligible", "actionable"))
+        bundle, call=call, model=models["arbiter"], keys=("intelligible", "actionable"),
+        thinking=think["arbiter"])
 
     final = arbiter["parsed"]
     scores, reader_scores = _scores(final), _scores(reader["parsed"])
@@ -394,9 +447,11 @@ def run_panel(bundle: dict[str, Any], *, call: Chat, models: dict[str, str]) -> 
     names = {c["name"] for c in bundle.get("checks", [])}
     said = [str(x) for x in ch.get("checks_confirmed") or []]
     disputed_all = [d for d in ch.get("checks_disputed") or [] if isinstance(d, dict)]
-    # a verdict on a check counts only if the Challenger read that check's evidence
-    read = {str((c.get("arguments") or {}).get("name")) for s in challenger["steps"]
-            for c in s.get("tool_calls", []) if c.get("name") == "check_result"}
+    # a verdict on a check counts only if the Challenger read that check's evidence: in v3
+    # every check's evidence is in its first message
+    read = set(names) if up_front else {
+        str((c.get("arguments") or {}).get("name")) for s in challenger["steps"]
+        for c in s.get("tool_calls", []) if c.get("name") == "check_result"}
     confirmed = sorted({x for x in said if x in names and x in read})
     disputed = [d for d in disputed_all if d.get("name") in names and d.get("name") in read]
     unread = sorted({x for x in said if x in names and x not in read}
@@ -405,7 +460,10 @@ def run_panel(bundle: dict[str, Any], *, call: Chat, models: dict[str, str]) -> 
     invented = sorted({x for x in said if x not in names}
                       | {str(d.get("name")) for d in disputed_all if d.get("name") not in names})
     return {
-        "item_id": bundle["item_id"], "repeat": bundle["repeat"], "panel": PANEL_VERSION,
+        "item_id": bundle["item_id"], "repeat": bundle["repeat"],
+        "panel": PANEL_VERSION_UP_FRONT if up_front else PANEL_VERSION,
+        **({"thinking_off": sorted(r for r, on in think.items() if not on)}
+           if not all(think.values()) else {}),
         "value": (round(sum(scores.values()) / (MAX_PER_FIELD * len(scores)), 3)
                   if scores else None),
         "scores": scores, "reader_scores": reader_scores,
@@ -428,7 +486,8 @@ def run_many(bundles: list[dict[str, Any]], *, call: Chat, models: dict[str, str
              workers: int = 4, done: set[tuple[str, int]] | None = None,
              write: Callable[[dict[str, Any]], None] = lambda r: None,
              log: Callable[[str], None] = print,
-             should_stop: Callable[[], bool] | None = None) -> list[dict[str, Any]]:
+             should_stop: Callable[[], bool] | None = None, up_front: bool = False,
+             thinking: dict[str, bool] | None = None) -> list[dict[str, Any]]:
     """The panel on every bundle not already done, a few at a time; each record written as
     it finishes, so an interrupted run resumes. Once ``should_stop`` says so, no briefing
     starts and those in progress are dropped at their next turn; what finished is kept."""
@@ -445,7 +504,8 @@ def run_many(bundles: list[dict[str, Any]], *, call: Chat, models: dict[str, str
         if stop():
             return None
         try:
-            return run_panel(b, call=guarded, models=models)
+            return run_panel(b, call=guarded, models=models, up_front=up_front,
+                             thinking=thinking)
         except Stopped:
             return None
         except (urllib.error.URLError, OSError, ValueError) as e:
@@ -484,6 +544,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="connect through the proxy in the environment (inside a sandbox)")
     ap.add_argument("--stop-file", help="stop when this file appears (default: STOP next to "
                     "--out)")
+    ap.add_argument("--fetch-evidence", dest="up_front", action="store_false",
+                    help="panel-v2: the Challenger fetches the case file and each check's "
+                    "evidence with tools (default: given up front, panel-v3)")
     a = ap.parse_args(argv)
     stop_file = a.stop_file or os.path.join(os.path.dirname(os.path.abspath(a.out)), "STOP")
     models = {r: getattr(a, f"{r}_model") or a.model for r in ("reader", "challenger",
@@ -508,7 +571,7 @@ def main(argv: list[str] | None = None) -> int:
 
         run_many(bundles, call=call, models=models, workers=a.workers, done=done, write=write,
                  log=lambda s: print(s, file=sys.stderr, flush=True),
-                 should_stop=lambda: os.path.exists(stop_file))
+                 should_stop=lambda: os.path.exists(stop_file), up_front=a.up_front)
     return 0
 
 
