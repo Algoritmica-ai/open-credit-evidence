@@ -18,12 +18,14 @@ result. Logic belongs in the engine where the CLI can reach it too.
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
 import io
 import json
 import os
 import re
 import shutil
+import sys
 import tempfile
 import threading
 import uuid
@@ -86,7 +88,13 @@ _SAFE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 _jobs: dict[str, dict[str, Any]] = {}
 _lock = threading.Lock()
 
-app = FastAPI(title="Credit Evidence Engine", version=__version__)
+@contextlib.asynccontextmanager
+async def _lifespan(_: FastAPI) -> Any:
+    _start_anchor_upgrader()  # proofs pending in Bitcoin are collected while the UI runs
+    yield
+
+
+app = FastAPI(title="Credit Evidence Engine", version=__version__, lifespan=_lifespan)
 
 
 # ----------------------------------------------------------------- helpers
@@ -536,6 +544,8 @@ def _job_worker(job_id: str, pack: Pack, out: Path, opts: dict[str, Any]) -> Non
                 run_id=manifest["run_id"],
                 transcripts=manifest["transcripts"],
             )
+        if manifest["transcripts"]:
+            _anchor_later(out, "test")
         if job.get("panel_remaining") and not job.get("cancel"):
             _finish_panel(job, pack, out)
     except Exception as exc:  # noqa: BLE001 — the browser needs the message, not a 500
@@ -696,6 +706,7 @@ def _retest_worker(job_id: str, from_run: str, setup: str) -> None:
                           setup=which, log=log, should_stop=lambda: job.get("cancel", False))
             if mf["transcripts"]:
                 write_evidence(out, pack.obligations)
+                _anchor_later(out, "test")
             runs_made[name] = out.name
             with _lock:
                 job[name] = out.name
@@ -964,11 +975,25 @@ def run_detail(run_id: str) -> dict[str, Any]:
         },
         "transcripts": sorted(p.name for p in (path / "transcripts").glob("*.json")),
         "sealed": (path / "checksums.sha256").is_file(),
+        "anchoring": _anchoring(),
+        "anchors": _anchor_status(path),
         "readers": [
             {"name": name} | meta | {"available": (ev / "readers" / f"{name}.md").is_file()}
             for name, meta in READERS.items()
         ],
     }
+
+
+def _anchoring() -> bool:
+    from evidence import anchor
+
+    return anchor.enabled()
+
+
+def _anchor_status(path: Path) -> list[dict[str, Any]]:
+    from evidence import anchor
+
+    return anchor.status(path)
 
 
 @app.get("/api/runs/{run_id}/pdf/{name}")
@@ -1038,7 +1063,79 @@ def verify(run_id: str, payload: dict[str, Any] = _OPTIONAL_BODY) -> dict[str, A
         pack_id = _read_json(path / "manifest.json")["pack"]["pack_id"]
         pack = _pack(pack_id)
     v = verify_run(path, pack, recompute=recompute)
-    return v.__dict__
+    out = dict(v.__dict__)
+    if (path / "anchors").is_dir():  # the Bitcoin proofs of the seal: checked on public explorers
+        from evidence import anchor
+
+        out["anchors"] = anchor.verify(path)
+        out["ok"] = out["ok"] and out["anchors"]["ok"]
+    return out
+
+
+# ------------------------------------------------------------------ anchoring
+
+
+def _anchor_later(run: Path, what: str) -> None:
+    """Anchor a run's seal in Bitcoin (OpenTimestamps) on a thread: a few seconds of network
+    that must never hold up or fail a test. Off with EVIDENCE_ANCHOR=off."""
+    from evidence import anchor
+
+    if not anchor.enabled():
+        return
+
+    def go() -> None:
+        try:
+            anchor.anchor(run, what)
+        except Exception as exc:  # noqa: BLE001 — anchoring is an addition, never a failure
+            print(f"anchor {run.name}: {type(exc).__name__}: {exc}", file=sys.stderr)
+
+    threading.Thread(target=go, daemon=True, name=f"anchor-{run.name}").start()
+
+
+def _upgrade_anchors() -> int:
+    """Fetch complete proofs for every pending anchor, and send failed ones again."""
+    from evidence import anchor
+
+    n = 0
+    for d in sorted(RUNS.glob("*/anchors")):
+        if any(r["status"] in ("pending", "failed") for r in anchor.records(d.parent)):
+            try:
+                n += len(anchor.upgrade(d.parent))
+            except Exception as exc:  # noqa: BLE001
+                print(f"anchor upgrade {d.parent.name}: {exc}", file=sys.stderr)
+    return n
+
+
+def _anchor_upgrader() -> None:
+    import time
+
+    time.sleep(60)
+    while True:
+        _upgrade_anchors()
+        time.sleep(float(os.environ.get("EVIDENCE_ANCHOR_UPGRADE_S", "1800")))
+
+
+def _start_anchor_upgrader() -> None:
+    from evidence import anchor
+
+    if anchor.enabled():
+        threading.Thread(target=_anchor_upgrader, daemon=True, name="anchor-upgrader").start()
+
+
+@app.post("/api/runs/{run_id}/anchor")
+def run_anchor(run_id: str, payload: dict[str, Any] = _OPTIONAL_BODY) -> dict[str, Any]:
+    """Anchor the run's seal now (``{"action": "now"}``) or fetch its complete proofs
+    (``{"action": "upgrade"}``). Returns the anchors as recorded."""
+    from evidence import anchor
+
+    path = _run_dir(run_id)
+    if not anchor.enabled():
+        raise HTTPException(400, "anchoring is off (EVIDENCE_ANCHOR=off) or not installed")
+    if payload.get("action") == "upgrade":
+        anchor.upgrade(path)
+    else:
+        anchor.anchor(path, str(payload.get("what") or "manual"))
+    return {"anchoring": True, "anchors": anchor.status(path)}
 
 
 @app.post("/api/runs/{run_id}/tamper-demo")
@@ -1283,6 +1380,7 @@ def review_feedback(run_id: str) -> dict[str, Any]:
     run = _run_dir(run_id)
     manifest = review.build_feedback(run, _review_queue(run))
     _reseal(run)
+    _anchor_later(run, "feedback-pack")
     return manifest
 
 

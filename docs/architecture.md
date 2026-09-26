@@ -49,6 +49,7 @@ Each step, what it produces and where it lives:
 | 3 | Rule checks | Six checks mark every memo against the case file and the case's known facts. No model is involved, so the same memo always gets the same result | `results.jsonl`; per check a pass rate, and how many cases got different results between runs | `checks/`, `aggregate.py` |
 | 4 | Second opinion (optional) | Three agents on the judge model: a Reader scores the memo as an underwriter would; a Challenger checks it against the case file with tools and the engine's reference figures; an Arbiter decides and flags memos for a person | `panel/records.jsonl` and every agent's conversation | `panel.py`, `panel_run.py`; in the NemoClaw sandbox via `scripts/cluster/panel_nemoclaw.sh` |
 | — | Seal and decide | The results become a decision against the bank's thresholds (GO / GO WITH CONDITIONS / NO-GO), root causes, recommendations and one report per reader; every file is hashed into `checksums.sha256` | `evidence/`, `checksums.sha256` | `evidence/` |
+| — | Anchor | The seal's fingerprint goes into the Bitcoin blockchain through OpenTimestamps, when the test finishes and each time a feedback pack is built. Standalone; `EVIDENCE_ANCHOR=off` turns it off ([anchoring](anchoring.md)) | `anchors/` in the test, outside its seal | `anchor.py` |
 | 5 | Review | Memos are sorted into lanes (both the checks and the AI reviewers flagged / one of them / neither). A person answers each finding: is the memo wrong here? The screen sets the case file's figures beside the memo and each finding; the coach answers only when asked | `review/records.jsonl`: answers, reasons, corrections, first answers, the coach conversation | `review.py`, `facts.py`, `coach.py` |
 | 6 | Improve | Model risk settles disagreements; people write the corrected wording of confirmed mistakes; the feedback pack is built from settled answers only | `feedback/`: corrected memos, before-and-after pairs, finding labels, rule-check fixes, and the fine-tuning handover zip | `review.py` (`labels`, `to_correct`, `build_feedback`, `build_handover`) |
 | 7 | Prove it | A change (the bank's own, such as handing the assistant its computed figures, or a fine-tuned model) is tested on new cases: as it is and with the change, same cases, compared case by case | Two sealed runs and a comparison: ACCEPT / REJECT / INCONCLUSIVE / NO EFFECT | `evidence/compare.py`; the re-test job in `web/app.py` |
@@ -61,6 +62,9 @@ What keeps the evidence honest:
   see the case documents only. The checks and the review's agreement figures use the key.
 - **Sealed and re-derivable.** A review, a ruling, a correction or a rebuilt pack re-seals
   the run; `evidence verify --recompute` re-runs every check from the transcripts.
+- **Anchored outside our control.** The seal is anchored in Bitcoin, so not even we can
+  change a memo or a check result and seal it again without it showing; anyone can check
+  the proof with the official OpenTimestamps client.
 - **Repeats measure consistency.** A case run more than once shows whether the assistant
   answers the same way; the decision adds a condition when more than 10% of cases change
   result between runs.

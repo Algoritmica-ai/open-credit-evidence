@@ -61,3 +61,9 @@ def one_memo_at_a_time(monkeypatch):
     """Stubs that vary their answer by call order need calls in order. Parallel runs are
     tested on their own, with a stub that answers by memo (test_run_and_verify)."""
     monkeypatch.setenv("EVIDENCE_WORKERS", "1")
+
+
+@pytest.fixture(autouse=True)
+def _no_anchoring(monkeypatch):
+    """Tests never reach the OpenTimestamps calendars; tests/test_anchor.py passes fakes."""
+    monkeypatch.setenv("EVIDENCE_ANCHOR", "off")

@@ -62,7 +62,7 @@ Synthetic Data Designer ──▶ scorecard ──▶ pack (documents + sealed m
 ## Quick start
 
 Guides: [local setup](docs/setup.md) · [underwriter guide to the UI](docs/underwriter-guide.md) ·
-[architecture and the end-to-end flow](docs/architecture.md)
+[architecture and the end-to-end flow](docs/architecture.md) · [anchoring in Bitcoin](docs/anchoring.md)
 
 ```bash
 git clone https://github.com/Algoritmica-ai/open-credit-evidence.git
@@ -87,7 +87,10 @@ readability judge — and the evidence pack it produces:
 .venv/bin/evidence verify runs/today --recompute --pack packs/underwriter-sample
 ```
 
-Change one digit in any transcript and `verify` fails, naming the file.
+Change one digit in any transcript and `verify` fails, naming the file. And the seal is
+anchored in Bitcoin through OpenTimestamps (free, only the fingerprint leaves the machine), so
+not even the people running the tests can change a file and seal it again unnoticed
+([anchoring](docs/anchoring.md); `EVIDENCE_ANCHOR=off` turns it off).
 
 Every run's evidence pack now opens with **the decision** — GO / GO WITH CONDITIONS /
 NO-GO / INCONCLUSIVE against the bank's thresholds (`evidence/thresholds.yaml`) — then

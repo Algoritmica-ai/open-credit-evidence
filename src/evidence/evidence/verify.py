@@ -24,7 +24,7 @@ from typing import Any
 
 from evidence.checks import run_checks
 from evidence.contracts.transcript import Transcript
-from evidence.evidence.writer import CHECKSUMS, _sha256_file, build_evidence
+from evidence.evidence.writer import CHECKSUMS, _sha256_file, build_evidence, sealed_files
 from evidence.pack import Pack
 
 
@@ -59,7 +59,7 @@ def verify_integrity(run: Path) -> Verification:
             v.missing.append(name)
         elif _sha256_file(path) != digest:
             v.mismatched.append(name)
-    present = {p.relative_to(run).as_posix() for p in run.rglob("*") if p.is_file()} - {CHECKSUMS}
+    present = {p.relative_to(run).as_posix() for p in sealed_files(run)}
     v.unlisted = sorted(present - expected.keys())
     v.ok = not (v.mismatched or v.missing or v.unlisted)
     if v.ok:

@@ -96,6 +96,10 @@ The result page answers: **can the assistant be used?**
   give the same answer twice.
 - **Download the sealed report (PDF):** the full evidence, for model risk, compliance or
   audit.
+- **Sealed and anchored:** under the buttons, whether the test's fingerprint is anchored in
+  the Bitcoin blockchain yet (usually within a few hours of the test). Once it is, nobody
+  can change a memo or a check result without it showing. **Show the technical detail**
+  lists each anchor, and **Check the seal** checks them. See [anchoring](anchoring.md).
 - **Review the flagged memos** takes you to step 2.
 
 ## Review

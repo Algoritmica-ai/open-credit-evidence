@@ -556,6 +556,20 @@ async function viewResult(id) {
       ? `Reading each memo on its own, as a lone AI judge would, the first of our three AI reviewers gave them ${Math.round(100 * p.judge_mean_value)}% on average. Once the second checked them against the case file, the panel ${caught}. ${why}`
       : `A single AI reviewer gave these memos ${Math.round(100 * p.judge_mean_value)}% on average. Our panel of three AI reviewers ${caught}. ${why}`;
   const reports = (d.readers || []).filter((r) => r.available && r.name !== "business");
+  // Anchoring: the seal's fingerprint in the Bitcoin blockchain, through OpenTimestamps
+  const MILESTONE = { test: "The test", "feedback-pack": "The feedback pack", manual: "Anchored by hand" };
+  const anchorLine = (a) => a.status === "confirmed"
+    ? `Anchored in Bitcoin block <b>${Number(a.bitcoin.height).toLocaleString("en-GB")}</b>${a.bitcoin.time ? `, ${esc(when(a.bitcoin.time))}` : ""}`
+    : a.status === "pending" ? `Waiting for Bitcoin since ${esc(when(a.at))}: usually a few hours`
+    : `Not yet sent: the calendars could not be reached (${esc(when(a.at))}); tried again automatically`;
+  const anchors = d.anchors || [];
+  const lastAnchor = anchors[anchors.length - 1];
+  const anchorBadge = lastAnchor ? `<p class="small muted row" style="gap:6px">${ICON.lock}${lastAnchor.status === "confirmed" ? `Sealed and anchored in Bitcoin block ${Number(lastAnchor.bitcoin.height).toLocaleString("en-GB")}` : lastAnchor.status === "pending" ? "Sealed; anchoring in Bitcoin (usually a few hours)" : "Sealed; anchoring will be tried again"}</p>` : "";
+  const anchorBox = `<div class="stack tight"><b>Anchored outside our control</b>
+      <p class="small muted">The seal's fingerprint (never the data) is written into the Bitcoin blockchain through OpenTimestamps, free of charge. After that, nobody, not even us, can change a memo or a check result without it showing, and anyone can check it with open-source tools.</p>
+      ${anchors.length ? `<ul class="small" style="margin:0;padding-left:18px">${anchors.map((a) => `<li>${esc(MILESTONE[a.what] || a.what)}: ${anchorLine(a)}</li>`).join("")}</ul>`
+        : d.anchoring ? '<p class="small">Not anchored yet. <button class="btn small" id="anchor-now">Anchor now</button></p>'
+        : '<p class="small muted">Anchoring is switched off on this server (EVIDENCE_ANCHOR=off).</p>'}</div>`;
   // Same case, different result: each case ran more than once; did its memos agree?
   const repeats = d.manifest.repeats || 1;
   const agree = Object.entries((d.summary && d.summary.repeat_agreement) || {}).filter(([k]) => CHECK[k]);
@@ -583,7 +597,8 @@ async function viewResult(id) {
       ${p && p.complete === false && p.planned ? `<p class="note-box amber small">The AI reviewers have answered ${p.answered} of ${p.planned} memos so far; the rest are being reviewed now. Reload this page in a few minutes for the full second opinion.</p>` : ""}
       <div class="row wrap" style="gap:12px;margin-top:6px">
         ${flagged ? `<a class="btn primary large" href="#/review/${enc(id)}">Review the ${flagged} flagged memos${ICON.arrow}</a>` : ""}
-        <a class="btn large" href="/api/runs/${enc(id)}/pdf/business">${ICON.down}Download the sealed report (PDF)</a></div></section>
+        <a class="btn large" href="/api/runs/${enc(id)}/pdf/business">${ICON.down}Download the sealed report (PDF)</a></div>
+      ${anchorBadge}</section>
     <div class="grid2">
       <section class="card stack" style="gap:18px"><h2 style="font-size:21px">What went wrong</h2>
         ${risks.length ? risks.map((r) => `<div class="stack tight"><div class="row" style="justify-content:space-between"><span style="font-weight:600">${esc(r.label)}</span><span style="font-weight:600;white-space:nowrap">${plural(r.briefings, "memo")}</span></div>
@@ -608,16 +623,20 @@ async function viewResult(id) {
         ${reports.length ? `<div class="stack tight"><b>Other reports</b><div class="row wrap" style="gap:8px">${reports.map((r) => `<a class="btn small" href="/api/runs/${enc(id)}/pdf/${enc(r.name)}">${esc(r.title || r.name)}</a>`).join("")}</div></div>` : ""}
         <div class="stack tight"><b>Is the evidence intact?</b><p class="small muted" id="vres">Every file in this test is sealed. Checking recomputes every result from the recorded memos.</p>
           <button class="btn small" id="verify" style="align-self:flex-start">Check the seal</button></div>
+        ${anchorBox}
         <p class="tiny muted">Assistant ${esc(d.manifest.sut && d.manifest.sut.model_id)} · test ${esc(id)}</p>
       </div></details>
   </div>`;
+  const an = document.getElementById("anchor-now");
+  if (an) an.onclick = async () => { an.disabled = true; try { await api(`/api/runs/${enc(id)}/anchor`, { action: "now", what: "test" }); } catch (e) { /* shown on reload */ } viewResult(id); };
   document.getElementById("verify").onclick = async (ev) => {
     const out = document.getElementById("vres");
     ev.target.disabled = true;
     out.textContent = "Checking…";
     try {
       const v = await api(`/api/runs/${enc(id)}/verify`, { recompute: true });
-      out.innerHTML = v.ok ? `<b style="color:var(--green)">Intact.</b> ${esc(v.message)}` : `<b class="error">Does not verify.</b> ${esc(v.message)}`;
+      out.innerHTML = (v.ok ? `<b style="color:var(--green)">Intact.</b> ${esc(v.message)}` : `<b class="error">Does not verify.</b> ${esc(v.message)}`)
+        + (v.anchors ? `<br>${v.anchors.ok ? "" : '<b class="error">Anchoring:</b> '}${esc(v.anchors.message)}` : "");
     } catch (e) { out.innerHTML = `<span class="error">${esc(e.message)}</span>`; }
     ev.target.disabled = false;
   };
