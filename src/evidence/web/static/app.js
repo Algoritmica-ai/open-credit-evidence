@@ -585,7 +585,11 @@ async function viewMemo(id, memo) {
   let signOff = false;
   let showRaise = false;
   let editName = !reviewer.get();
-  const coach = { session: null, turns: [], busy: false, error: "", beforeSave: false, draft: "" };
+  // The coach prepares a note on every finding as the memo opens; the note for an answer
+  // opens under the finding as soon as it is given. The first click on each finding is kept,
+  // so the review shows what the reviewer thought before any note was on screen.
+  const coach = { session: null, notes: null, reading: m.cards.length > 0, unavailable: "", turns: [], busy: false, error: "", draft: "" };
+  const firstClick = {};
 
   // The memo and the subbar are drawn once; the findings column redraws on every answer.
   const main = document.createElement("div");
@@ -633,6 +637,7 @@ async function viewMemo(id, memo) {
         ${st.action === "dispute" ? `<p class="small" style="font-weight:600">Why is the memo right?</p>
           <div class="answers chips">${Object.entries(REASON).map(([k, w]) => `<button type="button" data-r="${k}" aria-pressed="${st.reason === k}">${esc(w)}</button>`).join("")}</div>` : ""}
         ${st.action === "needs_more" ? '<p class="note-box amber small">Fine. A colleague from model risk will decide.</p>' : ""}
+        ${st.action ? coachNote(c.card_id, st.action) : ""}
       </section>`;
     }).join("");
     const none = !m.cards.length ? `<section class="finding"><h3>Nothing was found in this memo</h3>
@@ -652,11 +657,14 @@ async function viewMemo(id, memo) {
         ${t.reply ? `<p class="small">${esc(t.reply)}</p>` : ""}
         ${!t.challenges.length ? '<p class="small" style="color:var(--green);font-weight:600">No questions about your answers.</p>' : ""}</div>`).join("");
     const coachBox = m.cards.length ? `<section class="coach stack mid">
-        <div class="stack tight"><h3>Coach</h3><p class="tiny muted">A second opinion on your answers before you save. It points at the evidence; the decision is yours. It does not know the right answers.</p></div>
+        <div class="stack tight"><h3>Coach</h3><p class="tiny muted">A second opinion that points at the evidence; the decision is yours. It does not know the right answers, and it writes a note on every answer, so a note is not a sign the answer is wrong.</p></div>
+        ${coach.reading ? '<div class="row small"><span class="spinner" style="width:20px;height:20px" aria-hidden="true"></span>Reading the memo and the case file. Its notes open under each finding as you answer.</div>'
+          : coach.unavailable ? `<p class="small muted">The coach is not available for this memo (${esc(coach.unavailable)}). You can still answer and save.</p>`
+          : '<p class="small muted">Ready. Its note opens under each finding as you answer it.</p>'}
         ${thread}
         ${coach.busy ? '<div class="row small"><span class="spinner" style="width:20px;height:20px" aria-hidden="true"></span>The coach is reading your answers…</div>' : ""}
         ${coach.error ? `<p class="error small">${esc(coach.error)}</p>` : ""}
-        ${!coach.turns.length && !coach.busy ? `<button class="btn" id="coach-ask" style="align-self:flex-start" ${answered() < m.cards.length ? "disabled" : ""}>Ask the coach</button>${answered() < m.cards.length ? '<p class="tiny muted">Answer every finding first.</p>' : ""}` : ""}
+        ${!coach.turns.length && !coach.busy ? `<button class="btn small" id="coach-ask" style="align-self:flex-start" ${answered() < m.cards.length ? "disabled" : ""}>Check everything with the coach</button>${answered() < m.cards.length ? '<p class="tiny muted">Optional. Answer every finding first; the coach then looks at your answers together.</p>' : ""}` : ""}
         ${coach.turns.length && !coach.busy ? `<label class="small visually-hidden" for="coach-msg">Reply to the coach</label>
           <textarea id="coach-msg" placeholder="Reply to the coach, or change your answers above">${esc(coach.draft)}</textarea>
           <div class="row" style="gap:8px"><button class="btn small" id="coach-send">Send</button><button class="btn small" id="coach-again">Check my answers again</button></div>` : ""}
@@ -675,7 +683,11 @@ async function viewMemo(id, memo) {
         <a class="btn large" href="${nextHref}">Skip</a></div><p id="msg" class="error small"></p>`;
     side.querySelectorAll("[data-card]").forEach((el) => {
       const cid = el.dataset.card;
-      el.querySelectorAll("[data-a]").forEach((b) => (b.onclick = () => { state[cid] = { ...state[cid], action: b.dataset.a }; draw(); }));
+      el.querySelectorAll("[data-a]").forEach((b) => (b.onclick = () => {
+        if (!firstClick[cid]) firstClick[cid] = { card_id: cid, action: b.dataset.a, at: new Date().toISOString(), note_ready: !!coach.notes };
+        state[cid] = { ...state[cid], action: b.dataset.a };
+        draw();
+      }));
       el.querySelectorAll("[data-r]").forEach((b) => (b.onclick = () => { state[cid].reason = b.dataset.r; draw(); }));
       const fix = el.querySelector("[data-fix]");
       if (fix) fix.oninput = () => (state[cid].correction = fix.value);
@@ -710,6 +722,30 @@ async function viewMemo(id, memo) {
     }));
     void num;
   };
+  prepareCoach();
+
+  const NOTE_FOR = { confirm: "if_wrong", dispute: "if_right", needs_more: "if_unsure" };
+  function coachNote(cid, action) {
+    if (coach.reading) return '<div class="coachnote tiny muted"><span class="eyebrow">Coach</span>Still reading this memo; the note opens here in a moment.</div>';
+    const n = coach.notes && coach.notes[cid];
+    if (!n || !(n.evidence || n[NOTE_FOR[action]])) return "";
+    return `<div class="coachnote" role="status"><span class="eyebrow">Coach</span>
+      ${n.evidence ? `<p class="small">${esc(n.evidence)}</p>` : ""}
+      ${n[NOTE_FOR[action]] ? `<p class="small" style="font-weight:600">${esc(n[NOTE_FOR[action]])}</p>` : ""}</div>`;
+  }
+
+  // Prepare the notes now, then the next memo's, so they are ready when it opens.
+  async function prepareCoach() {
+    if (!m.cards.length) return;
+    try {
+      const r = await api(`/api/review/${enc(id)}/coach/prepare`, { memo });
+      coach.session = coach.session || r.session_id;
+      coach.notes = r.notes || {};
+    } catch (e) { coach.unavailable = e.message; }
+    coach.reading = false;
+    if (side.isConnected) draw();
+    if (next && next.memo !== memo) api(`/api/review/${enc(id)}/coach/prepare`, { memo: next.memo }).catch(() => {});
+  }
 
   const verdictsNow = () => m.cards.map((c) => ({ card_id: c.card_id, ...state[c.card_id] }));
   async function ask(message) {
@@ -733,19 +769,11 @@ async function viewMemo(id, memo) {
     if (open) { msg.textContent = `${plural(open, "finding")} still to answer.`; return; }
     if (noReason) { msg.textContent = "Say why the memo is right, for each finding you answered No."; return; }
     if (!m.cards.length && !signOff && !raised.length) { msg.textContent = "Say whether the memo is right, or add the problem you found."; return; }
-    if (m.cards.length && !coach.turns.length && !coach.error) {
-      // before the first save, the coach reads the answers; questions pause the save
-      const t = await ask();
-      if (t && t.challenges.length) {
-        side.querySelector("#msg").textContent = "The coach has questions. Change your answers, reply, or press Save again to keep them.";
-        return;
-      }
-    }
     side.querySelector("#save").disabled = true;
     try {
       await api(`/api/review/${enc(id)}/submit`, {
         memo, reviewer: who, seconds: (Date.now() - started) / 1000, raised,
-        verdicts: verdictsNow(), coach_session: coach.session,
+        verdicts: verdictsNow(), coach_session: coach.session, first_answers: Object.values(firstClick),
       });
       location.hash = nextHref;
     } catch (e) { msg.textContent = e.message; side.querySelector("#save").disabled = false; }

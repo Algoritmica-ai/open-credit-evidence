@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2026 Algoritmica GmbH
-"""The coach: a second pair of eyes that debates a reviewer's answers before they are saved.
+"""The coach: a second pair of eyes beside the reviewer, answering as they answer.
 
 One inference session per memo review, separate from the judge panel and from every other
 review. The coach sees what the reviewer sees (the memo, the findings with their evidence,
@@ -9,9 +9,15 @@ the reviewer's current answers. It does not see the answer key. It asks about an
 look inconsistent with the evidence and points at the evidence; it never says what to
 answer. The reviewer can change an answer, argue back, or keep their answers and save.
 
-The review keeps the answers from before the coach and the final ones, and the whole
-conversation, so the evidence shows which answers the coach changed, and whether that made
-them agree more or less with the known answers.
+When a memo opens, the coach prepares a note on every finding in the background: the
+evidence it turns on, in one neutral sentence, and what it would say to each possible
+answer, a question where that answer does not fit the evidence. The note for the answer the
+reviewer gives opens as soon as they give it. Every answer gets a note, so a note is not a
+verdict; the reviewer's first click on each finding is recorded before any note is shown.
+
+The review keeps the first answers and the final ones, the notes and the conversation, so
+the evidence shows which answers the coach changed, and whether that made them agree more
+or less with the known answers.
 """
 
 from __future__ import annotations
@@ -27,9 +33,10 @@ from typing import Any
 
 from evidence import panel
 
-COACH_VERSION = "coach-v1"
+COACH_VERSION = "coach-v2"
 MAX_TOKENS = 4000
 MAX_SESSIONS = 200  # sessions live in memory until the review is saved
+PREPARE_WAIT = 300  # seconds a request waits for notes another request is preparing
 
 SYSTEM = (
     "You are the coach beside a credit underwriter who is reviewing a memo an AI assistant "
@@ -54,6 +61,19 @@ SYSTEM = (
     'short question", "evidence": "the line or figure it rests on"}], "reply": "one or two '
     'sentences to the underwriter"}. At most three challenges, the most important first; '
     "none when every answer holds."
+)
+
+PREPARE = (
+    "\n\nThe underwriter has not answered yet. Prepare a note for every finding, for each of "
+    "their three possible answers: 'the memo is wrong here' (if_wrong), 'the memo is right' "
+    "(if_right) and 'not sure' (if_unsure). Start every finding with the evidence it turns on, "
+    "in one neutral sentence: the figure, the case-file line or the check result. For each "
+    "answer write one short sentence; where that answer does not fit the evidence, make it a "
+    "question that points at the evidence. Never write 'correct', 'right' or 'wrong' about "
+    "their answer, and never state a conclusion about the memo. For 'not sure', say what to "
+    "look at. For this step answer with one JSON object and nothing else: "
+    '{"notes": [{"finding": <number>, "evidence": "...", "if_wrong": "...", "if_right": '
+    '"...", "if_unsure": "..."}]}'
 )
 
 ANSWER_WORDS = {
@@ -81,11 +101,16 @@ class Session:
     messages: list[dict[str, Any]] = field(default_factory=list)
     turns: list[dict[str, Any]] = field(default_factory=list)
     first_answers: list[dict[str, Any]] | None = None
+    notes: dict[str, dict[str, str]] = field(default_factory=dict)
+    preparing: bool = False
+    error: str | None = None
+    ready: threading.Event = field(default_factory=threading.Event)
     started_at: str = field(default_factory=lambda: _now())
     used_at: float = field(default_factory=time.time)
 
 
 _sessions: dict[str, Session] = {}
+_by_memo: dict[tuple[str, str], str] = {}  # the open review of each memo: its notes are reused
 _lock = threading.Lock()
 
 
@@ -148,21 +173,95 @@ def start(run: str, memo: str, model: str) -> Session:
         return s
 
 
+def for_memo(run: str, memo: str, model: str) -> tuple[Session, bool]:
+    """The open coach session for a memo, or a new one; True when it is new (and so still to
+    be prepared). A memo prepared ahead, while the reviewer was on the one before, is reused."""
+    with _lock:
+        s = _sessions.get(_by_memo.get((run, memo), ""))
+        if s is not None:
+            s.used_at = time.time()
+            return s, False
+    s = start(run, memo, model)
+    s.preparing = True
+    with _lock:
+        _by_memo[(run, memo)] = s.id
+    return s, True
+
+
+def notes_of(s: Session) -> dict[str, Any]:
+    """The prepared notes, waiting while another request is still preparing them."""
+    if s.preparing:
+        s.ready.wait(PREPARE_WAIT)
+    if s.error or s.preparing:
+        raise OSError(s.error or "the coach is still reading this memo")
+    return {"session_id": s.id, "notes": s.notes}
+
+
+def prepare(s: Session, *, evidence: str, cards: list[dict[str, Any]],
+            call: Callable[..., dict[str, Any]]) -> dict[str, dict[str, str]]:
+    """Read the memo once and prepare a note on every finding, for each possible answer.
+    The conversation carries on from here when the reviewer replies."""
+    s.preparing = True
+    try:
+        if not cards:  # nothing to answer, nothing to prepare
+            return {}
+        s.messages = [{"role": "system", "content": SYSTEM},
+                      {"role": "user", "content": evidence + PREPARE}]
+        t0 = time.time()
+        reply = call(model=s.model, messages=s.messages, max_tokens=MAX_TOKENS)
+        text = ((reply.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+        parsed = panel.parse_json(text, ("notes",))
+        if parsed is None:  # the answer went on reasoning: once more, answer only
+            s.messages.append({"role": "assistant", "content": text})
+            s.messages.append({"role": "user", "content": "Give your answer now: the JSON "
+                               "object asked for, and nothing else."})
+            reply = call(model=s.model, messages=s.messages, max_tokens=MAX_TOKENS,
+                         json_only=True)
+            text = ((reply.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+            parsed = panel.parse_json(text, ("notes",))
+        notes: dict[str, dict[str, str]] = {}
+        for n in (parsed or {}).get("notes") or []:
+            k = n.get("finding") if isinstance(n, dict) else None
+            if isinstance(k, int) and 1 <= k <= len(cards):
+                notes[cards[k - 1]["card_id"]] = {
+                    f: str(n.get(f) or "")[:600]
+                    for f in ("evidence", "if_wrong", "if_right", "if_unsure")}
+        s.notes = notes
+        s.messages.append({"role": "assistant", "content": json.dumps(
+            {"notes": list(notes.values())}, ensure_ascii=False)})
+        s.turns.append({"at": _now(), "answers": [], "message": None,
+                        "coach": {"prepared_notes": len(notes)},
+                        "latency_ms": int((time.time() - t0) * 1000),
+                        "usage": reply.get("usage")})
+        return notes
+    except Exception as exc:  # recorded for whoever waits on these notes, then re-raised
+        s.error, s.messages = str(exc) or type(exc).__name__, []
+        raise
+    finally:
+        s.preparing = False
+        s.ready.set()
+
+
 def turn(s: Session, *, evidence: str, cards: list[dict[str, Any]],
          verdicts: list[dict[str, Any]], raised: list[dict[str, Any]], message: str | None,
          call: Callable[..., dict[str, Any]]) -> dict[str, Any]:
     """One exchange: the coach reads the reviewer's current answers (and their message, if
     any) and replies with its challenges. ``call`` is panel.chat bound to an endpoint."""
+    if s.preparing:  # the notes are still being prepared: the conversation continues from them
+        s.ready.wait(PREPARE_WAIT)
     answers = answers_block(cards, verdicts, raised)
-    if not s.messages:
+    if s.first_answers is None:
         s.first_answers = _snapshot(verdicts)
+    if not s.messages:
         s.messages = [{"role": "system", "content": SYSTEM},
                       {"role": "user", "content": f"{evidence}\n\nTHE UNDERWRITER'S ANSWERS:\n"
                                                   f"{answers}\n\nCheck their answers."}]
     else:
+        checked = any("challenges" in t["coach"] for t in s.turns)
         s.messages.append({"role": "user", "content": f"THE UNDERWRITER'S ANSWERS NOW:\n"
-                           f"{answers}" + (f"\n\nTHE UNDERWRITER SAYS: {message}"
-                                           if message else "\n\nCheck their answers again.")})
+                           f"{answers}" + (f"\n\nTHE UNDERWRITER SAYS: {message}" if message
+                                           else "\n\nCheck their answers"
+                                           + (" again." if checked else "."))})
     t0 = time.time()
     reply = call(model=s.model, messages=s.messages, max_tokens=MAX_TOKENS)
     text = ((reply.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
@@ -196,24 +295,30 @@ def turn(s: Session, *, evidence: str, cards: list[dict[str, Any]],
     return {"session_id": s.id, "turn": len(s.turns)} | out
 
 
-def record(s: Session, final: list[dict[str, Any]]) -> dict[str, Any]:
-    """What the review keeps of the conversation: the answers before the coach, which
-    answers changed after it, what it challenged, and every exchange."""
+def record(s: Session, final: list[dict[str, Any]],
+           first_clicks: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """What the review keeps of the conversation: the answers before the coach (the first
+    click on each finding, before its note opened), which answers changed after it, what it
+    challenged, its notes and every exchange."""
+    if first_clicks:
+        s.first_answers = _snapshot(first_clicks)
     first = {v["card_id"]: v for v in (s.first_answers or [])}
     changed = sorted(v["card_id"] for v in final
                      if v.get("card_id") in first
                      and (first[v["card_id"]].get("action"), first[v["card_id"]].get("reason"))
                      != (v.get("action"), v.get("reason")))
-    challenged = sorted({cid for t in s.turns for c in t["coach"]["challenges"]
+    challenged = sorted({cid for t in s.turns for c in t["coach"].get("challenges", [])
                          for cid in [c.get("card_id"), *c.get("also_card_ids", [])] if cid})
     return {"session": s.id, "version": COACH_VERSION, "model": s.model,
             "started_at": s.started_at, "turns": len(s.turns),
             "answers_before": s.first_answers or [], "changed_after_coach": changed,
-            "challenged": challenged,
+            "challenged": challenged, "notes": s.notes,
             "conversation": [{k: t[k] for k in ("at", "message", "coach", "latency_ms")}
                              for t in s.turns]}
 
 
 def close(session_id: str) -> None:
     with _lock:
-        _sessions.pop(session_id, None)
+        s = _sessions.pop(session_id, None)
+        if s is not None and _by_memo.get((s.run, s.memo)) == session_id:
+            _by_memo.pop((s.run, s.memo), None)

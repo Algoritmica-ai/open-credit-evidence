@@ -1096,23 +1096,15 @@ def _coach_call() -> tuple[Any, str]:
     return call, ep.model_id
 
 
-@app.post("/api/review/{run_id}/coach")
-def review_coach(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
-    """One exchange with the coach about a memo under review: it reads the reviewer's current
-    answers (and their message, if any) and asks about the ones the evidence does not bear
-    out. A separate conversation per review; it does not see the answer key."""
+def _coach_evidence(run: Path, memo: str) -> tuple[dict[str, Any], str]:
+    """A memo under review and what the coach reads about it: the memo, the case file, the
+    engine's reference figures and the checks. Never the answer key."""
     from evidence import coach
     from evidence.panel_run import reference_figures
 
-    run = _run_dir(run_id)
-    memo = str(payload.get("memo", ""))
     m = next((x for x in _review_queue(run) if x["memo"] == memo), None)
     if m is None:
         raise HTTPException(404, "memo not in this run")
-    call, model = _coach_call()
-    s = coach.get(payload.get("session_id"))
-    if s is None or s.run != run_id or s.memo != memo:
-        s = coach.start(run_id, memo, model)
     pack_id = _read_json(run / "manifest.json")["pack"]["pack_id"]
     try:
         item = next(i for i in _pack(pack_id).items if i.item_id == m["item_id"])
@@ -1122,8 +1114,44 @@ def review_coach(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     checks = [r for r in map(json.loads, (run / "results.jsonl").read_text().splitlines())
               if r["item_id"] == m["item_id"] and r["repeat"] == m["repeat"]
               and str(r.get("judge", "")).startswith("check:")]
-    evidence = coach.evidence_block(m["text"], m["cards"], case_file,
-                                    reference_figures(case_file), checks)
+    return m, coach.evidence_block(m["text"], m["cards"], case_file,
+                                   reference_figures(case_file), checks)
+
+
+@app.post("/api/review/{run_id}/coach/prepare")
+def review_coach_prepare(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """The coach's note on every finding of a memo, for each possible answer, prepared once
+    per memo: the page asks when the memo opens, and for the next memo ahead of time."""
+    from evidence import coach
+
+    run = _run_dir(run_id)
+    memo = str(payload.get("memo", ""))
+    m, evidence = _coach_evidence(run, memo)
+    call, model = _coach_call()
+    s, new = coach.for_memo(run_id, memo, model)
+    try:
+        if new:
+            coach.prepare(s, evidence=evidence, cards=m["cards"], call=call)
+        return coach.notes_of(s)
+    except OSError as exc:
+        coach.close(s.id)  # the next request tries again
+        raise HTTPException(502, f"the coach could not be reached: {exc}") from exc
+
+
+@app.post("/api/review/{run_id}/coach")
+def review_coach(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """One exchange with the coach about a memo under review: it reads the reviewer's current
+    answers (and their message, if any) and asks about the ones the evidence does not bear
+    out. A separate conversation per review; it does not see the answer key."""
+    from evidence import coach
+
+    run = _run_dir(run_id)
+    memo = str(payload.get("memo", ""))
+    m, evidence = _coach_evidence(run, memo)
+    call, model = _coach_call()
+    s = coach.get(payload.get("session_id"))
+    if s is None or s.run != run_id or s.memo != memo:
+        s = coach.start(run_id, memo, model)
     try:
         return coach.turn(s, evidence=evidence, cards=m["cards"],
                           verdicts=list(payload.get("verdicts") or []),
@@ -1140,8 +1168,8 @@ def review_submit(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     run = _run_dir(run_id)
     s = coach.get(payload.get("coach_session"))
     verdicts = list(payload.get("verdicts") or [])
-    kept = coach.record(s, verdicts) if s and s.run == run_id and s.memo == payload.get(
-        "memo") and s.turns else None
+    kept = coach.record(s, verdicts, list(payload.get("first_answers") or [])) if (
+        s and s.run == run_id and s.memo == payload.get("memo") and s.turns) else None
     try:
         rec = review.submit(run, str(payload.get("memo", "")), str(payload.get("reviewer", "")),
                             verdicts, list(payload.get("raised") or []),

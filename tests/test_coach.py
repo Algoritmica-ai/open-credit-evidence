@@ -60,3 +60,62 @@ def test_an_answer_lost_to_reasoning_is_asked_for_again_answer_only():
     s = coach.start("run", "m", "super")
     r = coach.turn(s, evidence="E", cards=CARDS, verdicts=[], raised=[], message=None, call=call)
     assert r["reply"] == "ok" and calls[1].get("json_only") is True
+
+
+def test_notes_are_prepared_once_per_memo_and_waited_for_by_a_second_request():
+    import threading
+
+    gate, calls = threading.Event(), []
+
+    def call(model, messages, **kw):
+        calls.append(messages)
+        gate.wait(5)
+        return _reply({"notes": [{"finding": 1, "evidence": "36.5% is under 40%.",
+                                  "if_wrong": "Noted.", "if_right": "Where is 36.5% above 40%?",
+                                  "if_unsure": "Compare the ratio with the limit."},
+                                 {"finding": 9, "evidence": "not a finding"}]})
+
+    s, new = coach.for_memo("run", "prep#r0", "super")
+    assert new
+    t = threading.Thread(target=coach.prepare, kwargs={"s": s, "evidence": "E", "cards": CARDS,
+                                                       "call": call})
+    t.start()
+    again, new2 = coach.for_memo("run", "prep#r0", "super")  # the page opening a prefetched memo
+    assert again is s and not new2
+    got = {}
+    w = threading.Thread(target=lambda: got.update(coach.notes_of(again)))
+    w.start()
+    gate.set()
+    t.join()
+    w.join()
+    assert len(calls) == 1 and set(got["notes"]) == {"c1"}  # finding 9 does not exist
+    assert "Prepare a note for every finding" in calls[0][1]["content"]
+    assert "answer key" not in calls[0][1]["content"].lower()
+    # a later check continues the same conversation, with the notes in it
+    r = coach.turn(s, evidence="E", cards=CARDS, verdicts=[{"card_id": "c1", "action": "confirm"}],
+                   raised=[], message=None, call=lambda **kw: _reply({"challenges": [],
+                                                                       "reply": "ok"}))
+    assert r["session_id"] == s.id and s.messages[2]["role"] == "assistant"
+    kept = coach.record(s, [{"card_id": "c1", "action": "confirm"}],
+                        [{"card_id": "c1", "action": "dispute"}])
+    assert kept["answers_before"][0]["action"] == "dispute"
+    assert kept["changed_after_coach"] == ["c1"]
+    assert kept["challenged"] == [] and kept["notes"]["c1"]["evidence"].startswith("36.5%")
+    coach.close(s.id)
+    assert coach.for_memo("run", "prep#r0", "super")[1]  # closed: the next open prepares anew
+
+
+def test_a_failed_preparation_is_reported_and_tried_again_next_time():
+    def call(model, messages, **kw):
+        raise OSError("connection refused")
+
+    s, _ = coach.for_memo("run", "fail#r0", "super")
+    try:
+        coach.prepare(s, evidence="E", cards=CARDS, call=call)
+    except OSError:
+        pass
+    try:
+        coach.notes_of(s)
+        raise AssertionError("expected the failure to be reported")
+    except OSError as exc:
+        assert "refused" in str(exc)
