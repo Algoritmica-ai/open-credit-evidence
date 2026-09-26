@@ -35,6 +35,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import time
 import urllib.request
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
@@ -265,20 +266,43 @@ def _get(url: str) -> bytes:
         return r.read()
 
 
-def _lookup(height: int) -> dict[str, Any]:
-    """The block at ``height`` as every reachable explorer reports it; they must agree."""
-    seen = []
-    for api in explorers():
+def _block(api: str, height: int) -> dict[str, Any]:
+    h = _get(f"{api}/block-height/{height}").decode().strip()
+    b = json.loads(_get(f"{api}/block/{h}"))
+    return {"hash": h, "merkle_root": b["merkle_root"], "source": api,
+            "time": datetime.fromtimestamp(b["timestamp"], UTC).isoformat(timespec="seconds")}
+
+
+def _lookup(height: int, deadline: float = 2 * TIMEOUT) -> dict[str, Any]:
+    """The block at ``height`` as the explorers report it, asked in parallel; every one
+    that answers within ``deadline`` seconds must agree. An explorer that accepts the
+    connection and then stalls (a per-read timeout does not end that) is left behind on
+    a daemon thread, so it can neither hold up verification nor the process's exit."""
+    import queue
+    import threading
+
+    apis = explorers()
+    answers: queue.Queue[dict[str, Any] | None] = queue.Queue()
+
+    def ask(api: str) -> None:
         try:
-            h = _get(f"{api}/block-height/{height}").decode().strip()
-            b = json.loads(_get(f"{api}/block/{h}"))
-            seen.append({"hash": h, "merkle_root": b["merkle_root"],
-                         "time": datetime.fromtimestamp(b["timestamp"], UTC)
-                         .isoformat(timespec="seconds"), "source": api})
-        except Exception:  # noqa: BLE001 — try the next explorer
-            continue
+            answers.put(_block(api, height))
+        except Exception:  # noqa: BLE001 — try the others
+            answers.put(None)
+
+    for api in apis:
+        threading.Thread(target=ask, args=(api,), daemon=True).start()
+    seen, end = [], time.monotonic() + deadline
+    for _ in apis:
+        try:
+            got = answers.get(timeout=max(0.0, end - time.monotonic()))
+        except queue.Empty:
+            break
+        if got:
+            seen.append(got)
+            end = min(end, time.monotonic() + 5)  # one has answered: the rest get 5 s more
     if not seen:
-        raise OSError("no block explorer reachable")
+        raise OSError("no block explorer answered")
     if len({(s["hash"], s["merkle_root"]) for s in seen}) > 1:
         raise ValueError(f"block explorers disagree about block {height}")
     return seen[0] | {"sources": [s["source"] for s in seen]}
