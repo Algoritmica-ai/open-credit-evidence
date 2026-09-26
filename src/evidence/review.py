@@ -258,7 +258,8 @@ def adjudications(run: Path) -> dict[str, dict[str, Any]]:
 
 def submit(run: Path, memo: str, reviewer: str, verdicts: list[dict[str, Any]],
            raised: list[dict[str, Any]] | None = None, seconds: float | None = None,
-           queue_items: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+           queue_items: list[dict[str, Any]] | None = None,
+           coach: dict[str, Any] | None = None) -> dict[str, Any]:
     """Record a reviewer's verdicts on one memo. Validates actions, reasons and card ids."""
     qi = next((q for q in queue_items or [] if q["memo"] == memo), None)
     if qi is None:
@@ -281,7 +282,8 @@ def submit(run: Path, memo: str, reviewer: str, verdicts: list[dict[str, Any]],
            "raised": [{"sentence": _clean(r.get("sentence")), "problem": _clean(r.get("problem")),
                        "correction": _wording(r.get("correction"))}
                       for r in raised or [] if _clean(r.get("problem"))],
-           "signed_off": not any(v["action"] == "confirm" for v in clean) and not raised}
+           "signed_off": not any(v["action"] == "confirm" for v in clean) and not raised,
+           **({"coach": coach} if coach else {})}
     (run / "review").mkdir(exist_ok=True)
     with (run / "review" / "records.jsonl").open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(rec, ensure_ascii=False, sort_keys=True) + "\n")
@@ -383,7 +385,32 @@ def summary(run: Path, queue_items: list[dict[str, Any]]) -> dict[str, Any]:
         "automation_bias_memos": bias,
         "seconds_per_memo_by_lane": secs,
         "settled": sum(1 for x in lab if _settled(x)),
+        **coach_effect(revs, by_memo),
     }
+
+
+def coach_effect(revs: dict[str, dict[str, Any]], by_memo: dict[str, Any]) -> dict[str, Any]:
+    """Did the coach help? On findings with a known answer (the rule checks, where the memo
+    is known to be wrong), how often the reviewer's answer agreed before the coach and after.
+    Absent when no review used the coach, so earlier evidence is unchanged."""
+    coached = {m: r for m, r in revs.items() if r.get("coach")}
+    if not coached:
+        return {}
+    before = after = known = changed = 0
+    for m, r in coached.items():
+        cards = {c["card_id"]: c for c in by_memo.get(m, {}).get("cards", [])}
+        first = {v["card_id"]: v for v in r["coach"].get("answers_before") or []}
+        changed += len(r["coach"].get("changed_after_coach") or [])
+        for v in r["verdicts"]:
+            c = cards.get(v["card_id"])
+            if not (c and c.get("known_answer")) or v["card_id"] not in first:
+                continue
+            known += 1
+            before += first[v["card_id"]].get("action") == "confirm"
+            after += v["action"] == "confirm"
+    return {"coach": {"memos": len(coached), "answers_changed": changed,
+                      "known_answer_findings": known, "agreed_before_coach": before,
+                      "agreed_after_coach": after}}
 
 
 # ------------------------------------------------------------------ feedback pack

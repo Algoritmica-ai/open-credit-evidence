@@ -1083,18 +1083,74 @@ def review_memo(run_id: str, memo: str) -> dict[str, Any]:
                 "reasons": list(review.REASONS)}
 
 
-@app.post("/api/review/{run_id}/submit")
-def review_submit(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
-    from evidence import review
+def _coach_call() -> tuple[Any, str]:
+    """The coach's model: the judge endpoint, called directly (its own conversation)."""
+    from evidence import panel
+
+    ep = endpoint_for("judge")
+    key = os.environ.get("NVIDIA_API_KEY") if ep.is_build else None
+
+    def call(**kw: Any) -> dict[str, Any]:
+        return panel.chat(ep.base_url, api_key=key, **kw)
+
+    return call, ep.model_id
+
+
+@app.post("/api/review/{run_id}/coach")
+def review_coach(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """One exchange with the coach about a memo under review: it reads the reviewer's current
+    answers (and their message, if any) and asks about the ones the evidence does not bear
+    out. A separate conversation per review; it does not see the answer key."""
+    from evidence import coach
+    from evidence.panel_run import reference_figures
 
     run = _run_dir(run_id)
+    memo = str(payload.get("memo", ""))
+    m = next((x for x in _review_queue(run) if x["memo"] == memo), None)
+    if m is None:
+        raise HTTPException(404, "memo not in this run")
+    call, model = _coach_call()
+    s = coach.get(payload.get("session_id"))
+    if s is None or s.run != run_id or s.memo != memo:
+        s = coach.start(run_id, memo, model)
+    pack_id = _read_json(run / "manifest.json")["pack"]["pack_id"]
+    try:
+        item = next(i for i in _pack(pack_id).items if i.item_id == m["item_id"])
+        case_file = item.documents_text()
+    except (HTTPException, StopIteration):
+        case_file = ""
+    checks = [r for r in map(json.loads, (run / "results.jsonl").read_text().splitlines())
+              if r["item_id"] == m["item_id"] and r["repeat"] == m["repeat"]
+              and str(r.get("judge", "")).startswith("check:")]
+    evidence = coach.evidence_block(m["text"], m["cards"], case_file,
+                                    reference_figures(case_file), checks)
+    try:
+        return coach.turn(s, evidence=evidence, cards=m["cards"],
+                          verdicts=list(payload.get("verdicts") or []),
+                          raised=list(payload.get("raised") or []),
+                          message=(str(payload.get("message") or "").strip() or None), call=call)
+    except OSError as exc:
+        raise HTTPException(502, f"the coach could not be reached: {exc}") from exc
+
+
+@app.post("/api/review/{run_id}/submit")
+def review_submit(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    from evidence import coach, review
+
+    run = _run_dir(run_id)
+    s = coach.get(payload.get("coach_session"))
+    verdicts = list(payload.get("verdicts") or [])
+    kept = coach.record(s, verdicts) if s and s.run == run_id and s.memo == payload.get(
+        "memo") and s.turns else None
     try:
         rec = review.submit(run, str(payload.get("memo", "")), str(payload.get("reviewer", "")),
-                            list(payload.get("verdicts") or []), list(payload.get("raised") or []),
-                            payload.get("seconds"), _review_queue(run))
+                            verdicts, list(payload.get("raised") or []),
+                            payload.get("seconds"), _review_queue(run), coach=kept)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     _reseal(run)
+    if kept:
+        coach.close(kept["session"])
     return rec
 
 

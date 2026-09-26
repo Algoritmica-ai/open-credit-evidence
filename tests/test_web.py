@@ -7,6 +7,7 @@ poll, evidence, verify, tamper demo — completes here without a network.
 """
 
 import json
+import sys
 import time
 from pathlib import Path
 
@@ -296,6 +297,32 @@ def test_review_endpoints_on_a_copy_of_a_committed_run(tmp_path, monkeypatch):
     assert fb["counts"]["judge_labels.jsonl"] >= 1
     assert c.get(f"/api/review/{src.name}/feedback/manifest.json").status_code == 200
     assert c.get("/api/overview").json()["stages"]["feedback_built"]
+    # the coach: a conversation before the save, kept with the review
+    def coach_call():
+        def call(model, messages, **kw):
+            return {"choices": [{"message": {"content": json.dumps({"challenges": [
+                {"finding": 1, "question": "Why?", "evidence": "the figures"}], "reply": "r"})}}]}
+        return call, "stub-coach"
+
+    web_mod = sys.modules["evidence.web.app"]
+    orig = web_mod._coach_call
+    web_mod._coach_call = coach_call
+    try:
+        second = q["memos"][1]["memo"]
+        m2 = c.get(f"/api/review/{src.name}/memo", params={"memo": second}).json()
+        first = [{"card_id": x["card_id"], "action": "dispute", "reason": "finding_wrong"}
+                 for x in m2["cards"]]
+        r = c.post(f"/api/review/{src.name}/coach", json={"memo": second, "verdicts": first}).json()
+        assert r["challenges"][0]["card_id"] == m2["cards"][0]["card_id"]
+        final = [{"card_id": x["card_id"], "action": "confirm"} for x in m2["cards"]]
+        rec = c.post(f"/api/review/{src.name}/submit", json={
+            "memo": second, "reviewer": "t", "verdicts": final,
+            "coach_session": r["session_id"]}).json()
+        assert rec["coach"]["model"] == "stub-coach" and rec["coach"]["changed_after_coach"]
+        assert c.get(f"/api/review/{src.name}").json()["summary"]["coach"]["memos"] == 1
+        assert c.post(f"/api/runs/{src.name}/verify", json={}).json()["ok"]
+    finally:
+        web_mod._coach_call = orig
     import io
     import zipfile
 

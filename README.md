@@ -149,7 +149,7 @@ status from its latest test and the one next step. **Test** starts a test (which
 which rules, which cases, and optionally the three-agent panel) and gives the result in plain
 words: what went wrong, what to change, the sealed report as a PDF. **Review** puts the
 flagged memos in three groups (check first, worth a look, probably fine) and asks one
-question per finding: is the memo wrong here? **Improve** settles disagreements, builds the
+question per finding: is the memo wrong here? Before a review is saved, a **coach** (its own conversation with the judge model, without the answer key) challenges answers the evidence does not bear out; the review keeps the answers from before and after it, so its effect is measured. A sidebar lists every application. **Improve** settles disagreements, builds the
 feedback pack with a fine-tuning handover for the engineering team (training data in chat and
 DPO formats, a starting LoRA configuration, provenance, the acceptance test), shows how good
 the checks and the AI reviewers were, and tests a change on new cases: the assistant as it is

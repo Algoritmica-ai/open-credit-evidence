@@ -556,6 +556,18 @@ function highlight(text, cards) {
   return html.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/^\s*[*-]\s{1,4}/gm, "• ").replace(/^#{1,4}\s*(.+)$/gm, "<b>$1</b>");
 }
 
+function appNav(id, memos, current, status) {
+  // Every application in the test, by lane, to move between them. status(m) gives a short tag.
+  const groups = ["red", "amber", "green"].map((lane) => {
+    const list = memos.filter((m) => m.lane === lane);
+    if (!list.length) return "";
+    return `<div class="navgroup"><p class="eyebrow row" style="gap:6px"><span class="lane-dot small ld-${lane}" aria-hidden="true"></span>${LANE[lane][0]} <span class="muted">${list.filter((m) => m.reviewed).length}/${list.length}</span></p>
+      ${list.map((m) => { const tag = status(m); return `<a class="navitem${m.memo === current ? " on" : ""}" href="#/review/${enc(id)}/memo/${enc(m.memo)}"${m.memo === current ? ' aria-current="page"' : ""}>
+        <span class="grow">${esc(m.case)} <span class="muted">· ${m.repeat + 1}</span></span>${tag}</a>`; }).join("")}</div>`;
+  }).join("");
+  return `<nav class="appnav hide-md" aria-label="Applications"><p class="small" style="font-weight:700;margin-bottom:8px">Applications</p>${groups}</nav>`;
+}
+
 async function viewMemo(id, memo) {
   const [m, q, ov] = await Promise.all([api(`/api/review/${enc(id)}/memo?memo=${enc(memo)}`), api(`/api/review/${enc(id)}`), overview(id)]);
   renderSteps(ov, "review");
@@ -573,6 +585,7 @@ async function viewMemo(id, memo) {
   let signOff = false;
   let showRaise = false;
   let editName = !reviewer.get();
+  const coach = { session: null, turns: [], busy: false, error: "", beforeSave: false, draft: "" };
 
   // The memo and the subbar are drawn once; the findings column redraws on every answer.
   const main = document.createElement("div");
@@ -586,7 +599,8 @@ async function viewMemo(id, memo) {
   const cleanup = () => { sub.remove(); window.removeEventListener("hashchange", cleanup); };
   window.addEventListener("hashchange", cleanup);
   main.className = "review-grid";
-  main.innerHTML = `<article class="card stack mid" style="padding:32px 36px">
+  const tick = (x) => (x.reviewed ? `<span class="navtick" title="Reviewed">${ICON.check}</span>` : "");
+  main.innerHTML = `${appNav(id, q.memos, memo, tick)}<article class="card stack mid" style="padding:32px 36px">
       <p class="eyebrow">Memo written by the assistant</p>
       <h1 style="font-size:26px">Application ${esc(m.case)} · memo ${m.repeat + 1}</h1>
       ${m.review ? `<p class="note-box amber small">Checked by ${esc(m.review.reviewer)} on ${esc(shortDate(m.review.submitted_at))}. Saving again records a new review.</p>` : ""}
@@ -599,11 +613,13 @@ async function viewMemo(id, memo) {
   const answered = () => m.cards.filter((c) => state[c.card_id].action).length;
   const draw = () => {
     const who = reviewer.get();
+    const challenged = new Set(coach.turns.flatMap((t) => t.challenges.flatMap((c) => [c.card_id, ...(c.also_card_ids || [])])).filter(Boolean));
     const cards = m.cards.map((c, i) => {
       const st = state[c.card_id];
       const btn = (a, words) => `<button type="button" data-a="${a}" aria-pressed="${st.action === a}">${words}</button>`;
       return `<section class="finding${st.action ? " answered" : ""}" data-card="${c.card_id}">
         <div class="row" style="gap:10px"><span class="dot num">${i + 1}</span><h3>${esc(c.kind)}</h3></div>
+        ${challenged.has(c.card_id) ? '<p class="tiny" style="color:var(--accent);font-weight:600">The coach asked about this answer.</p>' : ""}
         <p>${esc(c.problem)}</p>
         ${c.sentence && !c.span ? `<p class="small muted" style="border-left:3px solid var(--line);padding-left:10px">“${esc(c.sentence)}”</p>` : ""}
         ${c.evidence ? `<div class="proof"><span class="eyebrow">${c.known_answer ? "Proof" : "Why the reviewers think so"}</span><span>${esc(c.evidence)}</span></div>` : ""}
@@ -627,6 +643,24 @@ async function viewMemo(id, memo) {
       <label class="small" for="r-sentence">Which sentence <span class="muted">(optional; paste it from the memo)</span></label><input type="text" id="r-sentence">
       <label class="small" for="r-fix">How it should read <span class="muted">(optional)</span></label><input type="text" id="r-fix">
       <button class="btn small" id="r-add" style="align-self:flex-start">Add this problem</button></section>` : "";
+    const num = (cid) => m.cards.findIndex((c) => c.card_id === cid) + 1;
+    const thread = coach.turns.map((t) => `${t.message ? `<div class="bubble me"><span class="eyebrow">You</span><p>${esc(t.message)}</p></div>` : ""}
+      <div class="bubble coachsays"><span class="eyebrow">Coach</span>
+        ${t.challenges.length ? t.challenges.map((c) => `<div class="challenge">
+          ${c.card_id ? `<a href="#" data-goto="${c.card_id}" class="small" style="font-weight:700">Finding ${[c.finding, ...(c.also || [])].join(" and ")}</a>` : '<span class="small" style="font-weight:700">Not in the findings</span>'}
+          <p>${esc(c.question)}</p>${c.evidence ? `<p class="tiny muted">${esc(c.evidence)}</p>` : ""}</div>`).join("") : ""}
+        ${t.reply ? `<p class="small">${esc(t.reply)}</p>` : ""}
+        ${!t.challenges.length ? '<p class="small" style="color:var(--green);font-weight:600">No questions about your answers.</p>' : ""}</div>`).join("");
+    const coachBox = m.cards.length ? `<section class="coach stack mid">
+        <div class="stack tight"><h3>Coach</h3><p class="tiny muted">A second opinion on your answers before you save. It points at the evidence; the decision is yours. It does not know the right answers.</p></div>
+        ${thread}
+        ${coach.busy ? '<div class="row small"><span class="spinner" style="width:20px;height:20px" aria-hidden="true"></span>The coach is reading your answers…</div>' : ""}
+        ${coach.error ? `<p class="error small">${esc(coach.error)}</p>` : ""}
+        ${!coach.turns.length && !coach.busy ? `<button class="btn" id="coach-ask" style="align-self:flex-start" ${answered() < m.cards.length ? "disabled" : ""}>Ask the coach</button>${answered() < m.cards.length ? '<p class="tiny muted">Answer every finding first.</p>' : ""}` : ""}
+        ${coach.turns.length && !coach.busy ? `<label class="small visually-hidden" for="coach-msg">Reply to the coach</label>
+          <textarea id="coach-msg" placeholder="Reply to the coach, or change your answers above">${esc(coach.draft)}</textarea>
+          <div class="row" style="gap:8px"><button class="btn small" id="coach-send">Send</button><button class="btn small" id="coach-again">Check my answers again</button></div>` : ""}
+      </section>` : "";
     side.innerHTML = `<div class="row" style="justify-content:space-between;align-items:baseline">
         <h2>${m.cards.length ? plural(m.cards.length, "thing") + " to check" : "Nothing flagged"}</h2>
         ${m.cards.length ? `<span class="small muted">${answered()} of ${m.cards.length} answered</span>` : ""}</div>
@@ -634,6 +668,7 @@ async function viewMemo(id, memo) {
       ${raised.length ? `<div class="note-box blue small">${plural(raised.length, "extra problem")} added: ${raised.map((r) => esc(r.problem)).join("; ")}</div>` : ""}
       ${raiseForm}
       ${m.cards.length && !showRaise ? `<button class="btn dashed" id="more">${ICON.plus}I found another problem</button>` : ""}
+      ${coachBox}
       ${editName ? `<div class="stack tight"><label class="small" for="who-in"><b>Your name</b> <span class="muted">(recorded with your answers)</span></label><input type="text" id="who-in" value="${esc(who)}"></div>`
         : `<p class="small muted">Reviewing as ${esc(who)} · <a href="#" id="change">Change</a></p>`}
       <div class="row" style="gap:10px;padding-top:8px"><button class="btn primary large grow" id="save">Save and open the next memo${ICON.arrow}</button>
@@ -663,7 +698,31 @@ async function viewMemo(id, memo) {
     const whoIn = side.querySelector("#who-in");
     if (whoIn) whoIn.oninput = () => reviewer.set(whoIn.value.trim());
     on("#save", save);
+    on("#coach-ask", () => ask());
+    on("#coach-again", () => ask());
+    on("#coach-send", () => { const t = side.querySelector("#coach-msg").value.trim(); if (t) ask(t); });
+    const draft = side.querySelector("#coach-msg");
+    if (draft) draft.oninput = () => (coach.draft = draft.value);
+    side.querySelectorAll("[data-goto]").forEach((a) => (a.onclick = (ev) => {
+      ev.preventDefault();
+      const el = side.querySelector(`[data-card="${a.dataset.goto}"]`);
+      if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1600); }
+    }));
+    void num;
   };
+
+  const verdictsNow = () => m.cards.map((c) => ({ card_id: c.card_id, ...state[c.card_id] }));
+  async function ask(message) {
+    coach.busy = true; coach.error = ""; draw();
+    try {
+      const r = await api(`/api/review/${enc(id)}/coach`, { memo, session_id: coach.session, verdicts: verdictsNow(), raised, message: message || null });
+      coach.session = r.session_id;
+      coach.turns.push({ message: message || null, challenges: r.challenges, reply: r.reply });
+      if (message) coach.draft = "";
+    } catch (e) { coach.error = `The coach could not answer: ${e.message}`; }
+    coach.busy = false; draw();
+    return coach.turns.length ? coach.turns[coach.turns.length - 1] : null;
+  }
 
   async function save() {
     const msg = side.querySelector("#msg");
@@ -674,11 +733,19 @@ async function viewMemo(id, memo) {
     if (open) { msg.textContent = `${plural(open, "finding")} still to answer.`; return; }
     if (noReason) { msg.textContent = "Say why the memo is right, for each finding you answered No."; return; }
     if (!m.cards.length && !signOff && !raised.length) { msg.textContent = "Say whether the memo is right, or add the problem you found."; return; }
+    if (m.cards.length && !coach.turns.length && !coach.error) {
+      // before the first save, the coach reads the answers; questions pause the save
+      const t = await ask();
+      if (t && t.challenges.length) {
+        side.querySelector("#msg").textContent = "The coach has questions. Change your answers, reply, or press Save again to keep them.";
+        return;
+      }
+    }
     side.querySelector("#save").disabled = true;
     try {
       await api(`/api/review/${enc(id)}/submit`, {
         memo, reviewer: who, seconds: (Date.now() - started) / 1000, raised,
-        verdicts: m.cards.map((c) => ({ card_id: c.card_id, ...state[c.card_id] })),
+        verdicts: verdictsNow(), coach_session: coach.session,
       });
       location.hash = nextHref;
     } catch (e) { msg.textContent = e.message; side.querySelector("#save").disabled = false; }
@@ -694,6 +761,11 @@ async function viewImprove(id) {
     api(`/api/review/${enc(id)}/feedback/manifest.json`).catch(() => null), api(`/api/runs/${enc(id)}`),
   ]);
   const d_model = (d.manifest.sut || {}).model_id || "the assistant's model";
+  const ruling = new Set(adj.map((x) => x.memo));
+  const awaiting = new Set((fb && fb.memos_awaiting_correction) || []);
+  const improveTag = (x) => (ruling.has(x.memo) ? '<span class="badge b-amber navbadge">Ruling</span>'
+    : awaiting.has(x.memo) ? '<span class="badge b-blue navbadge">Correct</span>'
+    : x.reviewed ? `<span class="navtick" title="Reviewed">${ICON.check}</span>` : "");
   const fixable = (d.recommendations || []).find((r) => r.cause === "miscalculated" || r.cause === "misread_threshold") || null;
   const ev = q.evaluator || { panel: {}, rule_checks: {} };
   renderSteps(ov, "improve");
@@ -709,6 +781,7 @@ async function viewImprove(id) {
   const times = ["red", "amber", "green"].filter((l) => secs[l] != null).map((l) => `<li>${LANE[l][0]}: ${t(secs[l])} per memo</li>`).join("");
   const dl = (f, words) => `<a class="btn small" href="/api/review/${enc(id)}/feedback/${f}">${ICON.down}${words}</a>`;
   $view.innerHTML = `<div class="row" style="gap:32px;align-items:flex-start">
+    ${appNav(id, q.memos, null, improveTag)}
     <div class="stack grow">
       <div class="stack tight"><h1>Improve the assistant</h1>
         <p class="muted" style="font-size:17px">Your review becomes a feedback pack: the material the model team needs to fix the assistant. Then you test again on new cases to prove the fix worked.</p></div>
@@ -746,7 +819,10 @@ async function viewImprove(id) {
     <aside class="stack hide-sm" style="width:320px;flex-shrink:0;margin-top:8px;gap:16px"><div class="card stack" style="gap:16px"><h2 style="font-size:18px">How reliable was the review?</h2>
       ${s.known_answer_verdicts ? `<div class="stack" style="gap:2px"><span style="font-size:30px;font-weight:700">${pct(s.agree_with_known_answer, s.known_answer_verdicts)}%</span><span class="small muted">of answers matched the known right answer (${s.agree_with_known_answer} of ${s.known_answer_verdicts})</span></div>
         <div class="stack" style="gap:2px;padding-top:14px;border-top:1px solid var(--line-2)"><span style="font-size:30px;font-weight:700${s.automation_bias_memos ? ";color:var(--red)" : ""}">${s.automation_bias_memos}</span><span class="small muted">${s.automation_bias_memos === 1 ? "memo was" : "memos were"} approved although ${s.automation_bias_memos === 1 ? "it" : "they"} had a known mistake. A high number means people trust the machine too much.</span></div>
-        ${times ? `<div class="stack tight" style="padding-top:14px;border-top:1px solid var(--line-2)"><span class="small" style="font-weight:600">Time spent</span><ul class="small muted" style="margin:0;padding-left:18px">${times}</ul></div>` : ""}`
+        ${times ? `<div class="stack tight" style="padding-top:14px;border-top:1px solid var(--line-2)"><span class="small" style="font-weight:600">Time spent</span><ul class="small muted" style="margin:0;padding-left:18px">${times}</ul></div>` : ""}
+        ${s.coach ? `<div class="stack tight" style="padding-top:14px;border-top:1px solid var(--line-2)"><span class="small" style="font-weight:600">The coach</span>
+          <p class="small muted">Used on ${plural(s.coach.memos, "memo")}; ${plural(s.coach.answers_changed, "answer")} changed after its questions.</p>
+          ${s.coach.known_answer_findings ? `<p class="small">Agreement with the known answers: <b>${pct(s.coach.agreed_before_coach, s.coach.known_answer_findings)}%</b> before the coach, <b>${pct(s.coach.agreed_after_coach, s.coach.known_answer_findings)}%</b> after.</p>` : ""}</div>` : ""}`
         : '<p class="small muted">Shown once memos have been reviewed. Every test case has a known right answer, so each answer can be checked.</p>'}
     </div>
     <div class="card stack" style="gap:14px"><h2 style="font-size:18px">How good are the checks and the AI reviewers?</h2>
