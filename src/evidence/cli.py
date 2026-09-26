@@ -177,6 +177,36 @@ def _print_anchor(r: dict) -> None:
         print(f"      FAIL {p}")
 
 
+def _cmd_capabilities(a: argparse.Namespace) -> int:
+    import json
+
+    from evidence import capabilities as cap
+
+    if a.action == "show":
+        print((Path(a.dirs[0]) / "report.md").read_text(encoding="utf-8"), end="")
+        return 0
+    if a.action == "gate":
+        if len(a.dirs) != 2:
+            print("gate needs a baseline and a candidate folder", file=sys.stderr)
+            return 2
+        g = cap.gate(Path(a.dirs[0]), Path(a.dirs[1]),
+                     policy=Path(a.policy) if a.policy else None)
+        print(cap.gate_report(g), end="")
+        return 0 if g.get("verdict") == "GO" else 1
+    model = (cap.Target(url=a.model_url, model=a.model_id, key_env=a.key_env,
+                        thinking=a.thinking) if a.model_url
+             else cap.Target.from_role("assistant"))
+    model.thinking = a.thinking
+    judge = None if a.no_judge else cap.Target.from_role("judge")
+    out = cap.run(a.name or model.model.split("/")[-1], model, suite=a.suite, judge=judge,
+                  pack=Path(a.pack), setup=a.setup, repeats=a.repeats,
+                  root=Path(a.out))
+    summary = json.loads((out / "capabilities.json").read_text(encoding="utf-8"))
+    print((out / "report.md").read_text(encoding="utf-8"), end="")
+    print(f"\nresult   {out}")
+    return 0 if summary["run"]["nel_exit"] == 0 else 1
+
+
 def _cmd_anchor(a: argparse.Namespace) -> int:
     from evidence import anchor
 
@@ -445,6 +475,28 @@ def main(argv: list[str] | None = None) -> int:
     v.add_argument("--recompute", action="store_true")
     v.add_argument("--pack")
     v.set_defaults(fn=_cmd_verify)
+
+    cp_ = sub.add_parser("capabilities",
+                         help="measure a model with NVIDIA NeMo Evaluator; gate a candidate")
+    cp_.add_argument("action", choices=["run", "gate", "show"])
+    cp_.add_argument("dirs", nargs="*", help="gate: BASELINE CANDIDATE; show: a result folder")
+    cp_.add_argument("--suite", default="standard", choices=["standard", "quick", "general"])
+    cp_.add_argument("--model-url", help="the model's base URL ending in /v1 (default: the "
+                     "assistant's endpoint)")
+    cp_.add_argument("--model-id")
+    cp_.add_argument("--key-env", help="the environment variable holding its API key")
+    cp_.add_argument("--thinking", action="store_true",
+                     help="leave the model's thinking on (default: off, as the engine runs it)")
+    cp_.add_argument("--no-judge", action="store_true",
+                     help="skip the judge (on by default: the judge endpoint, Nemotron 3 Super)")
+    cp_.add_argument("--pack", default="packs/underwriter-de", help="the credit memo case set")
+    cp_.add_argument("--setup", default="as_is", choices=["as_is", "with_figures"])
+    cp_.add_argument("--repeats", type=int, default=2)
+    cp_.add_argument("--name", help="a label for the result folder (default: the model)")
+    cp_.add_argument("--out", default="capabilities", help="where result folders go")
+    cp_.add_argument("--policy", help="gate: a NeMo Evaluator gate policy (default: credit "
+                     "memos critical and may not drop; the rest may drop 5 points)")
+    cp_.set_defaults(fn=_cmd_capabilities)
 
     an = sub.add_parser("anchor", help="anchor a run's seal in Bitcoin with OpenTimestamps")
     an.add_argument("run")

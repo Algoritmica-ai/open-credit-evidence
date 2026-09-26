@@ -237,9 +237,7 @@ async function viewNew(preselect) {
       <div class="row wrap" style="gap:12px"><button class="btn" id="fresh">${ICON.plus}Generate new cases</button>
         <span class="small muted" id="freshmsg">Cases the assistant has never seen, made from your credit policy. You choose how many, and how many times each is run.</span></div>
       <div class="note-box row wrap" style="gap:12px"><p class="grow" id="nmemos" style="font-weight:600"></p><button class="btn small" id="resize">Change</button></div></fieldset>
-    <label class="choice-card"><input type="checkbox" id="panel" checked>
-      <span class="stack tight"><span class="t">Also get a second opinion from three AI reviewers</span>
-      <span class="small muted">One reads each memo, one challenges it against the case file, one decides. It replaces the single AI judge. Adds time, and helps sort what a person should check first.</span></span></label>
+    <p class="small muted">Every memo is checked against the rules and then gets a second opinion from three AI reviewers: one reads it, one challenges it against the case file, one decides. Their opinion sorts what a person should check first.</p>
     <div class="note-box"><span style="color:var(--green);display:flex">${ICON.lock}</span>
       <p class="small"><strong>No customer data.</strong> The cases are generated from your credit policy. Nothing from your loan book is used or seen.</p></div>
     <div class="row"><button class="btn primary large" id="start">Start test</button><a class="btn large" href="#/">Cancel</a><span id="msg" class="error"></span></div>
@@ -293,7 +291,7 @@ async function viewNew(preselect) {
     if (!pack) return;
     ev.target.disabled = true;
     try {
-      const j = await api("/api/run", { pack, repeats: size.repeats, limit: size.cases, judge: true, setup: "as_is", panel: document.getElementById("panel").checked });
+      const j = await api("/api/run", { pack, repeats: size.repeats, limit: size.cases, judge: true, setup: "as_is", panel: true });
       location.hash = `#/running/${enc(j.job_id)}`;
     } catch (e) {
       document.getElementById("msg").textContent = e.message;

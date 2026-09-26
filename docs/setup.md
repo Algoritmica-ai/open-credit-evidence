@@ -119,10 +119,8 @@ To use another port: `.venv/bin/evidence ui --port 8800`. To keep test data some
 1. On the home page, press **Start a new test**.
 2. Leave the assistant and the German rules as they are.
 3. Press **Generate new cases**. Choose **5** cases, run **Twice**, and press **Generate**.
-4. For the quickest first run, untick **Also get a second opinion from three AI
-   reviewers**.
-5. Press **Start test**. Ten memos take a minute or two; with the second opinion, a few
-   minutes more.
+4. Press **Start test**. Writing and checking ten memos takes a minute or two; the second
+   opinion from the three AI reviewers, which every test gets, a few minutes more.
 
 When it finishes, the result page opens. Continue with the
 [underwriter guide](underwriter-guide.md).
@@ -142,6 +140,7 @@ All are optional and go in `.env` or the shell.
 | `EVIDENCE_PANEL_SSH` | not set | Runs the AI reviewers inside the NemoClaw sandbox on the cluster (for example `"codefest rtx-3se-06-04"`); see [cluster.md](cluster.md) |
 | `EVIDENCE_CHROME` | found automatically | The Chrome or Chromium used to print PDFs |
 | `EVIDENCE_MODELS_FILE` | `models.json` | The node's model fingerprints (image digests, weights hashes), written by the servers job |
+| `EVIDENCE_NEL` | `nel` on the PATH | NVIDIA NeMo Evaluator's `nel`, for the [capability checker](capabilities.md) |
 | `EVIDENCE_ANCHOR` | `on` | `off` stops anchoring each test's seal in Bitcoin; see [anchoring](anchoring.md) for its other settings |
 
 ## Where your data goes

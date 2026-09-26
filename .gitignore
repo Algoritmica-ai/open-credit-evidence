@@ -21,3 +21,4 @@ __pycache__/
 /models.json
 /.sdd-workspace/
 /runs/test-numbers.json
+/capabilities/
