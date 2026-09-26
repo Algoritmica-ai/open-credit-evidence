@@ -254,6 +254,16 @@ textarea { min-height: 88px; resize: vertical; }
   .steps { flex-wrap: wrap; overflow: visible; }
   h1 { font-size: 26px; }
 }
+
+/* the open test, beside the steps */
+.testchip { display: inline-flex; gap: 6px; align-items: baseline; padding: 4px 12px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); font-size: 13px; color: var(--ink-2); white-space: nowrap; margin-right: 8px; }
+.testchip b { color: var(--ink); }
+@media (max-width: 1100px) { .testchip { display: none; } }
+tr.on td { background: var(--accent-soft); }
+dialog.modal { border: 0; border-radius: 16px; padding: 28px; width: min(520px, calc(100vw - 32px)); background: var(--card); color: var(--ink); box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+dialog.modal::backdrop { background: rgba(15, 23, 42, .45); }
+
+/* the review screen: runs of a case, the coach button, the documents window */
 .btn.ghost { background: transparent; }
 dialog.modal.wide { width: min(880px, calc(100vw - 32px)); max-height: calc(100vh - 64px); }
 .runchip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); font-size: 13px; }

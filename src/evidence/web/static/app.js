@@ -82,6 +82,10 @@ const REASON = {
 const ACTION_WORDS = { dispute: "The memo is right", needs_more: "Not sure", raise: "Found another problem", confirm: "The memo is wrong" };
 const date = (iso) => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "");
 const shortDate = (iso) => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "");
+const when = (iso) => (iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "");
+const testName = (r) => (r && r.test_no ? `Test ${r.test_no}` : "Test");
+const testLabel = (r) => `${testName(r)} · ${when((r && (r.started_at || r.finished_at)) || "")}`;
+const sizeWords = (r) => (r && r.cases && r.repeats ? `${plural(r.cases, "case")} × ${r.repeats === 1 ? "once" : r.repeats === 2 ? "twice" : r.repeats + " times"}` : "");
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many || one + "s"}`;
 const memoId = (itemId, repeat) => `${itemId}#r${repeat}`;
 const caseOf = (memo) => (memo.split(":")[2] || memo).split("#")[0];
@@ -112,7 +116,9 @@ function renderSteps(ov, active, testState) {
     const cls = `step${on ? " on" : ""}${state === "todo" && !on ? " off" : ""}`;
     return `<a class="${cls}" href="${href}"${on ? ' aria-current="step"' : ""}>${dot(state, n, on)}<span class="name">${name}</span>${words ? `<span class="state">${esc(words)}</span>` : ""}</a>`;
   };
+  const showTest = run && !testState && !["cases", "history"].includes(active);
   $steps.innerHTML = [
+    showTest ? `<span class="testchip" title="${esc(run.run_id)}"><b>${esc(testName(run))}</b> ${esc(when(run.started_at || run.finished_at))}</span>` : "",
     step("test", 1, testState ? "#/new" : run ? `#/result/${rid}` : "#/new", test[0], test[1], "Test"),
     '<span class="sep" aria-hidden="true"></span>',
     step("review", 2, run ? `#/review/${rid}` : "#/", reviewState, reviewWords, "Review"),
@@ -122,28 +128,34 @@ function renderSteps(ov, active, testState) {
   document.querySelectorAll(".history").forEach((a) => a.classList.toggle("on", a.dataset.nav === active));
 }
 
-const overview = (run) => api(`/api/overview${run ? `?run=${enc(run)}` : ""}`);
+const overview = (run, pending) => api(`/api/overview?${run ? `run=${enc(run)}&` : ""}${pending ? "pending=true" : ""}`);
 function page(cls) { $view.className = cls || ""; }
 
 // ----------------------------------------------------------------- home
 
 async function viewHome() {
-  const ov = await overview();
+  const ov = await overview(null, true);
   renderSteps(ov, null);
   page("");
   const job = (ov.jobs || [])[0];
   const banner = job ? `<a class="note-box blue link" href="#/running/${enc(job.job_id)}" style="text-decoration:none">
       <span class="spinner" style="width:22px;height:22px" aria-hidden="true"></span>
       <span class="grow">A test is running: ${job.phase === "panel" ? "second opinion" : "memos"} ${job.done} of ${job.total}. Open it to follow or stop it.</span>${ICON.arrow}</a>` : "";
-  if (!ov.run) {
-    $view.innerHTML = `<div class="stack">${banner}
-      <div class="stack tight"><p class="muted small">You are testing</p><h1>Credit memo assistant</h1>
-        <p class="muted">The AI that writes a summary for the underwriter when a loan application is referred.</p></div>
-      <div class="card stack mid"><h2>No tests yet</h2><p class="muted">Start with a test: the assistant writes memos for made-up loan cases, and each memo is checked against the rules.</p>
-        <a class="btn primary large" href="#/new" style="align-self:flex-start">Start a test</a></div></div>`;
+  const r = ov.run, s = ov.stages;
+  const startCard = `<section class="card row wrap${!r || s.next === "test" ? " strong" : ""}" style="gap:24px">
+      <span class="dot big fill" aria-hidden="true">${ICON.plus}</span>
+      <div class="stack tight grow"><h2>Start a new test</h2>
+        <p class="muted small">The assistant writes memos for made-up loan cases, and each memo is checked against the rules. You choose the cases, how many, and how many times each.</p></div>
+      <a class="btn primary large" href="#/new">Start a new test${ICON.arrow}</a></section>`;
+  const head = `<div class="stack tight"><p class="muted small">You are testing</p><h1 style="font-size:40px">Credit memo assistant</h1>
+      <p class="muted" style="font-size:17px">The AI that writes a summary for the underwriter when a loan application is referred.</p></div>`;
+  const lock = `<div class="row wrap"><span style="color:var(--green);display:flex">${ICON.lock}</span>
+      <p class="muted small grow">Test cases are generated from your credit policy. No customer data is used.</p></div>`;
+  if (!r) {
+    $view.innerHTML = `<div class="stack" style="gap:32px">${banner}${head}${startCard}${lock}</div>`;
     return;
   }
-  const r = ov.run, s = ov.stages, rid = enc(r.run_id);
+  const rid = enc(r.run_id);
   const flagged = s.flagged;
   const reviewText = s.review === "done" ? `All ${flagged} flagged memos checked.`
     : s.review === "in_progress" ? `A person confirms the mistakes the machine found. ${s.flagged_checked} of ${flagged} flagged memos checked.`
@@ -161,26 +173,34 @@ async function viewHome() {
   };
   const cta = (key, href, words) => s.next === key
     ? `<a class="btn primary" href="${href}">${words}${ICON.arrow}</a>` : `<a class="link" href="${href}">${words}</a>`;
-  $view.innerHTML = `<div class="stack" style="gap:32px">${banner}
-    <div class="stack tight"><p class="muted small">You are testing</p><h1 style="font-size:40px">Credit memo assistant</h1>
-      <p class="muted" style="font-size:17px">The AI that writes a summary for the underwriter when a loan application is referred.</p></div>
-    <section class="card row wrap" aria-label="Current status" style="gap:32px">
+  const pending = (ov.to_review || []).slice(0, 5);
+  const more = (ov.to_review || []).length - pending.length;
+  const waiting = pending.length ? `<section class="card stack mid" aria-labelledby="waiting"><div class="row wrap" style="justify-content:space-between;align-items:baseline">
+      <h2 id="waiting">Waiting for review</h2><span class="small muted">${plural(ov.to_review.length, "test")} with flagged memos still to check${more ? ` · the newest ${pending.length} shown, <a href="#/history">all in Earlier tests</a>` : ""}</span></div>
+      <table><thead><tr><th>Test</th><th>Started</th><th class="hide-sm">Cases</th><th>Checked</th><th><span class="visually-hidden">Open</span></th></tr></thead><tbody>
+      ${pending.map((t) => `<tr${t.run_id === r.run_id ? ' class="on"' : ""}><td style="font-weight:600;white-space:nowrap">${esc(testName(t))}${t.run_id === r.run_id ? '<div class="tiny muted">Latest</div>' : ""}</td>
+        <td style="white-space:nowrap">${esc(when(t.started_at || t.finished_at))}</td>
+        <td class="hide-sm small">${esc(rulesName(t.pack) || packName(t.pack))}<div class="tiny muted">${esc(sizeWords(t))}</div></td>
+        <td style="min-width:120px"><span class="small">${t.flagged_checked} of ${t.flagged}</span><span class="bar" style="display:block;margin-top:4px" aria-hidden="true"><span style="width:${pct(t.flagged_checked, t.flagged)}%"></span></span></td>
+        <td style="text-align:right"><a class="link" href="#/review/${enc(t.run_id)}">${t.flagged_checked ? "Continue" : "Start"} review</a></td></tr>`).join("")}
+      </tbody></table></section>` : "";
+  $view.innerHTML = `<div class="stack" style="gap:32px">${banner}${head}${startCard}
+    <div class="stack tight"><h2>Latest test: ${esc(testName(r))}</h2>
+      <p class="muted small">Started ${esc(when(r.started_at || r.finished_at))}${rulesName(r.pack) ? " · " + esc(rulesName(r.pack)) : ""}${sizeWords(r) ? " · " + esc(sizeWords(r)) : ""}</p></div>
+    <section class="card row wrap" aria-label="Result of the latest test" style="gap:32px;margin-top:-16px">
       <div class="stack tight grow">${verdictBadge(r.verdict)}
         <p style="font-size:22px;font-weight:600;line-height:1.35">${r.memos_with_error
           ? `${r.memos_with_error} of ${r.memos} test memos had a mistake an underwriter could act on.`
-          : `No mistakes found in ${r.memos} test memos.`}</p>
-        <p class="muted small">Last test: ${esc(date(r.finished_at))}${rulesName(r.pack) ? " · " + esc(rulesName(r.pack)) : ""}</p></div>
+          : `No mistakes found in ${r.memos} test memos.`}</p></div>
       <a class="btn" href="#/result/${rid}">See the result</a></section>
-    <h2 style="margin-bottom:-12px">What to do next</h2>
     <div class="grid3">
       ${card("test", 1, "Test", "done", `The assistant wrote ${r.memos} memos for made-up loan cases. Each memo was checked against the rules.`, `<a class="link" href="#/result/${rid}">See the result</a>`)}
       ${card("review", 2, "Review", s.review, reviewText + (s.review === "in_progress" ? `<span class="bar" style="margin-top:12px;display:block" aria-hidden="true"><span style="width:${pct(s.flagged_checked, flagged)}%"></span></span>` : ""),
         cta("review", `#/review/${rid}`, s.review === "not_started" ? "Start review" : s.review === "done" ? "Open review" : "Continue review"))}
       ${card("improve", 3, "Improve", s.improve, improveText, cta("improve", `#/improve/${rid}`, s.improve === "not_started" ? "How this works" : s.improve === "done" ? "Open feedback pack" : "Continue"))}
     </div>
-    <div class="row wrap"><span style="color:var(--green);display:flex">${ICON.lock}</span>
-      <p class="muted small grow">Test cases are generated from your credit policy. No customer data is used.</p>
-      <a class="btn${s.next === "test" ? " primary" : ""}" href="#/new">${ICON.plus}Start a new test</a></div>
+    ${waiting}
+    ${lock}
   </div>`;
 }
 
@@ -190,7 +210,7 @@ async function viewNew(preselect) {
   const [ov, meta, packs] = await Promise.all([overview(), api("/api/meta"), api("/api/packs")]);
   renderSteps(ov, "test", "New");
   page("narrow");
-  const usable = packs.filter((p) => !p.error && p.items);
+  const usable = packs.filter((p) => !p.error && p.items && (!packSeed(p.pack_id) || !p.used_in_tests || p.pack_id === preselect));
   const byJ = {};
   usable.forEach((p) => { const j = p.jurisdiction || PACK_JURISDICTION[packFamily(p.pack_id)] || "other"; (byJ[j] = byJ[j] || []).push(p); });
   Object.values(byJ).forEach((l) => l.sort((a, b) => (packSeed(a.pack_id) ? 1 : 0) - (packSeed(b.pack_id) ? 1 : 0) || (b.built_at || "").localeCompare(a.built_at || "")));
@@ -202,10 +222,12 @@ async function viewNew(preselect) {
     if (hit) { chosenJ = hit.jurisdiction || PACK_JURISDICTION[packFamily(hit.pack_id)] || chosenJ; chosenPack = hit.pack_id; }
   }
   const a = meta.roles.assistant;
+  const maxRepeats = (meta.limits && meta.limits.repeats) || 5;
+  const maxItems = (meta.limits && meta.limits.items) || Infinity;
   $view.innerHTML = `<div class="stack" style="gap:28px">
     <a class="link back" href="#/">${ICON.back}Home</a>
     <div class="stack tight" style="margin-top:-12px"><h1>Start a new test</h1>
-      <p class="muted" style="font-size:17px">Answer three questions. The test then runs by itself; it usually finishes within an hour.</p></div>
+      <p class="muted" style="font-size:17px">Answer three questions. The test then runs by itself; a small test takes a few minutes.</p></div>
     <fieldset><legend>1. Which assistant are you testing?</legend>
       <label for="assistant" class="small muted">Assistant</label>
       <select id="assistant"><option>Credit memo assistant (${esc(a.model)})</option></select>
@@ -213,9 +235,8 @@ async function viewNew(preselect) {
     <fieldset><legend>2. Which rules must its memos follow?</legend><div class="stack tight" id="rules"></div></fieldset>
     <fieldset><legend>3. Which test cases?</legend><div class="stack tight" id="cases"></div>
       <div class="row wrap" style="gap:12px"><button class="btn" id="fresh">${ICON.plus}Generate new cases</button>
-        <span class="small muted" id="freshmsg">Cases the assistant has never seen, made from your credit policy by the Synthetic Data Designer. More options in <a href="#/cases">Case sets</a>.</span></div>
-      <p class="small muted">Each case is given to the assistant three times, to check it answers the same way each time.</p></fieldset>
-    <fieldset id="setupbox" hidden><legend>4. What does the assistant get?</legend><div class="stack tight" id="setup"></div></fieldset>
+        <span class="small muted" id="freshmsg">Cases the assistant has never seen, made from your credit policy. You choose how many, and how many times each is run.</span></div>
+      <div class="note-box row wrap" style="gap:12px"><p class="grow" id="nmemos" style="font-weight:600"></p><button class="btn small" id="resize">Change</button></div></fieldset>
     <label class="choice-card"><input type="checkbox" id="panel" checked>
       <span class="stack tight"><span class="t">Also get a second opinion from three AI reviewers</span>
       <span class="small muted">One reads each memo, one challenges it against the case file, one decides. It replaces the single AI judge. Adds time, and helps sort what a person should check first.</span></span></label>
@@ -231,53 +252,149 @@ async function viewNew(preselect) {
     }).join("");
     document.querySelectorAll("input[name=rules]").forEach((el) => (el.onchange = () => { chosenJ = el.value; drawCases(); }));
   };
-  const drawSetup = () => {
-    const p = (byJ[chosenJ] || []).find((x) => x.pack_id === chosenPack);
-    const box = document.getElementById("setupbox");
-    box.hidden = !(p && p.bank_figures);
-    document.getElementById("setup").innerHTML = Object.entries(SETUP).map(([k, w], i) => `<label class="choice-card">
-      <input type="radio" name="setup" value="${k}" ${i === 0 ? "checked" : ""}>
-      <span class="stack tight"><span class="t">${esc(w)}</span><span class="small muted">${k === "as_is" ? "What the assistant receives today." : "The recommended change: the debt ratio, income and policy limits your rules engine computes are added to the case file."}</span></span></label>`).join("");
-  };
   const drawCases = () => {
     const list = byJ[chosenJ] || [];
     if (!list.some((p) => p.pack_id === chosenPack)) chosenPack = list.length ? list[0].pack_id : null;
     document.getElementById("cases").innerHTML = list.map((p) => `<label class="choice-card">
       <input type="radio" name="cases" value="${esc(p.pack_id)}" ${p.pack_id === chosenPack ? "checked" : ""}>
-      <span class="stack tight"><span class="t">${esc(packName(p))}</span><span class="small muted">${p.items} cases, each with a known right answer · ${p.items * 3} memos${packSeed(p.pack_id) ? " · never used before" : ""}</span></span></label>`).join("");
-    document.querySelectorAll("input[name=cases]").forEach((el) => (el.onchange = () => { chosenPack = el.value; drawSetup(); }));
-    drawSetup();
+      <span class="stack tight"><span class="t">${esc(packName(p))}</span><span class="small muted">${p.items} cases, each with a known right answer${p.built_at ? ` · made ${esc(when(p.built_at))}` : ""}${packSeed(p.pack_id) ? " · never used before" : ""}</span></span></label>`).join("");
+    document.querySelectorAll("input[name=cases]").forEach((el) => (el.onchange = () => { chosenPack = el.value; drawSize(true); }));
+    drawSize(true);
+  };
+  // How many cases from the chosen set, and how many times each: the memos to write.
+  const size = { cases: 0, repeats: Math.min(3, maxRepeats) };
+  const drawSize = (reset) => {
+    const p = (byJ[chosenJ] || []).find((x) => x.pack_id === chosenPack);
+    const most = Math.min(p ? p.items : 0, maxItems);
+    if (reset || !size.cases) size.cases = most;
+    size.cases = Math.max(Math.min(1, most), Math.min(most, size.cases));
+    document.getElementById("nmemos").textContent = `This test: ${plural(size.cases, "case")}, each run ${size.repeats === 1 ? "once" : size.repeats === 2 ? "twice" : size.repeats + " times"} = ${plural(size.cases * size.repeats, "memo")}`;
   };
   drawRules();
   drawCases();
-  document.getElementById("fresh").onclick = async (ev) => {
+  document.getElementById("resize").onclick = () => {
+    const p = (byJ[chosenJ] || []).find((x) => x.pack_id === chosenPack);
+    if (p) sizeDialog(Math.min(p.items, maxItems), size, maxRepeats, () => drawSize(false));
+  };
+  document.getElementById("fresh").onclick = () => {
     const from = chosenPack || ((byJ[chosenJ] || [])[0] || {}).pack_id;
-    const msg = document.getElementById("freshmsg");
-    ev.target.disabled = true;
-    msg.textContent = "Generating new cases from your credit policy…";
-    try {
-      const f = await api("/api/packs/fresh", { from });
-      const fresh = (await api("/api/packs")).find((p) => p.pack_id === f.pack_id);
+    if (!from) return;
+    const times = size.repeats;
+    generateCases(from, (f, fresh, times) => {
       (byJ[chosenJ] = byJ[chosenJ] || []).unshift(fresh);
       chosenPack = f.pack_id;
+      size.repeats = times;
       drawCases();
-      msg.innerHTML = `${f.items} new cases (set #${f.seed}) generated in ${f.seconds} s. ${f.shared_with_other_packs ? `<span class="error">${f.shared_with_other_packs} match earlier cases.</span>` : "None of them appears in an earlier test."} <a href="#/cases">How they are made</a>`;
-    } catch (e) { msg.innerHTML = `<span class="error">${esc(e.message)}</span>`; }
-    ev.target.disabled = false;
+      document.getElementById("freshmsg").innerHTML = `${f.items} new cases (set #${f.seed}) made in ${f.seconds} s and chosen, each run ${times === 1 ? "once" : times === 2 ? "twice" : times + " times"}. ${f.shared_with_other_packs ? `<span class="error">${f.shared_with_other_packs} match earlier cases.</span>` : "None of them appears in an earlier test."}`;
+    }, times, maxRepeats);
   };
   document.getElementById("start").onclick = async (ev) => {
     const pack = (document.querySelector("input[name=cases]:checked") || {}).value;
     if (!pack) return;
     ev.target.disabled = true;
     try {
-      const setup = (document.querySelector("input[name=setup]:checked") || {}).value || "as_is";
-      const j = await api("/api/run", { pack, repeats: 3, judge: true, setup: document.getElementById("setupbox").hidden ? "as_is" : setup, panel: document.getElementById("panel").checked });
+      const j = await api("/api/run", { pack, repeats: size.repeats, limit: size.cases, judge: true, setup: "as_is", panel: document.getElementById("panel").checked });
       location.hash = `#/running/${enc(j.job_id)}`;
     } catch (e) {
       document.getElementById("msg").textContent = e.message;
       ev.target.disabled = false;
     }
   };
+}
+
+// The "Generate new cases" window: how many cases, how many times each is run in the test,
+// and whether the bank's figures are included. Calls done(result, pack, repeats) once made.
+function generateCases(from, done, repeats = 3, maxRepeats = 5) {
+  const dlg = document.createElement("dialog");
+  dlg.className = "modal";
+  dlg.setAttribute("aria-labelledby", "gen-title");
+  dlg.innerHTML = `<form method="dialog" class="stack mid">
+      <div class="stack tight"><h2 id="gen-title">Generate new cases</h2>
+        <p class="small muted">Made-up loan applications the assistant has never seen, generated from your credit policy by the Synthetic Data Designer. Each one has a known right answer. No customer data is used.</p></div>
+      <p class="small"><b>Cases like:</b> ${esc(packName(packFamily(from)))}</p>
+      <div class="stack tight"><label class="small" for="gen-n"><b>How many cases</b></label>
+        <input type="number" id="gen-n" min="5" max="200" step="1" value="20" style="width:120px">
+        <span class="tiny muted">Between 5 and 200. 5 is enough to try things out.</span></div>
+      <div class="stack tight"><label class="small" for="gen-r"><b>Times each case is run in the test</b></label>
+        <select id="gen-r" style="width:160px">${[1, 2, 3, 4, 5].filter((n) => n <= maxRepeats).map((n) => `<option value="${n}" ${n === repeats ? "selected" : ""}>${n === 1 ? "Once" : n === 2 ? "Twice" : n + " times"}</option>`).join("")}</select>
+        <span class="tiny muted">The assistant can write a different memo each time for the same case, so running it more than once shows how consistent it is.</span></div>
+      <p class="small" id="gen-total" style="font-weight:600"></p>
+      <label class="choice-card"><input type="checkbox" id="gen-bank" checked><span class="stack tight"><span class="t">Include the figures your systems calculate</span>
+        <span class="small muted">A rules-engine summary in each case file. The assistant only sees it when a test asks for it.</span></span></label>
+      <p class="small" id="gen-msg" role="status"></p>
+      <div class="row wrap" style="gap:10px"><button type="button" class="btn primary" id="gen-go">Generate</button>
+        <button type="button" class="btn" id="gen-cancel">Cancel</button>
+        <a class="link small" href="#/cases" style="margin-left:auto">All case sets</a></div></form>`;
+  document.body.appendChild(dlg);
+  const close = () => { dlg.close(); dlg.remove(); };
+  dlg.addEventListener("cancel", (ev) => { if (busy) ev.preventDefault(); });
+  dlg.addEventListener("close", () => dlg.remove());
+  dlg.querySelector("a[href='#/cases']").onclick = close;
+  let busy = false;
+  dlg.querySelector("#gen-cancel").onclick = () => { if (!busy) close(); };
+  const total = () => {
+    const n = Math.round(+dlg.querySelector("#gen-n").value) || 0;
+    dlg.querySelector("#gen-total").textContent = `= ${plural(n * +dlg.querySelector("#gen-r").value, "memo")} in the test`;
+  };
+  dlg.querySelector("#gen-n").oninput = total;
+  dlg.querySelector("#gen-r").oninput = total;
+  total();
+  dlg.querySelector("#gen-go").onclick = async (ev) => {
+    const n = Math.round(+dlg.querySelector("#gen-n").value);
+    const msg = dlg.querySelector("#gen-msg");
+    if (!(n >= 5 && n <= 200)) { msg.innerHTML = '<span class="error">Choose between 5 and 200 cases.</span>'; return; }
+    busy = true;
+    ev.target.disabled = true;
+    dlg.querySelector("#gen-cancel").disabled = true;
+    msg.innerHTML = '<span class="row small"><span class="spinner" style="width:18px;height:18px" aria-hidden="true"></span>Generating cases from your credit policy… usually under a minute.</span>';
+    try {
+      const f = await api("/api/packs/fresh", { from, keep: n, bank_figures: dlg.querySelector("#gen-bank").checked });
+      const fresh = (await api("/api/packs")).find((p) => p.pack_id === f.pack_id);
+      busy = false;
+      if (!dlg.isConnected) return;  // the page was left while the cases were made
+      const times = +dlg.querySelector("#gen-r").value;
+      close();
+      done(f, fresh, times);
+    } catch (e) {
+      busy = false;
+      msg.innerHTML = `<span class="error">${esc(e.message)}</span>`;
+      ev.target.disabled = false;
+      dlg.querySelector("#gen-cancel").disabled = false;
+    }
+  };
+  dlg.showModal();
+  dlg.querySelector("#gen-n").select();
+}
+
+// "Change": how many cases of the chosen set to use, and how many times each is run.
+function sizeDialog(most, size, maxRepeats, done) {
+  const dlg = document.createElement("dialog");
+  dlg.className = "modal";
+  dlg.setAttribute("aria-labelledby", "size-title");
+  dlg.innerHTML = `<form method="dialog" class="stack mid">
+      <h2 id="size-title">Test size</h2>
+      <div class="stack tight"><label class="small" for="size-n"><b>Cases to use</b></label>
+        <input type="number" id="size-n" min="1" max="${most}" step="1" value="${size.cases}" style="width:120px">
+        <span class="tiny muted">Up to ${plural(most, "case")} in this set.</span></div>
+      <div class="stack tight"><label class="small" for="size-r"><b>Times each case is run</b></label>
+        <select id="size-r" style="width:160px">${[1, 2, 3, 4, 5].filter((n) => n <= maxRepeats).map((n) => `<option value="${n}" ${n === size.repeats ? "selected" : ""}>${n === 1 ? "Once" : n === 2 ? "Twice" : n + " times"}</option>`).join("")}</select>
+        <span class="tiny muted">The assistant can write a different memo each time for the same case, so running it more than once shows how consistent it is.</span></div>
+      <p class="small" id="size-total" style="font-weight:600"></p>
+      <div class="row" style="gap:10px"><button type="button" class="btn primary" id="size-ok">Done</button><button type="button" class="btn" id="size-cancel">Cancel</button></div></form>`;
+  document.body.appendChild(dlg);
+  const n = dlg.querySelector("#size-n"), r = dlg.querySelector("#size-r");
+  const total = () => (dlg.querySelector("#size-total").textContent = `= ${plural((Math.round(+n.value) || 0) * +r.value, "memo")}`);
+  n.oninput = total; r.oninput = total; total();
+  dlg.addEventListener("close", () => dlg.remove());
+  dlg.querySelector("#size-cancel").onclick = () => dlg.close();
+  dlg.querySelector("#size-ok").onclick = () => {
+    const v = Math.round(+n.value);
+    if (!(v >= 1 && v <= most)) { n.focus(); return; }
+    size.cases = v; size.repeats = +r.value;
+    dlg.close();
+    done();
+  };
+  dlg.showModal();
 }
 
 // ----------------------------------------------------------------- case sets
@@ -291,7 +408,8 @@ async function viewCases() {
   const designer = meta.designer;
   const row = (p) => `<tr><td style="font-weight:600">${esc(packName(p))}</td><td>${p.items}</td>
     <td>${esc(rulesName(p) || p.jurisdiction || "")}</td><td>${p.bank_figures ? "Yes" : '<span class="muted">No</span>'}</td>
-    <td class="muted">${esc(shortDate(p.built_at))}</td><td style="text-align:right"><a class="link" href="#/new/${enc(p.pack_id)}">Use in a test</a></td></tr>`;
+    <td>${p.used_in_tests ? plural(p.used_in_tests, "test") : '<span class="muted">Not yet</span>'}</td>
+    <td class="muted" style="white-space:nowrap">${esc(when(p.built_at))}</td><td style="text-align:right"><a class="link" href="#/new/${enc(p.pack_id)}">Use in a test</a></td></tr>`;
   $view.innerHTML = `<div class="stack">
     <div class="stack tight"><h1>Case sets</h1>
       <p class="muted" style="font-size:17px">Every test case is a made-up loan application with a known right answer, generated from your credit policy by the Synthetic Data Designer. No customer data is used, so a new set can be made at any time.</p></div>
@@ -300,7 +418,7 @@ async function viewCases() {
         <label class="small" for="fam">Cases like</label>
         <select id="fam">${families.map((f) => `<option value="${esc(f)}">${esc(packName(f))}</option>`).join("")}</select>
         <label class="small" for="keep">How many cases</label>
-        <select id="keep"><option>20</option><option>50</option><option>100</option></select>
+        <input type="number" id="keep" min="5" max="200" step="1" value="20" style="width:120px"><span class="tiny muted">Between 5 and 200.</span>
         <label class="choice-card"><input type="checkbox" id="bank" checked><span class="stack tight"><span class="t">Include the figures your systems calculate</span>
           <span class="small muted">A rules-engine summary in each case file. Needed to test the recommended change; the assistant only sees it when a test asks for it.</span></span></label>
         <div class="row wrap" style="gap:12px"><button class="btn primary" id="create">Create case set</button><span class="small" id="cmsg"></span></div>
@@ -315,7 +433,7 @@ async function viewCases() {
             <div class="row wrap" style="gap:12px"><button class="btn" id="buildspec">Build case set</button><span class="small" id="smsg"></span></div></div></details>
       </section>
     </div>
-    <section class="card" style="padding:8px 20px"><table><thead><tr><th>Case set</th><th>Cases</th><th>Rules</th><th>Bank figures</th><th>Made</th><th><span class="visually-hidden">Use</span></th></tr></thead>
+    <section class="card" style="padding:8px 20px"><table><thead><tr><th>Case set</th><th>Cases</th><th>Rules</th><th>Bank figures</th><th>Used in</th><th>Made</th><th><span class="visually-hidden">Use</span></th></tr></thead>
       <tbody>${usable.map(row).join("")}</tbody></table></section>
   </div>`;
   document.getElementById("create").onclick = async (ev) => {
@@ -393,7 +511,7 @@ async function viewRunning(jobId) {
     if (job.status === "error") foot = `<p class="error">The test stopped with an error: ${esc(job.error)}</p><a class="btn" href="#/new" style="align-self:flex-start">Try again</a>`;
     $view.innerHTML = `<div class="stack" style="gap:28px">
       <div class="stack tight"><h1>${job.status === "done" ? "The test is finished" : "Testing the credit memo assistant"}</h1>
-        <p class="muted" style="font-size:17px">Started at ${esc((job.started || "").slice(11, 13))}:${esc((job.started || "").slice(13, 15))} UTC</p></div>
+        <p class="muted" style="font-size:17px">Started ${esc(when(String(job.started || "").replace(/^(\d{4}-\d\d-\d\dT)(\d\d)(\d\d)(\d\d)Z$/, "$1$2:$3:$4Z")))} · ${plural(job.cases && job.repeats ? job.cases * job.repeats : job.total, "memo")}${job.cases ? ` (${esc(sizeWords(job))})` : ""}</p></div>
       <ol class="card" style="list-style:none;padding:8px 28px;margin:0">${items.join("")}</ol>${foot}</div>`;
     const stop = document.getElementById("stop");
     if (stop) stop.onclick = async () => {
@@ -458,7 +576,7 @@ async function viewResult(id) {
       </tbody></table></section>`;
   $view.innerHTML = `<div class="stack" style="gap:28px">
     <div class="row wrap"><a class="link" href="#/">${ICON.back}Home</a>
-      <span class="muted small">Test result · ${esc(date(d.manifest.finished_at))}${rulesName(d.manifest.pack) ? " · " + esc(rulesName(d.manifest.pack)) : ""} · ${h.memos} memos</span></div>
+      <span class="muted small"><b>${esc(testName(ov.run))}</b> · started ${esc(when(d.manifest.started_at || d.manifest.finished_at))}${rulesName(d.manifest.pack) ? " · " + esc(rulesName(d.manifest.pack)) : ""} · ${h.memos} memos${sizeWords(ov.run) ? ` (${esc(sizeWords(ov.run))})` : ""}</span></div>
     <section class="card stack mid" style="padding:32px 36px">${verdictBadge(dec.verdict, true)}
       <h1 style="font-size:34px;max-width:900px">${esc(lead)}</h1>
       <p class="muted" style="font-size:17px;max-width:900px">${esc(support)}</p>
@@ -537,7 +655,7 @@ async function viewQueue(id) {
   };
   $view.innerHTML = `<div class="row" style="gap:32px;align-items:flex-start">
     <div class="stack grow">
-      <div class="stack tight"><h1>Review the flagged memos</h1>
+      <div class="stack tight"><p class="muted small"><b>${esc(testName(ov.run))}</b> · started ${esc(when(ov.run.started_at || ov.run.finished_at))}</p><h1>Review the flagged memos</h1>
         <p class="muted" style="font-size:17px">The machine found possible mistakes. You decide whether they are real. Your answers are recorded and become the feedback that improves the assistant.</p></div>
       <div class="stack tight"><div class="row wrap" style="justify-content:space-between"><span style="font-weight:600">${s.flagged_checked} of ${s.flagged} flagged memos checked</span>
         <span class="small muted" id="who">${who ? `Reviewing as ${esc(who)} · <a href="#" id="change">Change</a>` : ""}</span></div>
@@ -1044,7 +1162,9 @@ async function viewRetest(jobId) {
 // ----------------------------------------------------------------- earlier tests
 
 async function viewHistory() {
-  const [runs, ov] = await Promise.all([api("/api/runs"), overview()]);
+  const [runs, ov] = await Promise.all([api("/api/runs"), overview(null, true)]);
+  const open = {};
+  (ov.to_review || []).forEach((t) => (open[t.run_id] = t));
   renderSteps(ov, "history");
   page("");
   const list = runs.filter((r) => r.sealed && r.transcripts).sort((a, b) => (b.finished_at || "").localeCompare(a.finished_at || ""));
@@ -1053,11 +1173,11 @@ async function viewHistory() {
     <div class="row wrap" style="align-items:flex-end;gap:24px;margin-top:-8px"><div class="stack tight grow"><h1>Earlier tests</h1>
       <p class="muted" style="font-size:17px">Every test is sealed and can be re-checked at any time. Tick two to compare them.</p></div>
       <button class="btn primary" id="cmp" disabled>Compare the 2 ticked tests</button></div>
-    <div class="card" style="padding:8px 20px"><table><thead><tr><th style="width:44px"><span class="visually-hidden">Compare</span></th><th>Date</th><th>Test cases</th><th>Result</th><th>Memos with a mistake</th><th class="hide-sm">Reviewed</th><th><span class="visually-hidden">Open</span></th></tr></thead><tbody>
-      ${list.map((r) => `<tr><td><input type="checkbox" data-run="${esc(r.run_id)}" aria-label="Compare the test of ${esc(date(r.finished_at))}" style="width:20px;height:20px;accent-color:var(--accent)"></td>
-        <td style="font-weight:600;white-space:nowrap">${esc(shortDate(r.finished_at))}${ov.run && ov.run.run_id === r.run_id ? '<div class="tiny muted">Latest</div>' : ""}</td>
-        <td>${esc(packName(r.pack))}</td><td>${verdictBadge(r.verdict)}</td><td>${r.memos_with_error} of ${r.memos}</td>
-        <td class="hide-sm">${r.reviewed ? "Yes" : '<span class="muted">No</span>'}</td>
+    <div class="card" style="padding:8px 20px"><table><thead><tr><th style="width:44px"><span class="visually-hidden">Compare</span></th><th>Test</th><th>Test cases</th><th>Result</th><th>Memos with a mistake</th><th class="hide-sm">Flagged memos checked</th><th><span class="visually-hidden">Open</span></th></tr></thead><tbody>
+      ${list.map((r) => `<tr><td><input type="checkbox" data-run="${esc(r.run_id)}" aria-label="Compare ${esc(testLabel(r))}" style="width:20px;height:20px;accent-color:var(--accent)"></td>
+        <td style="white-space:nowrap"><b>${esc(testName(r))}</b>${ov.run && ov.run.run_id === r.run_id ? ' <span class="tiny muted">Latest</span>' : ""}<div class="small muted">${esc(when(r.started_at || r.finished_at))}</div></td>
+        <td>${esc(packName(r.pack))}<div class="tiny muted">${esc(sizeWords(r))}</div></td><td>${verdictBadge(r.verdict)}</td><td>${r.memos_with_error} of ${r.memos}</td>
+        <td class="hide-sm">${open[r.run_id] ? `${open[r.run_id].flagged_checked} of ${open[r.run_id].flagged} · <a class="link" href="#/review/${enc(r.run_id)}">${open[r.run_id].flagged_checked ? "Continue" : "Start"}</a>` : '<span style="color:var(--green);font-weight:600">All checked</span>'}</td>
         <td style="text-align:right"><a class="link" href="#/result/${enc(r.run_id)}">Open</a></td></tr>`).join("")}
     </tbody></table></div></div>`;
   const boxes = [...document.querySelectorAll("[data-run]")];
@@ -1098,7 +1218,7 @@ async function viewCompare(before, after) {
   $view.innerHTML = `<div class="stack">
     <a class="link back" href="#/history">${ICON.back}Earlier tests</a>
     <section class="card stack mid"><span class="badge big ${cls}">${esc(words)}</span>
-      <h1 style="font-size:30px">${esc(shortDate(c.before.finished_at))} compared with ${esc(shortDate(c.after.finished_at))}</h1>
+      <h1 style="font-size:30px">${esc(when(c.before.started_at || c.before.finished_at))} compared with ${esc(when(c.after.started_at || c.after.finished_at))}</h1>
       ${c.changed.filter((x) => x.what === "assistant setup").map((x) => `<p><b>The change:</b> ${esc(SETUP[x.before] || x.before)} → ${esc(SETUP[x.after] || x.after)}.</p>`).join("")}
       ${c.changed.some((x) => x.what === "pack") ? "" : `<p class="muted">Both on the same cases${packSeed(c.after.pack) ? `: new set #${packSeed(c.after.pack)}, never used before` : ""}, compared case by case.</p>`}
       ${c.changed.filter((x) => !["assistant setup", "engine commit"].includes(x.what)).length ? `<p class="muted small">Also different between the two: ${c.changed.filter((x) => !["assistant setup", "engine commit"].includes(x.what)).map((x) => esc(x.what)).join(", ")}.</p>` : ""}
@@ -1116,6 +1236,7 @@ async function viewCompare(before, after) {
 
 async function route() {
   clearTimeout(pollTimer);
+  document.querySelectorAll("dialog.modal").forEach((d) => d.remove());  // a window left open on the page before
   const parts = location.hash.replace(/^#\/?/, "").split("/").map(decodeURIComponent);
   try {
     if (!parts[0]) return await viewHome();

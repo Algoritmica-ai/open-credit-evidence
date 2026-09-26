@@ -158,6 +158,14 @@ def meta() -> dict[str, Any]:
 
 @app.get("/api/packs")
 def packs() -> list[dict[str, Any]]:
+    used: dict[str, int] = {}  # how many tests each case set has been used in
+    for mf in RUNS.glob("*/manifest.json"):
+        try:
+            pid = (_read_json(mf).get("pack") or {}).get("pack_id")
+        except (OSError, ValueError):
+            continue
+        if pid:
+            used[pid] = used.get(pid, 0) + 1
     out = []
     for path in sorted(PACKS.glob("*/items.jsonl")):
         try:
@@ -181,6 +189,7 @@ def packs() -> list[dict[str, Any]]:
                 "sdd": p.manifest.get("sdd"),
                 "bank_figures": bool(p.manifest.get("bank_figures")),
                 "built_at": p.manifest.get("built_at"),
+                "used_in_tests": used.get(p.pack_id, 0),
                 "warnings": p.warnings,
             }
         )
@@ -669,7 +678,9 @@ def _retest_worker(job_id: str, from_run: str, setup: str) -> None:
     try:
         base = _read_json(_run_dir(from_run) / "manifest.json")
         phase("cases")
-        fresh = make_fresh_pack(base["pack"]["pack_id"])
+        # new cases, as many as the test being re-tested used
+        cases = int(base.get("transcripts") or 0) // max(1, int(base.get("repeats") or 1))
+        fresh = make_fresh_pack(base["pack"]["pack_id"], cases or None)
         pack = _pack(fresh["pack_id"])
         with _lock:
             job.update(pack_id=fresh["pack_id"], seed=fresh["seed"],
@@ -749,6 +760,8 @@ def start_run(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
         "log": [],
         "run_id": out.name,
         "started": stamp,
+        "cases": limit or len(pack.items),
+        "repeats": repeats,
     }
     threading.Thread(
         target=_job_worker,
@@ -806,6 +819,31 @@ def _headline(run: Path) -> dict[str, Any]:
             "panel": (run / "panel" / "records.jsonl").is_file()}
 
 
+_numbers_lock = threading.Lock()
+
+
+def _test_numbers(rows: list[dict[str, Any]]) -> dict[str, int]:
+    """A short number per finished test (Test 1, Test 2, ...) in the order they finished,
+    kept in runs/test-numbers.json so a number never changes once given."""
+    path = RUNS / "test-numbers.json"
+    with _numbers_lock:
+        try:
+            nums = {k: int(v) for k, v in json.loads(path.read_text()).items()}
+        except (OSError, ValueError, AttributeError):
+            nums = {}
+        new = sorted((r for r in rows if r["run_id"] not in nums and r["sealed"]
+                      and r["transcripts"]), key=lambda r: r.get("finished_at") or "")
+        if new:
+            top = max(nums.values(), default=0)
+            for i, r in enumerate(new, 1):
+                nums[r["run_id"]] = top + i
+            try:
+                path.write_text(json.dumps(nums, indent=1, sort_keys=True))
+            except OSError:
+                pass  # a read-only evidence folder: numbered for this listing only
+        return nums
+
+
 @app.get("/api/runs")
 def runs() -> list[dict[str, Any]]:
     out = []
@@ -823,6 +861,8 @@ def runs() -> list[dict[str, Any]]:
                 "judge": m.get("judge"),
                 "repeats": m.get("repeats"),
                 "transcripts": m.get("transcripts"),
+                "cases": (m.get("transcripts") or 0) // max(1, int(m.get("repeats") or 1)),
+                "started_at": m.get("started_at"),
                 "finished_at": m.get("finished_at"),
                 "sealed": (path.parent / "checksums.sha256").is_file(),
                 **_headline(path.parent),
@@ -837,6 +877,9 @@ def runs() -> list[dict[str, Any]]:
                 },
             }
         )
+    nums = _test_numbers(out)
+    for r in out:
+        r["test_no"] = nums.get(r["run_id"])
     return out
 
 
@@ -870,17 +913,29 @@ def _stages(run: Path) -> dict[str, Any]:
 
 
 @app.get("/api/overview")
-def overview(run: str | None = None) -> dict[str, Any]:
-    """The home page: the latest sealed test (or ``run``), where it stands, what is running."""
+def overview(run: str | None = None, pending: bool = False) -> dict[str, Any]:
+    """The home page: the latest sealed test (or ``run``), where it stands, what is running;
+    with ``pending``, also every test with flagged memos still to check."""
     rows = [r for r in runs() if r["sealed"] and r["transcripts"]]
     current = next((r for r in rows if r["run_id"] == run), None) if run else None
     if current is None and rows:
         current = max(rows, key=lambda r: r.get("finished_at") or "")
-    out: dict[str, Any] = {"run": None, "jobs": jobs(), "tests": len(rows)}
+    out: dict[str, Any] = {"run": None, "jobs": jobs(), "tests": len(rows), "to_review": []}
     if current:
-        out["run"] = {k: current[k] for k in ("run_id", "pack", "sut", "finished_at", "verdict",
-                                              "memos", "memos_with_error", "panel")}
+        out["run"] = {k: current[k] for k in ("run_id", "test_no", "pack", "sut", "started_at",
+                                              "finished_at", "verdict", "memos",
+                                              "memos_with_error", "panel", "cases", "repeats")}
         out["stages"] = _stages(_run_dir(current["run_id"]))
+    # every test with flagged memos still to check, newest first
+    newest = sorted(rows, key=lambda r: r.get("finished_at") or "", reverse=True)
+    for r in newest if pending else []:
+        st = out["stages"] if current and r["run_id"] == current["run_id"] else _stages(
+            _run_dir(r["run_id"]))
+        if st["flagged_checked"] < st["flagged"]:
+            out["to_review"].append({k: r[k] for k in ("run_id", "test_no", "pack", "started_at",
+                                                       "finished_at", "cases", "repeats")}
+                                    | {"flagged": st["flagged"],
+                                       "flagged_checked": st["flagged_checked"]})
     return out
 
 
