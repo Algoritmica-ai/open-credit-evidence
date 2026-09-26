@@ -452,3 +452,14 @@ def test_new_cases_come_from_the_synthetic_data_designer(client):
     listed = {p["pack_id"]: p for p in client.get("/api/packs").json()}
     assert listed[f["pack_id"]]["bank_figures"] and listed[f["pack_id"]]["items"] == 20
     assert f["links"]["space"].startswith("https://huggingface.co/spaces/")
+
+
+def test_the_synthetic_data_designer_starts_with_the_ui(client):
+    pytest.importorskip("sdd")
+    assert client.get("/api/meta").json()["designer"] == {"url": "/sdd/"}
+    page = client.get("/sdd/")
+    assert page.status_code == 200 and "Synthetic Data Designer" in page.text
+    assert '"/api/' not in client.get("/sdd/app.js").text  # its calls stay under /sdd/
+    recipes = client.get("/sdd/api/meta").json()["packs"]
+    assert "credit_underwriting" in recipes  # the recipe the test cases come from
+    assert client.get("/sdd/api/packs/credit_underwriting").status_code == 200

@@ -19,3 +19,4 @@ __pycache__/
 /regulations/*/index/passages.db
 /exports/
 /models.json
+/.sdd-workspace/

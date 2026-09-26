@@ -349,10 +349,12 @@ def flip_refs(contrib: dict[str, float], disposition: str) -> list[FlipRef]:
 # same in every market: only the currency and the regulatory overlay change.
 MARKETS: dict[str, dict[str, str]] = {
     # the original sample: sterling figures, Italian rule pack
-    "sample": {"currency": "£", "jurisdiction": "IT", "version": "0.5.0"},
-    # a German public lender (Sparkasse, Landesbank, development bank): euro figures,
+    "sample": {"currency": "£", "jurisdiction": "IT", "version": "0.6.0"},
+    # (0.6.0 and 0.8.0: a credit file's opening date carries the year back when the months wrap;
+# before, a 6-month-old file opened "September 2026" on a March 2026 case.)
+# a German public lender (Sparkasse, Landesbank, development bank): euro figures,
     # German rule pack
-    "de": {"currency": "€", "jurisdiction": "DE", "version": "0.7.0"},
+    "de": {"currency": "€", "jurisdiction": "DE", "version": "0.8.0"},
 }
 
 # How the case file reads in each market. The recipe draws British decoy values
@@ -404,14 +406,18 @@ def localise(df: pd.DataFrame, market: str) -> pd.DataFrame:
     return df
 
 
+def months_before(when: date, months: int) -> date:
+    """The first of the month ``months`` before ``when``: the credit file's opening month."""
+    index = when.year * 12 + (when.month - 1) - int(months)
+    return date(index // 12, index % 12 + 1, 1)
+
+
 def render_documents(row: pd.Series, f: dict[str, float], env: Environment,
                      currency: str = "£", market: str = "sample",
                      bank_figures: bool = False) -> list[ItemContext]:
     """The case file. With ``bank_figures`` it also holds what the bank's rules engine
     computes from the same data: the assistant sees it only in the with_figures setup."""
     received = date(2026, 3, 31)
-    opened_year = 2026 - int(row.file_age_months // 12)
-    opened_month = ((3 - int(row.file_age_months % 12)) - 1) % 12 + 1
     loc = LOCALES[market]
     ctx = dict(row.items()) | {
         "cur": currency,
@@ -421,7 +427,7 @@ def render_documents(row: pd.Series, f: dict[str, float], env: Environment,
         "public_record_label": loc["public_record_label"],
         "received": received.strftime("%-d %B %Y"),
         "instalment": f["_instalment"],
-        "file_opened": date(opened_year, opened_month, 1).strftime("%B %Y"),
+        "file_opened": months_before(received, row.file_age_months).strftime("%B %Y"),
         "accounts": 3 + int(row.file_age_months // 30),
         "searches": 1 if row.delinquencies_24m == 0 else 2,
     }

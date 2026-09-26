@@ -121,7 +121,13 @@ serve as quality control on reviewers' labels.
 
 ## Build order
 
-1. The review queue over evaluation outputs (lanes, cards) writing a sealed review record.
-2. Label checking and adjudication; the sealed feedback pack.
-3. A LoRA fine-tune of an open Nemotron model on the feedback pack.
-4. Re-evaluation on a fresh pack and the comparison as the proof of improvement.
+1. The review queue over evaluation outputs (lanes, cards) writing a sealed review record. Done.
+2. Label checking and adjudication; the sealed feedback pack. Done.
+3. A fine-tune of the assistant on the feedback pack. The engine hands it over rather than runs
+   it: `feedback/handover/` holds the training data (SFT in chat format, DPO pairs), the finding
+   labels, a starting LoRA configuration and the acceptance test, for the team that owns the
+   assistant.
+4. Re-evaluation on a fresh pack and the comparison as the proof of improvement. Done for a
+   change the bank makes itself: **Test this change on new cases** generates a pack with a new
+   seed, runs the assistant as it is and with the change on it, and compares the two case by
+   case. A tuned model is tested the same way.

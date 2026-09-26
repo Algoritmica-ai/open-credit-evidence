@@ -25,3 +25,15 @@ def test_german_and_sample_packs_share_the_marking_key():
         assert ga["disposition"] == gb["disposition"]
         for key in ("driver_refs", "decoy_refs", "omission_refs", "flip_refs", "driver_labels"):
             assert ga[key] == gb[key], (a["item_id"], key)
+
+
+def test_a_credit_file_opening_date_agrees_with_its_age():
+    from datetime import date
+
+    from evidence.packs.credit_underwriting import months_before
+
+    received = date(2026, 3, 31)
+    assert months_before(received, 6) == date(2025, 9, 1)  # was "September 2026"
+    assert months_before(received, 14) == date(2025, 1, 1)
+    assert months_before(received, 44) == date(2022, 7, 1)
+    assert months_before(received, 2) == date(2026, 1, 1)

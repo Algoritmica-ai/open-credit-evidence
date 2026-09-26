@@ -151,6 +151,7 @@ def meta() -> dict[str, Any]:
         "roles": roles,
         "has_key": bool(os.environ.get("NVIDIA_API_KEY")),
         "shared": SHARED,
+        "designer": DESIGNER,
         "limits": {"items": SHARED_MAX_ITEMS, "repeats": SHARED_MAX_REPEATS} if SHARED else None,
     }
 
@@ -386,6 +387,8 @@ def _build_worker(job_id: str, opts: dict[str, Any]) -> None:
             PACKS / opts["pack_id"],
             opts["pack_id"],
             opts.get("spec"),
+            opts.get("market", "sample"),
+            opts.get("bank_figures", False),
         )
         with _lock:
             job.update(
@@ -412,9 +415,15 @@ async def build_pack(
     keep: int = _FORM,
     seed: int = _FORM,
     spec: UploadFile | None = _OPTIONAL_FILE,
+    market: str = Form("sample"),
+    bank_figures: bool = Form(False),
 ) -> dict[str, Any]:
     """Generate a new pack from an SDD spec (uploaded, or the bundled recipe)."""
+    from evidence.packs.credit_underwriting import MARKETS
+
     pack_id = _safe_name(pack_id, "pack")
+    if market not in MARKETS:
+        raise HTTPException(400, f"market must be one of {sorted(MARKETS)}")
     if (PACKS / pack_id / "items.jsonl").is_file():
         raise HTTPException(400, f"pack {pack_id} already exists")
     spec_path = None
@@ -436,6 +445,8 @@ async def build_pack(
                 "keep": max(1, min(keep, 500)),
                 "seed": seed,
                 "spec": spec_path,
+                "market": market,
+                "bank_figures": bank_figures,
             },
         ),
         daemon=True,
@@ -557,7 +568,8 @@ def jobs() -> list[dict[str, Any]]:
     return sorted(rows, key=lambda r: r["started"] or "", reverse=True)
 
 
-def make_fresh_pack(from_pack: str) -> dict[str, Any]:
+def make_fresh_pack(from_pack: str, keep: int | None = None,
+                    bank_figures: bool = True) -> dict[str, Any]:
     """New cases from the same recipe, market and size as ``from_pack``, with a new seed and
     the figures the bank's systems compute. Checked to share no case file with any other
     pack of the same family: the assistant has never seen them."""
@@ -575,9 +587,10 @@ def make_fresh_pack(from_pack: str) -> dict[str, Any]:
                 if s not in used)
     pack_id = f"{family}-s{seed}"
     t0 = datetime.now(UTC)
-    manifest = build(int((m.get("sdd") or {}).get("generated") or 700), len(src.items), seed,
-                     PACKS / pack_id, pack_id, None, m.get("market") or "sample",
-                     bank_figures=True)
+    keep = max(5, min(int(keep or len(src.items)), 200))
+    generated = max(int((m.get("sdd") or {}).get("generated") or 700), keep * 35)
+    manifest = build(generated, keep, seed, PACKS / pack_id, pack_id, None,
+                     m.get("market") or "sample", bank_figures=bank_figures)
     fresh = _pack(pack_id)
     seen = {c.content for p in PACKS.glob(f"{family}*/items.jsonl") if p.parent.name != pack_id
             for it in load_pack(p.parent).items for c in it.context
@@ -593,7 +606,8 @@ def make_fresh_pack(from_pack: str) -> dict[str, Any]:
 def fresh_pack(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
     """Generate new cases the assistant has never seen, with the Synthetic Data Designer."""
     try:
-        return make_fresh_pack(str(payload.get("from", "")))
+        return make_fresh_pack(str(payload.get("from", "")), payload.get("keep"),
+                               bool(payload.get("bank_figures", True)))
     except ImportError as exc:
         raise HTTPException(501, "the Synthetic Data Designer is not installed: "
                             "pip install -e '.[generate]'") from exc
@@ -1140,6 +1154,28 @@ def advanced_slash() -> Response:
     return RedirectResponse("/advanced/")
 
 
+# The Synthetic Data Designer (src/sdd), which generates the test cases, starts with the UI
+# and is served at /sdd/: open a recipe (credit_underwriting among them), change it, run it.
+try:
+    from sdd.web.app import app as _designer
+
+    DESIGNER: dict[str, Any] | None = {"url": "/sdd/"}
+except ImportError:  # the generate extra is not installed: the evidence UI works without it
+    _designer, DESIGNER = None, None
+
+
+@app.get("/sdd")
+def designer_slash() -> Response:
+    from fastapi.responses import RedirectResponse
+
+    if _designer is None:
+        raise HTTPException(501, "the Synthetic Data Designer is not installed: "
+                            "pip install -e '.[web]'")
+    return RedirectResponse("/sdd/")
+
+
+if _designer is not None:
+    app.mount("/sdd", _designer, name="designer")
 app.mount("/", StaticFiles(directory=STATIC), name="static")
 
 

@@ -68,7 +68,6 @@ function packName(pack) {
 }
 const rulesName = (pack) => (RULES[PACK_JURISDICTION[packFamily((pack && pack.pack_id) || pack)]] || [])[1] || "";
 const SETUP = { as_is: "As today: the case file only", with_figures: "With the figures your systems already calculate" };
-const SDD_URL = "https://huggingface.co/spaces/Algoritmica/synthetic-data-designer";
 const LANE = {
   red: ["Check first", "The rule checks and the AI reviewers both found a problem."],
   amber: ["Worth a look", "Only one of the two found a problem. Your answers here show whether the AI reviewers raise false alarms."],
@@ -120,7 +119,7 @@ function renderSteps(ov, active, testState) {
     '<span class="sep" aria-hidden="true"></span>',
     step("improve", 3, run ? `#/improve/${rid}` : "#/", improveState, improveWords, "Improve"),
   ].join("");
-  document.querySelector(".history").classList.toggle("on", active === "history");
+  document.querySelectorAll(".history").forEach((a) => a.classList.toggle("on", a.dataset.nav === active));
 }
 
 const overview = (run) => api(`/api/overview${run ? `?run=${enc(run)}` : ""}`);
@@ -187,7 +186,7 @@ async function viewHome() {
 
 // ----------------------------------------------------------------- new test
 
-async function viewNew() {
+async function viewNew(preselect) {
   const [ov, meta, packs] = await Promise.all([overview(), api("/api/meta"), api("/api/packs")]);
   renderSteps(ov, "test", "New");
   page("narrow");
@@ -198,6 +197,10 @@ async function viewNew() {
   let chosenPack = null;
   const js = Object.keys(byJ).sort((a, b) => (a === "DE" ? -1 : b === "DE" ? 1 : a.localeCompare(b)));
   let chosenJ = js[0];
+  if (preselect) {
+    const hit = usable.find((p) => p.pack_id === preselect);
+    if (hit) { chosenJ = hit.jurisdiction || PACK_JURISDICTION[packFamily(hit.pack_id)] || chosenJ; chosenPack = hit.pack_id; }
+  }
   const a = meta.roles.assistant;
   $view.innerHTML = `<div class="stack" style="gap:28px">
     <a class="link back" href="#/">${ICON.back}Home</a>
@@ -210,7 +213,7 @@ async function viewNew() {
     <fieldset><legend>2. Which rules must its memos follow?</legend><div class="stack tight" id="rules"></div></fieldset>
     <fieldset><legend>3. Which test cases?</legend><div class="stack tight" id="cases"></div>
       <div class="row wrap" style="gap:12px"><button class="btn" id="fresh">${ICON.plus}Generate new cases</button>
-        <span class="small muted" id="freshmsg">Cases the assistant has never seen, made from your credit policy by the <a href="${SDD_URL}" target="_blank" rel="noopener">Synthetic Data Designer</a>.</span></div>
+        <span class="small muted" id="freshmsg">Cases the assistant has never seen, made from your credit policy by the Synthetic Data Designer. More options in <a href="#/cases">Case sets</a>.</span></div>
       <p class="small muted">Each case is given to the assistant three times, to check it answers the same way each time.</p></fieldset>
     <fieldset id="setupbox" hidden><legend>4. What does the assistant get?</legend><div class="stack tight" id="setup"></div></fieldset>
     <label class="choice-card"><input type="checkbox" id="panel" checked>
@@ -258,7 +261,7 @@ async function viewNew() {
       (byJ[chosenJ] = byJ[chosenJ] || []).unshift(fresh);
       chosenPack = f.pack_id;
       drawCases();
-      msg.innerHTML = `${f.items} new cases (set #${f.seed}) generated in ${f.seconds} s. ${f.shared_with_other_packs ? `<span class="error">${f.shared_with_other_packs} match earlier cases.</span>` : "None of them appears in an earlier test."} <a href="${SDD_URL}" target="_blank" rel="noopener">How they are made</a>`;
+      msg.innerHTML = `${f.items} new cases (set #${f.seed}) generated in ${f.seconds} s. ${f.shared_with_other_packs ? `<span class="error">${f.shared_with_other_packs} match earlier cases.</span>` : "None of them appears in an earlier test."} <a href="#/cases">How they are made</a>`;
     } catch (e) { msg.innerHTML = `<span class="error">${esc(e.message)}</span>`; }
     ev.target.disabled = false;
   };
@@ -274,6 +277,83 @@ async function viewNew() {
       document.getElementById("msg").textContent = e.message;
       ev.target.disabled = false;
     }
+  };
+}
+
+// ----------------------------------------------------------------- case sets
+
+async function viewCases() {
+  const [ov, packs, meta] = await Promise.all([overview(), api("/api/packs"), api("/api/meta")]);
+  renderSteps(ov, "cases");
+  page("");
+  const usable = packs.filter((p) => !p.error && p.items);
+  const families = [...new Set(usable.map((p) => packFamily(p.pack_id)))];
+  const designer = meta.designer;
+  const row = (p) => `<tr><td style="font-weight:600">${esc(packName(p))}</td><td>${p.items}</td>
+    <td>${esc(rulesName(p) || p.jurisdiction || "")}</td><td>${p.bank_figures ? "Yes" : '<span class="muted">No</span>'}</td>
+    <td class="muted">${esc(shortDate(p.built_at))}</td><td style="text-align:right"><a class="link" href="#/new/${enc(p.pack_id)}">Use in a test</a></td></tr>`;
+  $view.innerHTML = `<div class="stack">
+    <div class="stack tight"><h1>Case sets</h1>
+      <p class="muted" style="font-size:17px">Every test case is a made-up loan application with a known right answer, generated from your credit policy by the Synthetic Data Designer. No customer data is used, so a new set can be made at any time.</p></div>
+    <div class="grid2">
+      <section class="card stack mid"><h2>Create a case set</h2>
+        <label class="small" for="fam">Cases like</label>
+        <select id="fam">${families.map((f) => `<option value="${esc(f)}">${esc(packName(f))}</option>`).join("")}</select>
+        <label class="small" for="keep">How many cases</label>
+        <select id="keep"><option>20</option><option>50</option><option>100</option></select>
+        <label class="choice-card"><input type="checkbox" id="bank" checked><span class="stack tight"><span class="t">Include the figures your systems calculate</span>
+          <span class="small muted">A rules-engine summary in each case file. Needed to test the recommended change; the assistant only sees it when a test asks for it.</span></span></label>
+        <div class="row wrap" style="gap:12px"><button class="btn primary" id="create">Create case set</button><span class="small" id="cmsg"></span></div>
+      </section>
+      <section class="card stack mid"><h2>Design the recipe</h2>
+        <p class="small muted">The designer shows how cases are made: who applies, their incomes, debts and credit files, and how often each happens. Open the <b>credit_underwriting</b> recipe to see it or change it, then export the recipe to build a case set from it.</p>
+        ${designer ? `<a class="btn" href="${esc(designer.url)}" target="_blank" rel="noopener" style="align-self:flex-start">Open the Synthetic Data Designer</a>` : '<p class="small error">The Synthetic Data Designer is not installed on this server.</p>'}
+        <details><summary class="small">Build a case set from a recipe file</summary>
+          <div class="stack tight" style="margin-top:10px">
+            <label class="small" for="spec">Recipe (YAML) exported from the designer</label><input type="file" id="spec" accept=".yaml,.yml">
+            <label class="small" for="smarket">Market</label><select id="smarket"><option value="de">Germany (in euros)</option><option value="sample">Sample (in pounds)</option></select>
+            <div class="row wrap" style="gap:12px"><button class="btn" id="buildspec">Build case set</button><span class="small" id="smsg"></span></div></div></details>
+      </section>
+    </div>
+    <section class="card" style="padding:8px 20px"><table><thead><tr><th>Case set</th><th>Cases</th><th>Rules</th><th>Bank figures</th><th>Made</th><th><span class="visually-hidden">Use</span></th></tr></thead>
+      <tbody>${usable.map(row).join("")}</tbody></table></section>
+  </div>`;
+  document.getElementById("create").onclick = async (ev) => {
+    const msg = document.getElementById("cmsg");
+    const fam = document.getElementById("fam").value;
+    const from = (usable.find((p) => p.pack_id === fam) || usable.find((p) => packFamily(p.pack_id) === fam)).pack_id;
+    ev.target.disabled = true;
+    msg.textContent = "Generating…";
+    try {
+      const f = await api("/api/packs/fresh", { from, keep: +document.getElementById("keep").value, bank_figures: document.getElementById("bank").checked });
+      msg.innerHTML = `Made ${f.items} new cases (set #${f.seed}) in ${f.seconds} s. <a href="#/new/${enc(f.pack_id)}">Use them in a test</a>`;
+      setTimeout(() => viewCases().then(() => { document.getElementById("cmsg").innerHTML = msg.innerHTML; }), 50);
+    } catch (e) { msg.innerHTML = `<span class="error">${esc(e.message)}</span>`; ev.target.disabled = false; }
+  };
+  document.getElementById("buildspec").onclick = async (ev) => {
+    const msg = document.getElementById("smsg");
+    const file = document.getElementById("spec").files[0];
+    if (!file) { msg.textContent = "Choose a recipe file first."; return; }
+    const market = document.getElementById("smarket").value;
+    const form = new FormData();
+    const seed = Math.floor(1000 + Math.random() * 90000);
+    form.append("pack_id", `${market === "de" ? "underwriter-de" : "underwriter-sample"}-s${seed}`);
+    form.append("n", "700"); form.append("keep", "20"); form.append("seed", String(seed));
+    form.append("market", market); form.append("bank_figures", "true"); form.append("spec", file);
+    ev.target.disabled = true;
+    msg.textContent = "Building…";
+    try {
+      const r = await fetch("/api/packs/build", { method: "POST", body: form });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.detail || r.statusText);
+      for (let i = 0; i < 120; i++) {
+        const st = await api(`/api/run/${enc(j.job_id)}`);
+        if (st.status === "done") { msg.innerHTML = `Built. <a href="#/new/${enc(j.pack_id)}">Use it in a test</a>`; return; }
+        if (st.status === "error") throw new Error(st.error);
+        await new Promise((res) => setTimeout(res, 1000));
+      }
+    } catch (e) { msg.innerHTML = `<span class="error">${esc(e.message)}</span>`; }
+    ev.target.disabled = false;
   };
 }
 
@@ -730,7 +810,7 @@ async function viewRetest(jobId) {
       <div class="stack tight"><h1>Testing the change on new cases</h1>
         <p class="muted" style="font-size:17px">${esc(SETUP[j.setup] || j.setup)}, against the assistant as it is today.</p></div>
       <ol class="card" style="list-style:none;padding:8px 28px;margin:0">
-        ${line("cases", "New cases generated", j.seed ? `Set #${j.seed} from your credit policy, by the <a href="${SDD_URL}" target="_blank" rel="noopener">Synthetic Data Designer</a>. ${j.shared_with_other_packs ? `${j.shared_with_other_packs} match earlier cases.` : "None appears in an earlier test."}` : "Cases the assistant has never seen")}
+        ${line("cases", "New cases generated", j.seed ? `Set #${j.seed} from your credit policy, by the <a href="/sdd/" target="_blank" rel="noopener">Synthetic Data Designer</a>. ${j.shared_with_other_packs ? `${j.shared_with_other_packs} match earlier cases.` : "None appears in an earlier test."}` : "Cases the assistant has never seen")}
         ${line("before", "The assistant as it is today", state("before") === "now" ? `${j.done} of ${j.total} memos` : "Writes a memo for every case; each is checked against the rules")}
         ${line("after", "The assistant with the change", state("after") === "now" ? `${j.done} of ${j.total} memos` : "The same cases, with the figures your systems calculate")}
         ${line("compare", "The two side by side", "Case by case: did the change help, and did anything get worse?")}
@@ -820,7 +900,8 @@ async function route() {
   const parts = location.hash.replace(/^#\/?/, "").split("/").map(decodeURIComponent);
   try {
     if (!parts[0]) return await viewHome();
-    if (parts[0] === "new") return await viewNew();
+    if (parts[0] === "new") return await viewNew(parts[1]);
+    if (parts[0] === "cases") return await viewCases();
     if (parts[0] === "running" && parts[1]) return await viewRunning(parts[1]);
     if (parts[0] === "result" && parts[1]) return await viewResult(parts[1]);
     if (parts[0] === "review" && parts[1] && parts[2] === "memo") return await viewMemo(parts[1], parts.slice(3).join("/"));
