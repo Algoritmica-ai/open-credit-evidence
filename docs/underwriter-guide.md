@@ -69,8 +69,8 @@ The new cases are made in about a minute and chosen for the test. The line under
 sets shows the size of the test ("5 cases, each run twice = 10 memos"). For an existing set,
 press **Change** there to use fewer cases or a different number of runs.
 
-Leave **Also get a second opinion from three AI reviewers** ticked for a real test. It
-takes a few minutes longer and sorts the memos so you check the most likely mistakes first.
+Every test also gets a second opinion from three AI reviewers. It takes a few minutes
+longer and sorts the memos so you check the most likely mistakes first.
 
 Press **Start test**. The progress page shows each stage. You can close the page, and the
 result waits on the home page. **Stop the test** keeps everything finished so far.

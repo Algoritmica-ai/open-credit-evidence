@@ -1,6 +1,0 @@
-# nel gate policy: fail the build if the assistant's briefings regress.
-#   nel gate --policy examples/nemo_evaluator/gate.yaml results/credit-evidence
-benchmarks:
-  credit-evidence-underwriter:
-    mean_reward:
-      min: 0.85

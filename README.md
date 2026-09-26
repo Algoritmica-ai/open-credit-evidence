@@ -62,7 +62,8 @@ Synthetic Data Designer ──▶ scorecard ──▶ pack (documents + sealed m
 ## Quick start
 
 Guides: [local setup](docs/setup.md) · [underwriter guide to the UI](docs/underwriter-guide.md) ·
-[architecture and the end-to-end flow](docs/architecture.md) · [anchoring in Bitcoin](docs/anchoring.md)
+[architecture and the end-to-end flow](docs/architecture.md) · [anchoring in Bitcoin](docs/anchoring.md) ·
+[capability checker (NeMo Evaluator)](docs/capabilities.md)
 
 ```bash
 git clone https://github.com/Algoritmica-ai/open-credit-evidence.git
@@ -208,7 +209,7 @@ which endpoint produced it. See [`docs/models.md`](docs/models.md) and
 | `scripts/` | Pack builder, the no-model demo, cluster serving scripts, LoRA fine-tuning |
 | `notebooks/` | Executed notebooks: the three models on one case; the on-prem setup |
 | `runs/` | A committed evidence pack from a real run |
-| `examples/nemo_evaluator/` | The same pack as a NeMo Evaluator benchmark, with a gate policy |
+| `src/evidence/capabilities.py`, `src/evidence/nemo/` | The capability checker: NVIDIA NeMo Evaluator over general benchmarks and the credit memo benchmark, with a release gate ([docs/capabilities.md](docs/capabilities.md)) |
 | `docs/` | Setup, the underwriter guide, architecture, contracts, models, cluster, regulations, the Verifier’s Law framing, the deck |
 
 ## What it claims, and what it does not
