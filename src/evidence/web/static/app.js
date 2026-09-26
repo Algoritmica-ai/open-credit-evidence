@@ -287,12 +287,14 @@ async function viewNew(preselect) {
   document.getElementById("fresh").onclick = () => {
     const from = chosenPack || ((byJ[chosenJ] || [])[0] || {}).pack_id;
     if (!from) return;
-    generateCases(from, (f, fresh) => {
+    const times = +document.getElementById("nrepeats").value;
+    generateCases(from, (f, fresh, times) => {
       (byJ[chosenJ] = byJ[chosenJ] || []).unshift(fresh);
       chosenPack = f.pack_id;
+      document.getElementById("nrepeats").value = String(times);
       drawCases();
-      document.getElementById("freshmsg").innerHTML = `${f.items} new cases (set #${f.seed}) made in ${f.seconds} s and chosen. ${f.shared_with_other_packs ? `<span class="error">${f.shared_with_other_packs} match earlier cases.</span>` : "None of them appears in an earlier test."}`;
-    });
+      document.getElementById("freshmsg").innerHTML = `${f.items} new cases (set #${f.seed}) made in ${f.seconds} s and chosen, each run ${times === 1 ? "once" : times === 2 ? "twice" : times + " times"}. ${f.shared_with_other_packs ? `<span class="error">${f.shared_with_other_packs} match earlier cases.</span>` : "None of them appears in an earlier test."}`;
+    }, times, maxRepeats);
   };
   document.getElementById("start").onclick = async (ev) => {
     const pack = (document.querySelector("input[name=cases]:checked") || {}).value;
@@ -308,9 +310,9 @@ async function viewNew(preselect) {
   };
 }
 
-// The "Generate new cases" window: how many, and whether the bank's figures are included.
-// Calls done(result, pack) with the new case set once it is made.
-function generateCases(from, done) {
+// The "Generate new cases" window: how many cases, how many times each is run in the test,
+// and whether the bank's figures are included. Calls done(result, pack, repeats) once made.
+function generateCases(from, done, repeats = 3, maxRepeats = 5) {
   const dlg = document.createElement("dialog");
   dlg.className = "modal";
   dlg.setAttribute("aria-labelledby", "gen-title");
@@ -321,6 +323,10 @@ function generateCases(from, done) {
       <div class="stack tight"><label class="small" for="gen-n"><b>How many cases</b></label>
         <input type="number" id="gen-n" min="5" max="200" step="1" value="20" style="width:120px">
         <span class="tiny muted">Between 5 and 200. 5 is enough to try things out.</span></div>
+      <div class="stack tight"><label class="small" for="gen-r"><b>Times each case is run in the test</b></label>
+        <select id="gen-r" style="width:160px">${[1, 2, 3, 4, 5].filter((n) => n <= maxRepeats).map((n) => `<option value="${n}" ${n === repeats ? "selected" : ""}>${n === 1 ? "Once" : n === 2 ? "Twice" : n + " times"}</option>`).join("")}</select>
+        <span class="tiny muted">The assistant can write a different memo each time for the same case, so running it more than once shows how consistent it is.</span></div>
+      <p class="small" id="gen-total" style="font-weight:600"></p>
       <label class="choice-card"><input type="checkbox" id="gen-bank" checked><span class="stack tight"><span class="t">Include the figures your systems calculate</span>
         <span class="small muted">A rules-engine summary in each case file. The assistant only sees it when a test asks for it.</span></span></label>
       <p class="small" id="gen-msg" role="status"></p>
@@ -334,6 +340,13 @@ function generateCases(from, done) {
   dlg.querySelector("a[href='#/cases']").onclick = close;
   let busy = false;
   dlg.querySelector("#gen-cancel").onclick = () => { if (!busy) close(); };
+  const total = () => {
+    const n = Math.round(+dlg.querySelector("#gen-n").value) || 0;
+    dlg.querySelector("#gen-total").textContent = `= ${plural(n * +dlg.querySelector("#gen-r").value, "memo")} in the test`;
+  };
+  dlg.querySelector("#gen-n").oninput = total;
+  dlg.querySelector("#gen-r").oninput = total;
+  total();
   dlg.querySelector("#gen-go").onclick = async (ev) => {
     const n = Math.round(+dlg.querySelector("#gen-n").value);
     const msg = dlg.querySelector("#gen-msg");
@@ -347,8 +360,9 @@ function generateCases(from, done) {
       const fresh = (await api("/api/packs")).find((p) => p.pack_id === f.pack_id);
       busy = false;
       if (!dlg.isConnected) return;  // the page was left while the cases were made
+      const times = +dlg.querySelector("#gen-r").value;
       close();
-      done(f, fresh);
+      done(f, fresh, times);
     } catch (e) {
       busy = false;
       msg.innerHTML = `<span class="error">${esc(e.message)}</span>`;
