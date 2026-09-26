@@ -274,6 +274,21 @@ def test_review_endpoints_on_a_copy_of_a_committed_run(tmp_path, monkeypatch):
     c = TestClient(web.app)
     ov = c.get("/api/overview").json()
     assert ov["run"]["run_id"] == src.name and ov["jobs"] == []
+    assert ov["run"]["test_no"] == 1 and ov["run"]["cases"] * ov["run"]["repeats"] == 60
+    assert ov["to_review"] == []  # worked out only when asked for: the home page
+    waiting = c.get("/api/overview", params={"pending": True}).json()["to_review"]
+    assert [(t["test_no"], t["flagged_checked"]) for t in waiting] == [(1, 0)]
+    # a test's number never changes once given: a later test gets the next one
+    later = runs / "zz-later"
+    shutil.copytree(src, later)
+    m = json.loads((later / "manifest.json").read_text())
+    m["finished_at"] = "2000-01-01T00:00:00+00:00"  # finished "earlier", still numbered after
+    (later / "manifest.json").write_text(json.dumps(m))
+    nums = {r["run_id"]: r["test_no"] for r in c.get("/api/runs").json()}
+    assert nums == {src.name: 1, "zz-later": 2}
+    used = {x["pack_id"]: x["used_in_tests"] for x in c.get("/api/packs").json() if "items" in x}
+    assert used[ov["run"]["pack"]["pack_id"]] == 2  # the run and its copy
+    shutil.rmtree(later)
     assert ov["stages"]["review"] == "not_started" and ov["stages"]["next"] == "review"
     assert ov["stages"]["flagged"] == ov["stages"]["lanes"]["red"] + ov["stages"]["lanes"]["amber"]
     q = c.get(f"/api/review/{src.name}").json()
@@ -448,7 +463,8 @@ def test_a_change_is_tested_on_new_cases_as_it_is_and_with_the_change(client, mo
                                                                        tmp_path):
     seen = []
 
-    def fake_fresh(from_pack):
+    def fake_fresh(from_pack, keep=None):
+        seen.append(("keep", keep))  # as many new cases as the test being re-tested used
         pid = "underwriter-sample-s4242"
         _with_bank_figures(web.PACKS / from_pack, web.PACKS / pid, pid)
         return {"pack_id": pid, "seed": 4242, "from": from_pack, "items": 20,
@@ -481,6 +497,7 @@ def test_a_change_is_tested_on_new_cases_as_it_is_and_with_the_change(client, mo
     assert (b["setup"], a["setup"]) == ("as_is", "with_figures")
     assert b["pack"]["pack_id"] == a["pack"]["pack_id"] == "underwriter-sample-s4242"
     assert seen.count(True) == seen.count(False) == 20  # the figures went to one side only
+    assert ("keep", 2) in seen  # the base test used 2 cases
     for r in (j["before"], j["after"]):
         assert client.post(f"/api/runs/{r}/verify", json={"recompute": True}).json()["ok"]
     c = client.get("/api/compare", params={"before": j["before"], "after": j["after"]}).json()
