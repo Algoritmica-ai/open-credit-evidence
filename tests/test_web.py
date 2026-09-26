@@ -315,7 +315,8 @@ def test_review_endpoints_on_a_copy_of_a_committed_run(tmp_path, monkeypatch):
     assert c.post(f"/api/runs/{src.name}/verify", json={}).json()["ok"]
     fb = c.post(f"/api/review/{src.name}/feedback").json()
     assert fb["counts"]["judge_labels.jsonl"] >= 1
-    assert c.get(f"/api/review/{src.name}/feedback/manifest.json").status_code == 200
+    got = c.get(f"/api/review/{src.name}/feedback/manifest.json")
+    assert got.status_code == 200 and got.headers["cache-control"] == "no-cache"  # never stale
     assert c.get("/api/overview").json()["stages"]["feedback_built"]
     # the coach: asked about one finding, kept with the review
     calls = []
@@ -351,6 +352,23 @@ def test_review_endpoints_on_a_copy_of_a_committed_run(tmp_path, monkeypatch):
         assert rec["coach"]["answers_before"] == [{"card_id": cid, "action": "dispute",
                                                    "reason": None, "correction": None}]
         assert c.get(f"/api/review/{src.name}").json()["summary"]["coach"]["memos"] == 1
+        assert c.post(f"/api/runs/{src.name}/verify", json={}).json()["ok"]
+        # Improve: a confirmed mistake without a correction waits for one, and gets it there
+        rq = c.get(f"/api/review/{src.name}").json()
+        spot = next(x for x in rq["to_correct"] if x["memo"] == second)["spots"][0]
+        assert rq["last_change"] and set(spot["card_ids"]) <= {x["card_id"] for x in m2["cards"]}
+        url = f"/api/review/{src.name}/correct"
+        assert c.post(url, json={"memo": second, "card_ids": ["nope"],
+                                 "correction": "x"}).status_code == 400
+        assert c.post(url, json={"memo": second, "card_ids": spot["card_ids"],
+                                 "correction": ""}).status_code == 400
+        fixed = c.post(url, json={"memo": second, "card_ids": spot["card_ids"],
+                                  "correction": "The ratio is 36.5%, within the limit.",
+                                  "by": "mr"}).json()
+        assert fixed["corrected_by"] == "mr" and fixed["reviewer"] == "t" and fixed["coach"]
+        after = {x["memo"]: x for x in c.get(f"/api/review/{src.name}").json()["to_correct"]}
+        assert not any(set(spot["card_ids"]) & set(sp["card_ids"])
+                       for sp in after.get(second, {"spots": []})["spots"])
         assert c.post(f"/api/runs/{src.name}/verify", json={}).json()["ok"]
     finally:
         web_mod._coach_call = orig

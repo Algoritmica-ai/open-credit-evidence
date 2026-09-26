@@ -899,7 +899,9 @@ def _stages(run: Path) -> dict[str, Any]:
         rv = "in_progress"
     else:
         rv = "done"
-    if fb.is_file():
+    built = _read_json(fb).get("built_at") if fb.is_file() else None
+    if built and not s["needs_adjudication"] and not review.to_correct(run, q) and (
+            review.last_change(run) or "") <= built:
         im = "done"
     elif rv == "done" or s["needs_adjudication"] or s["settled"]:
         im = "in_progress"
@@ -1112,6 +1114,7 @@ def review_queue(run_id: str) -> dict[str, Any]:
     q = _review_queue(run)
     done = review.reviews(run)
     return {"summary": review.summary(run, q), "evaluator": review.evaluator(run, q),
+            "to_correct": review.to_correct(run, q), "last_change": review.last_change(run),
             "memos": [{k: m[k] for k in ("memo", "case", "repeat", "lane", "failing_checks",
                                          "panel_flag")}
                       | {"findings": len(m["cards"]), "reviewed": m["memo"] in done}
@@ -1241,6 +1244,22 @@ def review_adjudication(run_id: str) -> list[dict[str, Any]]:
             if x["standing"] == "needs_adjudication"]
 
 
+@app.post("/api/review/{run_id}/correct")
+def review_correct(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """Write how a memo should read, for confirmed findings that have no correction yet."""
+    from evidence import review
+
+    run = _run_dir(run_id)
+    try:
+        rec = review.correct(run, str(payload.get("memo", "")),
+                             [str(c) for c in payload.get("card_ids") or []],
+                             str(payload.get("correction", "")), str(payload.get("by", "")))
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    _reseal(run)
+    return rec
+
+
 @app.post("/api/review/{run_id}/adjudicate")
 def review_adjudicate(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     from evidence import review
@@ -1297,10 +1316,11 @@ def review_feedback_file(run_id: str, name: str) -> FileResponse:
 
 @app.middleware("http")
 async def _no_stale_pages(request: Any, call_next: Any) -> Any:
-    """Browsers revalidate the page, script and styles each time, so an upgrade shows at once."""
+    """Browsers revalidate everything each time: the page, script and styles, so an upgrade
+    shows at once, and the API's files (a feedback pack rebuilt a minute ago), which a browser
+    would otherwise keep from their last-modified date."""
     response = await call_next(request)
-    if not request.url.path.startswith("/api/"):
-        response.headers["Cache-Control"] = "no-cache"
+    response.headers.setdefault("Cache-Control", "no-cache")
     return response
 
 

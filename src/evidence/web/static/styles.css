@@ -193,17 +193,7 @@ textarea { min-height: 88px; resize: vertical; }
 .answers.chips button[aria-pressed=true] { background: var(--accent-soft); color: var(--accent); font-weight: 700; padding: 0 13px; }
 .casefile { white-space: pre-wrap; font-size: 14px; color: var(--ink-2); margin-top: 12px; }
 
-/* ------------------------------------------------------------ applications sidebar and coach */
-.appnav { width: 220px; flex-shrink: 0; position: sticky; top: 140px; max-height: calc(100vh - 160px); overflow-y: auto;
-          padding: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; }
-.navgroup { margin-bottom: 14px; }
-.navgroup .eyebrow { margin-bottom: 6px; }
-.navitem { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 4px 10px; border-radius: 8px; color: var(--ink); text-decoration: none; font-size: 14px; }
-.navitem:hover { background: var(--accent-soft); color: var(--ink); }
-.navitem.on { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
-.navtick { color: var(--green); display: inline-flex; }
-.navtick .icon { width: 14px; height: 14px; }
-.navbadge { font-size: 11px; padding: 1px 7px; }
+/* ------------------------------------------------------------ coach */
 .coach { padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--bg); }
 .bubble { padding: 12px 14px; border-radius: 12px; display: flex; flex-direction: column; gap: 6px; }
 .bubble.me { background: var(--accent-soft); margin-left: 32px; }
@@ -270,3 +260,18 @@ dialog.modal.wide { width: min(880px, calc(100vw - 32px)); max-height: calc(100v
 .runchip.on { border-color: var(--accent); font-weight: 600; }
 .linkbtn { border: 0; background: none; padding: 0; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; }
 .other-run { padding: 24px 28px; border-style: dashed; }
+
+/* improve: the five steps, and the work in them */
+.stepline { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.stepline a { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 600; }
+.stepline a > span:first-child, .stepline a > .icon { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; background: var(--bg); font-size: 12px; }
+.stepline li.done a { color: var(--ink-2); }
+.stepline li.done a > .icon { background: var(--green); color: #fff; padding: 4px; }
+.stepline li.next a { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.stepline li.next a > span:first-child { background: var(--accent); color: var(--accent-ink); }
+.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.settle { display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; }
+.fixmemo { padding-top: 14px; border-top: 1px solid var(--line-2); }
+.fixspot { padding: 12px 0 4px; }
+section.flash { outline: 3px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 1100px) { .grid4 { grid-template-columns: repeat(2, 1fr); } }
