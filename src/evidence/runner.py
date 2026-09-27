@@ -24,7 +24,7 @@ from typing import Any
 
 from evidence import __version__
 from evidence.adapters.nvidia_build import BUILD_HOST, chat, endpoint_for
-from evidence.checks import run_checks
+from evidence.checks import check_versions, run_checks
 from evidence.contracts.item import BenchmarkItem
 from evidence.contracts.transcript import SUTPins, Transcript
 from evidence.corpus import Corpus
@@ -409,6 +409,8 @@ def run_pack(
         **({"single_judge": "skipped: the three-agent panel reviews these briefings"}
            if panel else {}),
         "checks": checks if checks is not None else pack.checks_declared(),
+        "check_versions": check_versions(checks if checks is not None
+                                         else pack.checks_declared()),
         "repeats": repeats,
         "transcripts": done,
         "planned": total,

@@ -3,23 +3,31 @@
 A credit memo test shows how the assistant does at its job. Before a changed or fine-tuned
 assistant replaces the current one, two more questions need answers:
 
-1. **Did the change break anything else?** A model tuned on credit memos could get worse at
-   arithmetic or at German.
-2. **Is the improvement real, or run-to-run noise?**
+1. **Is the improvement real, or run-to-run noise?**
+2. **Did the change break anything else?** A model tuned on credit memos could get worse at
+   other things.
 
-The capability checker answers both with NVIDIA's open-source
+The capability checker answers the first, and can answer the second, with NVIDIA's open-source
 [NeMo Evaluator](https://github.com/NVIDIA-NeMo/Evaluator) (`nel`), and keeps each result in a
 sealed, anchored folder. It is standalone: the engine does not depend on it, and NeMo
 Evaluator runs in its own Python environment.
 
 ## What it measures
 
-| Capability | Benchmark | Why |
-|---|---|---|
-| Arithmetic | `gsm8k` | The assistant's main weakness in our tests |
-| Maths in eleven languages, German included | `mgsm` | Our cases are German; the report gives German alone |
-| Knowledge and reasoning | `mmlu-pro` | General ability across 14 subjects |
-| Credit memos | `credit-memo` | Our case set: the six checks decide each memo; a judge (Nemotron 3 Super) scores its usefulness to an underwriter, 1–5, beside them |
+By default, **credit memos only** (`credit-memo`): our case set, where the six checks
+decide each memo and a judge (Nemotron 3 Super) scores its usefulness to an underwriter,
+1–5, beside them.
+
+Three general benchmarks are **parked**. The assistant works on tabular case files, and
+the six checks already test the arithmetic it does on them, so these add little for now.
+They stay runnable with `--suite general` (the three alone) or `--suite all` (with the
+credit memos), for example on a fine-tuned model:
+
+| Capability | Benchmark |
+|---|---|
+| Arithmetic | `gsm8k` |
+| Maths in eleven languages, German included (the report gives German alone) | `mgsm` |
+| Knowledge and reasoning across 14 subjects | `mmlu-pro` |
 
 The model is measured as the engine runs it: temperature 0 and, for Nemotron models, thinking
 switched off.
@@ -64,11 +72,12 @@ Measure the assistant (the endpoint in `.env`), judged by the judge endpoint:
 .venv/bin/evidence capabilities run --suite quick --pack packs/underwriter-de-s80534 --name lightning
 ```
 
-| Suite | Size | Time (Lightning on the team's node) | For |
-|---|---|---|---|
-| `quick` | about 20 problems per benchmark, 10 credit cases, 2 repeats | about 2 minutes | trying things out |
-| `standard` | about 100 per benchmark, the whole case set, 2 repeats | about 10–15 minutes | a release decision |
-| `general` | the three general benchmarks only | | a model with no credit-memo task |
+| Suite | Size | For |
+|---|---|---|
+| `quick` | 10 credit cases, 2 repeats | trying things out |
+| `standard` (the default) | the whole case set, 2 repeats | a release decision |
+| `general` | the three parked general benchmarks: about 100 problems each | a model with no credit-memo task |
+| `all` | the whole case set and the three general benchmarks | a fine-tuned model |
 
 Other options:
 - `--setup with_figures`: the credit memos with the bank's figures.
@@ -91,7 +100,7 @@ Set a candidate against a baseline:
 This runs `nel compare` and `nel gate`, and writes `gate.md`, `gate.json` and `compare.json`
 into the candidate's folder, sealed. The default policy:
 - **Credit memos are critical** and may not drop.
-- **The rest are supporting** and may drop at most 5 points.
+- **Any general benchmark measured** is supporting and may drop at most 5 points.
 
 `--policy` takes your own policy (NeMo Evaluator's format).
 
@@ -101,10 +110,11 @@ The verdict is one of:
 - **INCONCLUSIVE:** too few problems to tell either way. Measure with the standard suite or
   more repeats.
 
-Example, from the quick suite: Lightning with the bank's figures against Lightning without.
-The credit memos went from 20% to 75% passing every check, which is significant even on 10
-cases. The general benchmarks moved by 5–9 points although the model was the same, so that
-was run-to-run noise. The gate rightly said INCONCLUSIVE for them.
+Example, from the quick suite with the general benchmarks (before they were parked):
+Lightning with the bank's figures against Lightning without. The credit memos went from 20%
+to 75% passing every check, which is significant even on 10 cases. The general benchmarks
+moved by 5–9 points although the model was the same, so that was run-to-run noise. The gate
+rightly said INCONCLUSIVE for them.
 
 ## What we learned about NeMo Evaluator 0.3.0
 

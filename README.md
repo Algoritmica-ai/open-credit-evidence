@@ -209,7 +209,8 @@ which endpoint produced it. See [`docs/models.md`](docs/models.md) and
 | `scripts/` | Pack builder, the no-model demo, cluster serving scripts, LoRA fine-tuning |
 | `notebooks/` | Executed notebooks: the three models on one case; the on-prem setup |
 | `runs/` | A committed evidence pack from a real run |
-| `src/evidence/capabilities.py`, `src/evidence/nemo/` | The capability checker: NVIDIA NeMo Evaluator over general benchmarks and the credit memo benchmark, with a release gate ([docs/capabilities.md](docs/capabilities.md)) |
+| `src/evidence/capabilities.py`, `src/evidence/nemo/` | The capability checker: NVIDIA NeMo Evaluator over the credit memo benchmark (general benchmarks parked), with a release gate ([docs/capabilities.md](docs/capabilities.md)) |
+| `src/evidence/recheck.py` | What a newer version of the checks would change on a sealed run, without touching it |
 | `docs/` | Setup, the underwriter guide, architecture, contracts, models, cluster, regulations, the Verifier’s Law framing, the deck |
 
 ## What it claims, and what it does not

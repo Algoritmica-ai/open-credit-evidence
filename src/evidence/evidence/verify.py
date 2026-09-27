@@ -79,8 +79,11 @@ def verify_integrity(run: Path) -> Verification:
 def verify_recompute(run: Path, pack: Pack, v: Verification | None = None) -> Verification:
     """Re-run every deterministic check from the transcripts and compare with results.jsonl."""
     v = v or Verification(ok=True)
-    # each memo is checked against what the assistant was given under the run's setup
-    setup = json.loads((run / "manifest.json").read_text(encoding="utf-8")).get("setup", "as_is")
+    # each memo is checked against what the assistant was given under the run's setup,
+    # by the versions of the checks it was scored with (all 1 before versions were recorded)
+    manifest = json.loads((run / "manifest.json").read_text(encoding="utf-8"))
+    setup = manifest.get("setup", "as_is")
+    versions = manifest.get("check_versions") or {c: 1 for c in manifest.get("checks") or []}
     items = {i.item_id: i.for_setup(setup) for i in pack.items}
     recorded: dict[tuple[str, int, str], dict[str, Any]] = {}
     for line in (run / "results.jsonl").read_text(encoding="utf-8").splitlines():
@@ -95,7 +98,7 @@ def verify_recompute(run: Path, pack: Pack, v: Verification | None = None) -> Ve
             v.disagreements.append({"item_id": t.item_id, "reason": "item not in pack"})
             continue
         names = sorted({c for (i, rep, c) in recorded if i == t.item_id and rep == t.repeat})
-        for c in run_checks(names, output=t.output, item=item):
+        for c in run_checks(names, output=t.output, item=item, versions=versions):
             v.recomputed += 1
             old = recorded[(t.item_id, t.repeat, c.name)]
             new = c.to_score()
