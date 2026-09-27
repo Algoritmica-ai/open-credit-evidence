@@ -420,6 +420,24 @@ def _cmd_checks(_: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_distill(a: argparse.Namespace) -> int:
+    from evidence import distill
+
+    if a.stage in ("cases", "all"):
+        print(f"{distill.make_cases(a.name, a.n, a.from_pack)} cases in "
+              f"{distill.ROOT / a.name / 'cases'}")
+    if a.stage in ("teach", "all"):
+        from evidence.adapters.nvidia_build import endpoint_for
+
+        ep = endpoint_for("teacher")
+        print(f"teacher {ep.model_id} at {ep.base_url}")
+        print(distill.teach(a.name, setup=a.setup, attempts=a.attempts, workers=a.workers,
+                            limit=a.limit))
+    if a.stage in ("build", "all"):
+        distill.build(a.name, setup=a.setup, feedback=[Path(f) for f in a.feedback])
+    return 0
+
+
 def _cmd_recheck(a: argparse.Namespace) -> int:
     from evidence.recheck import recheck
 
@@ -565,6 +583,23 @@ def main(argv: list[str] | None = None) -> int:
     w.add_argument("--port", type=int, default=8765)
     w.add_argument("--root", help="directory holding packs/ and runs/ (default: current)")
     w.set_defaults(fn=_cmd_ui)
+
+    ds = sub.add_parser("distill", help="training data for a fine-tuned assistant: new cases, "
+                                         "memos by a teacher model, kept if the checks pass")
+    ds.add_argument("stage", choices=["cases", "teach", "build", "all"])
+    ds.add_argument("--name", required=True, help="the folder under training/")
+    ds.add_argument("--n", type=int, default=2000, help="cases to generate (stage cases)")
+    ds.add_argument("--from-pack", default="underwriter-de",
+                    help="the test pack whose recipe and market the cases follow")
+    ds.add_argument("--setup", default="as_is", choices=["as_is", "with_figures"],
+                    help="what the assistant is given, and so the teacher too")
+    ds.add_argument("--attempts", type=int, default=2, help="teacher tries per case")
+    ds.add_argument("--workers", type=int, default=8, help="teacher calls in parallel")
+    ds.add_argument("--limit", type=int, help="teach at most this many cases (a pilot)")
+    ds.add_argument("--feedback", nargs="*", default=[],
+                    help="feedback/handover folders whose corrected memos join the training "
+                         "set (they come from a test: compare the model on other cases)")
+    ds.set_defaults(fn=_cmd_distill)
 
     rc = sub.add_parser("recheck", help="what the current checks would change on a sealed "
                                          "run (engine or capability run); the run is untouched")

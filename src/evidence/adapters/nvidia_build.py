@@ -46,6 +46,8 @@ BUILD_HOST = "integrate.api.nvidia.com"
 MODELS: dict[str, str] = {
     "assistant": "nvidia/nemotron-3.5-lightning-30b-a3b",
     "judge": "nvidia/nemotron-3-ultra-550b-a55b",
+    # writes the memos a fine-tuned assistant learns from (evidence.distill)
+    "teacher": "nvidia/nemotron-3-ultra-550b-a55b",
     "embed": "nvidia/nemotron-3-embed-1b",
 }
 

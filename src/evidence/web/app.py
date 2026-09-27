@@ -629,9 +629,13 @@ def make_fresh_pack(from_pack: str, keep: int | None = None,
     src = _pack(from_pack)
     m = src.manifest
     family = re.sub(r"-s\d+$", "", src.pack_id)
+    from evidence import distill
+
     used = {int(x) for p in PACKS.glob(f"{family}-s*")
             if (x := p.name.rsplit("-s", 1)[1]).isdigit()}
     used.add(int((m.get("sdd") or {}).get("seed") or 0))
+    trained_seeds, trained_forms = distill.taken()  # training cases never become a test
+    used |= trained_seeds
     seed = next(s for s in iter(lambda: random.SystemRandom().randrange(1000, 100000), None)
                 if s not in used)
     pack_id = f"{family}-s{seed}"
@@ -648,7 +652,7 @@ def make_fresh_pack(from_pack: str, keep: int | None = None,
     fresh = _pack(pack_id)
     seen = {c.content for p in PACKS.glob(f"{family}*/items.jsonl") if p.parent.name != pack_id
             for it in load_pack(p.parent).items for c in it.context
-            if c.renderer == "application_form"}
+            if c.renderer == "application_form"} | trained_forms
     shared = sum(1 for it in fresh.items for c in it.context
                  if c.renderer == "application_form" and c.content in seen)
     return {"pack_id": pack_id, "seed": seed, "from": src.pack_id, "items": manifest["items"],
