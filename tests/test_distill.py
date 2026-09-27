@@ -52,10 +52,13 @@ def test_the_teacher_is_kept_only_when_the_checks_pass_and_the_run_resumes(ws):
     distill.make_cases("t", 3, "underwriter-de", log=lambda _: None)
     items = distill.cases("t")
     calls: list[str] = []
+    repairs: list[dict] = []
 
-    def teacher(system, user):
+    def teacher(system, user, previous=None):
         item = next(i for i in items if i.documents_text() == user)
         calls.append(item.item_id)
+        if previous:
+            repairs.append(previous)
         first = calls.count(item.item_id) == 1
         # case 0 passes at once; case 1 fails, then passes; case 2 always fails
         if item is items[2] or (item is items[1] and first):
@@ -64,6 +67,8 @@ def test_the_teacher_is_kept_only_when_the_checks_pass_and_the_run_resumes(ws):
 
     counts = distill.teach("t", ask=teacher, workers=1, log=lambda _: None)
     assert counts == {"cases": 3, "kept": 2, "failed_checks": 3, "too_long": 0, "errors": 0}
+    # a retry is shown the memo that failed and what the checks found
+    assert len(repairs) == 2 and all(r["memo"] == BAD and r["failed"] for r in repairs)
     # nothing left to do: kept cases and cases out of attempts are skipped
     assert distill.teach("t", ask=teacher, workers=1, log=lambda _: None)["cases"] == 0
     rows = [json.loads(x) for x in (ws / "training/t/teacher.jsonl").read_text().splitlines()]

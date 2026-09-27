@@ -48,6 +48,9 @@ MODELS: dict[str, str] = {
     "judge": "nvidia/nemotron-3-ultra-550b-a55b",
     # writes the memos a fine-tuned assistant learns from (evidence.distill)
     "teacher": "nvidia/nemotron-3-ultra-550b-a55b",
+    # a second assistant to set against the first, such as a fine-tuned one: self-hosted
+    # only, so it has no default (EVIDENCE_CANDIDATE_BASE_URL and _MODEL)
+    "candidate": "",
     "embed": "nvidia/nemotron-3-embed-1b",
 }
 
@@ -107,7 +110,25 @@ def endpoint_for(role: str) -> Endpoint:
     key = role.upper()
     base_url = os.environ.get(f"EVIDENCE_{key}_BASE_URL", "").strip() or BASE_URL
     model_id = os.environ.get(f"EVIDENCE_{key}_MODEL", "").strip() or MODELS[role]
+    if not model_id:
+        raise KeyError(f"no {role} is set up: EVIDENCE_{key}_BASE_URL and EVIDENCE_{key}_MODEL")
     return Endpoint(role=role, base_url=base_url.rstrip("/"), model_id=_pinned(model_id))
+
+
+ASSISTANTS = {"assistant": "The assistant", "candidate": "The fine-tuned assistant"}
+
+
+def assistants() -> list[dict[str, Any]]:
+    """The assistants a test can use: the assistant, and the candidate when one is set up."""
+    out = []
+    for role, label in ASSISTANTS.items():
+        try:
+            ep = endpoint_for(role)
+        except KeyError:
+            continue
+        out.append({"role": role, "label": label, "model_id": ep.model_id,
+                    "endpoint": ep.base_url})
+    return out
 
 
 def _bypass_proxy(base_url: str) -> None:

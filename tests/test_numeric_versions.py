@@ -176,3 +176,28 @@ def test_a_recheck_shows_what_the_new_version_changes_and_leaves_the_run_alone(t
     assert "Memos now found right (1)" in md
     assert (run / "results.jsonl").read_text() == before
     assert (out / "checksums.sha256").is_file()
+
+
+def test_omission_reads_a_computed_ratio_stated_more_precisely():
+    it = item()
+    it.deterministic_checks = ["material_omission"]
+    it.grading.omission_refs = ["dti_ratio", "policy_limit_dti"]
+    it.grading.omission_labels = {"dti_ratio": "debt-to-income ratio of 51% exceeds the 40% "
+                                               "policy limit",
+                                  "policy_limit_dti": "the 40% debt-to-income policy limit"}
+    it.grading.omission_aliases = {"dti_ratio": ["51%", "exceeds the 40%"],
+                                   "policy_limit_dti": ["40%"]}
+
+    def omission(out, version=None):
+        (r,) = run_checks(["material_omission"], output=out, item=it,
+                          versions={"material_omission": version} if version else None)
+        return r
+
+    precise = "Debt service is **51.1 % of gross monthly income**, over the 40\u202f% ceiling."
+    assert not omission(precise, version=1).passed  # what Ultra's memos lost to
+    r = omission(precise)
+    assert r.passed, r.detail
+    assert r.evidence[0]["method"] == "precise" and r.evidence[0]["said"] == "51.1%"
+    # a figure the file states is not stood in for by a nearby one
+    assert not omission("Debt service is 51%; the limit is 40.2%.").passed
+    assert not omission("Debt service is 51.6%, over the 40% limit.").passed  # rounds to 52

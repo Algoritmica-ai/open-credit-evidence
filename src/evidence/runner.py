@@ -98,11 +98,12 @@ def _fingerprint(role: str, log: Callable[[str], None]) -> dict[str, Any]:
 
 
 def call_assistant(item: BenchmarkItem, run_id: str, repeat: int,
-                   fingerprint: str | None = None) -> Transcript:
-    """One recorded call. The assistant sees the task prompt and every document."""
+                   fingerprint: str | None = None, role: str = "assistant") -> Transcript:
+    """One recorded call. The assistant sees the task prompt and every document. ``role``
+    is ``assistant`` or ``candidate`` (a second assistant, such as a fine-tuned one)."""
     user = item.documents_text()
     started = _now()
-    r = chat("assistant", system=item.prompt, user=user, max_tokens=ASSISTANT_MAX_TOKENS)
+    r = chat(role, system=item.prompt, user=user, max_tokens=ASSISTANT_MAX_TOKENS)
     sut = SUTPins(
         model_id=r.model_id, prompt_version=r.prompt_version, params=r.params, endpoint=r.endpoint,
         fingerprint=fingerprint,
@@ -138,12 +139,17 @@ def run_pack(
     panel: bool = False,
     workers: int | None = None,
     setup: str = "as_is",
+    assistant: str = "assistant",
 ) -> dict[str, Any]:
     """Execute the pack. Returns the run manifest; writes transcripts and results.jsonl.
 
     ``panel`` says the three-agent panel will review these briefings: the single
     judge is then skipped (the panel's Reader, scoring each briefing alone, is the
     lone-judge view) and the manifest says so.
+
+    ``assistant`` is the role that writes the memos: ``assistant``, or ``candidate`` for a
+    second one set against it (a fine-tuned model). Either is recorded as the run's
+    assistant, with its role.
 
     ``setup`` is what the assistant is given (see ``SETUPS``): ``with_figures`` adds the
     figures the bank's systems compute, where the pack carries them. The checks and
@@ -244,7 +250,7 @@ def run_pack(
 
     # Fingerprint each model once, before the calls fan out across threads.
     if any(not transcript_path(out, it.item_id, rep).is_file() for it, rep in jobs):
-        fp_for("assistant")
+        fp_for(assistant)
     if any(wants_judge(it) and (it.item_id, rep) not in prior_judge for it, rep in jobs):
         fp_for("judge")
         if corpus_obj is not None:
@@ -264,7 +270,7 @@ def run_pack(
             if path.is_file():
                 t = Transcript.model_validate_json(path.read_text(encoding="utf-8"))
             else:
-                t = call_assistant(item, run_id, rep, fp_for("assistant"))
+                t = call_assistant(item, run_id, rep, fp_for(assistant), assistant)
                 path.write_text(t.model_dump_json(indent=2), encoding="utf-8")
                 called = True
             names = checks if checks is not None else item.deterministic_checks
@@ -318,7 +324,7 @@ def run_pack(
     if transcripts:
         first = transcripts[0].sut
         sut_block = {
-            "role": "assistant",
+            "role": assistant,
             "model_id": first.model_id,
             "endpoint": first.endpoint,
             "on_prem": bool(first.endpoint) and BUILD_HOST not in (first.endpoint or ""),
@@ -328,9 +334,9 @@ def run_pack(
             "endpoints_seen": sorted({t.sut.endpoint or "" for t in transcripts}),
         }
     else:
-        ep = endpoint_for("assistant")
+        ep = endpoint_for(assistant)
         sut_block = {
-            "role": "assistant",
+            "role": assistant,
             "model_id": ep.model_id,
             "endpoint": ep.base_url,
             "on_prem": not ep.is_build,
@@ -377,7 +383,7 @@ def run_pack(
         entry = first | {"checked_at": [first["checked_at"], last["checked_at"]]}
         if last.get("fingerprint") != first.get("fingerprint"):
             entry |= {"changed_during_run": True, "fingerprint_end": last.get("fingerprint")}
-        models[role] = entry
+        models["assistant" if role == assistant else role] = entry  # the run's assistant
     # A resumed run can hold briefings from more than one server start.
     seen = sorted({t.sut.fingerprint for t in transcripts if t.sut.fingerprint})
     if "assistant" in models and seen:

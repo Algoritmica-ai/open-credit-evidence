@@ -40,7 +40,7 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from evidence import __version__
-from evidence.adapters.nvidia_build import endpoint_for
+from evidence.adapters.nvidia_build import assistants, endpoint_for
 from evidence.checks import available_checks, run_checks
 from evidence.contracts.item import BenchmarkItem
 from evidence.evidence import verify_run, write_evidence
@@ -529,6 +529,7 @@ def _job_worker(job_id: str, pack: Pack, out: Path, opts: dict[str, Any]) -> Non
             limit=opts["limit"],
             panel=opts["panel"],
             setup=opts.get("setup", "as_is"),
+            assistant=opts.get("assistant", "assistant"),
             log=log,
             should_stop=lambda: job.get("cancel", False),
         )
@@ -671,9 +672,11 @@ def fresh_pack(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
                             "pip install -e '.[generate]'") from exc
 
 
-def _retest_worker(job_id: str, from_run: str, setup: str) -> None:
+def _retest_worker(job_id: str, from_run: str, setup: str, candidate: bool = False) -> None:
     """New cases, then the assistant as it is and with the change on those same cases,
-    then the comparison: the proof, or not, that the change helps."""
+    then the comparison: the proof, or not, that the change helps. The change is a setup
+    (what the assistant is given) or, with ``candidate``, another assistant (a fine-tuned
+    one) given the same."""
     from evidence.evidence.compare import compare_runs
 
     job = _jobs[job_id]
@@ -690,7 +693,12 @@ def _retest_worker(job_id: str, from_run: str, setup: str) -> None:
                 job["done"], job["total"] = int(mm.group(1)), int(mm.group(2))
 
     try:
-        base = _read_json(_run_dir(from_run) / "manifest.json")
+        if from_run.startswith("pack:"):  # a pack, a number of cases and of repeats
+            pack_id, n, reps = from_run.removeprefix("pack:").rsplit(":", 2)
+            base = {"pack": {"pack_id": pack_id}, "repeats": int(reps),
+                    "transcripts": int(n) * int(reps)}
+        else:
+            base = _read_json(_run_dir(from_run) / "manifest.json")
         phase("cases")
         # new cases, as many as the test being re-tested used
         cases = int(base.get("transcripts") or 0) // max(1, int(base.get("repeats") or 1))
@@ -701,13 +709,16 @@ def _retest_worker(job_id: str, from_run: str, setup: str) -> None:
                        shared_with_other_packs=fresh["shared_with_other_packs"])
         stamp = datetime.now(UTC).strftime("%Y-%m-%dT%H%M%SZ")
         runs_made = {}
-        for name, which in (("before", "as_is"), ("after", setup)):
+        after = ("after", "as_is", "candidate") if candidate else ("after", setup, "assistant")
+        steps = (("before", "as_is", "assistant"), after)
+        for name, which, role in steps:
             if job.get("cancel"):
                 break
             phase(name, len(pack.items) * int(base.get("repeats") or 3))
             out = RUNS / f"{fresh['pack_id']}-{stamp}-{name}"
             mf = run_pack(pack, out, repeats=int(base.get("repeats") or 3), judge=False,
-                          setup=which, log=log, should_stop=lambda: job.get("cancel", False))
+                          setup=which, assistant=role, log=log,
+                          should_stop=lambda: job.get("cancel", False))
             if mf["transcripts"]:
                 write_evidence(out, pack.obligations)
                 _anchor_later(out, "test")
@@ -726,21 +737,47 @@ def _retest_worker(job_id: str, from_run: str, setup: str) -> None:
             job.update(status="error", error=f"{type(exc).__name__}: {exc}")
 
 
+def _assistant_role(role: Any) -> str:
+    """The assistant a test uses: ``assistant`` unless a set-up candidate is asked for."""
+    role = str(role or "assistant")
+    if role not in {a["role"] for a in assistants()}:
+        raise HTTPException(400, f"no {role} is set up: EVIDENCE_{role.upper()}_BASE_URL "
+                                 f"and EVIDENCE_{role.upper()}_MODEL in .env")
+    return role
+
+
+@app.get("/api/assistants")
+def list_assistants() -> list[dict[str, Any]]:
+    """The assistants a test can use; a fine-tuned one appears once it is set up."""
+    return assistants()
+
+
 @app.post("/api/retest")
 def retest(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
     """Test a change on new cases: the assistant as it is and with the change, same cases."""
     from evidence.contracts.item import SETUPS
 
-    from_run = _safe_name(str(payload.get("from_run", "")), "run")
-    _run_dir(from_run)
-    setup = str(payload.get("setup", "with_figures"))
-    if setup not in SETUPS or setup == "as_is":
+    if payload.get("from_pack"):  # new cases like a pack's, rather than like a test's
+        pack = _pack(str(payload["from_pack"]))
+        n = max(1, min(int(payload.get("cases") or len(pack.items)), 200))
+        reps = max(1, min(int(payload.get("repeats") or 2), 10))
+        from_run = f"pack:{pack.pack_id}:{n}:{reps}"
+    else:
+        from_run = _safe_name(str(payload.get("from_run", "")), "run")
+        _run_dir(from_run)
+    candidate = payload.get("assistant") == "candidate"
+    setup = "as_is" if candidate else str(payload.get("setup", "with_figures"))
+    if candidate:
+        _assistant_role("candidate")
+    elif setup not in SETUPS or setup == "as_is":
         raise HTTPException(400, f"setup must be one of {sorted(set(SETUPS) - {'as_is'})}")
     job_id = uuid.uuid4().hex[:12]
     _jobs[job_id] = {"status": "running", "kind": "retest", "phase": "cases", "done": 0,
                      "total": 0, "log": [], "from_run": from_run, "setup": setup,
+                     "assistant": "candidate" if candidate else "assistant",
                      "started": datetime.now(UTC).strftime("%Y-%m-%dT%H%M%SZ")}
-    threading.Thread(target=_retest_worker, args=(job_id, from_run, setup), daemon=True).start()
+    threading.Thread(target=_retest_worker, args=(job_id, from_run, setup, candidate),
+                     daemon=True).start()
     return {"job_id": job_id}
 
 
@@ -758,6 +795,7 @@ def start_run(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
     setup = str(payload.get("setup", "as_is"))
     if setup == "with_figures" and not any(i.has_bank_figures() for i in pack.items):
         raise HTTPException(400, "these cases hold no figures from the bank's systems")
+    assistant = _assistant_role(payload.get("assistant"))
     corpus = payload.get("corpus", "EU")
     corpus = None if corpus in (None, "", "none") else _safe_name(str(corpus), "corpus")
     if not os.environ.get("NVIDIA_API_KEY") and endpoint_for("assistant").is_build:
@@ -777,6 +815,7 @@ def start_run(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
         "started": stamp,
         "cases": limit or len(pack.items),
         "repeats": repeats,
+        "assistant": assistant,
     }
     threading.Thread(
         target=_job_worker,
@@ -785,7 +824,7 @@ def start_run(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
             pack,
             out,
             {"repeats": repeats, "judge": judge, "limit": limit, "corpus": corpus,
-             "panel": panel, "setup": setup},
+             "panel": panel, "setup": setup, "assistant": assistant},
         ),
         daemon=True,
     ).start()
@@ -1042,6 +1081,34 @@ def compare(before: str, after: str) -> dict[str, Any]:
     if before == after:
         raise HTTPException(400, "choose two different runs")
     return compare_runs(_run_dir(before), _run_dir(after))
+
+
+@app.get("/api/compare/cases")
+def compare_cases(before: str, after: str) -> list[dict[str, Any]]:
+    """Two runs of the same cases, memo beside memo: what each assistant wrote for every
+    case and which checks each memo failed."""
+    runs = {"before": _run_dir(before), "after": _run_dir(after)}
+    out: dict[str, dict[str, Any]] = {}
+    for side, run in runs.items():
+        failed: dict[tuple[str, int], list[str]] = {}
+        for line in (run / "results.jsonl").read_text(encoding="utf-8").splitlines():
+            r = json.loads(line) if line.strip() else {"judge": ""}
+            if r["judge"].startswith("check:"):
+                failed.setdefault((r["item_id"], r["repeat"]), [])
+                if r["passed"] is False:
+                    failed[(r["item_id"], r["repeat"])].append(r["check"])
+        for path in sorted((run / "transcripts").glob("*.json")):
+            t = _read_json(path)
+            case = out.setdefault(t["item_id"], {"item_id": t["item_id"], "before": [],
+                                                 "after": []})
+            case[side].append({"repeat": t["repeat"], "memo": t["output"],
+                               "failed": failed.get((t["item_id"], t["repeat"]), [])})
+    rows = sorted(out.values(), key=lambda c: c["item_id"])
+    for c in rows:
+        for side in ("before", "after"):
+            c[side].sort(key=lambda m: m["repeat"])
+        c["clean"] = {side: sum(1 for m in c[side] if not m["failed"]) for side in runs}
+    return rows
 
 
 @app.get("/api/runs/{run_id}/results")

@@ -207,7 +207,8 @@ async function viewHome() {
 // ----------------------------------------------------------------- new test
 
 async function viewNew(preselect) {
-  const [ov, meta, packs] = await Promise.all([overview(), api("/api/meta"), api("/api/packs")]);
+  const [ov, meta, packs, assistants] = await Promise.all([overview(), api("/api/meta"), api("/api/packs"),
+    api("/api/assistants").catch(() => [])]);
   renderSteps(ov, "test", "New");
   page("narrow");
   const usable = packs.filter((p) => !p.error && p.items && (!packSeed(p.pack_id) || !p.used_in_tests || p.pack_id === preselect));
@@ -230,8 +231,11 @@ async function viewNew(preselect) {
       <p class="muted" style="font-size:17px">Answer three questions. The test then runs by itself; a small test takes a few minutes.</p></div>
     <fieldset><legend>1. Which assistant are you testing?</legend>
       <label for="assistant" class="small muted">Assistant</label>
-      <select id="assistant"><option>Credit memo assistant (${esc(a.model)})</option></select>
-      <p class="tiny muted">${a.where === "on-prem" ? "Runs on your own servers." : "Runs on NVIDIA's cloud."}</p></fieldset>
+      <select id="assistant">${assistants.length > 1
+        ? assistants.map((x) => `<option value="${esc(x.role)}">${esc(x.label)} (${esc(x.model_id)})</option>`).join("")
+          + `<option value="both">Both, side by side on new cases</option>`
+        : `<option value="assistant">Credit memo assistant (${esc(a.model)})</option>`}</select>
+      <p class="tiny muted" id="assistantnote">${a.where === "on-prem" ? "Runs on your own servers." : "Runs on NVIDIA's cloud."}</p></fieldset>
     <fieldset><legend>2. Which rules must its memos follow?</legend><div class="stack tight" id="rules"></div></fieldset>
     <fieldset><legend>3. Which test cases?</legend><div class="stack tight" id="cases"></div>
       <div class="row wrap" style="gap:12px"><button class="btn" id="fresh">${ICON.plus}Generate new cases</button>
@@ -286,12 +290,24 @@ async function viewNew(preselect) {
       document.getElementById("freshmsg").innerHTML = `${f.items} new cases (set #${f.seed}) made in ${f.seconds} s and chosen, each run ${times === 1 ? "once" : times === 2 ? "twice" : times + " times"}. ${f.shared_with_other_packs ? `<span class="error">${f.shared_with_other_packs} match earlier cases.</span>` : "None of them appears in an earlier test."}`;
     }, times, maxRepeats);
   };
+  const pick = document.getElementById("assistant");
+  pick.onchange = () => {
+    document.getElementById("assistantnote").textContent = pick.value === "both"
+      ? "New cases like the ones chosen below; both assistants write a memo for each, and you see them side by side."
+      : pick.value === "candidate" ? "The fine-tuned model, on its own server beside the assistant."
+      : a.where === "on-prem" ? "Runs on your own servers." : "Runs on NVIDIA's cloud.";
+  };
   document.getElementById("start").onclick = async (ev) => {
     const pack = (document.querySelector("input[name=cases]:checked") || {}).value;
     if (!pack) return;
     ev.target.disabled = true;
     try {
-      const j = await api("/api/run", { pack, repeats: size.repeats, limit: size.cases, judge: true, setup: "as_is", panel: true });
+      if (pick.value === "both") {
+        const j = await api("/api/retest", { from_pack: pack, cases: size.cases, repeats: size.repeats, assistant: "candidate" });
+        location.hash = `#/retest/${enc(j.job_id)}`;
+        return;
+      }
+      const j = await api("/api/run", { pack, repeats: size.repeats, limit: size.cases, judge: true, setup: "as_is", panel: true, assistant: pick.value });
       location.hash = `#/running/${enc(j.job_id)}`;
     } catch (e) {
       document.getElementById("msg").textContent = e.message;
@@ -1195,7 +1211,8 @@ async function viewImprove(id) {
 // ----------------------------------------------------------------- re-test a change
 
 async function viewRetest(jobId) {
-  const ov = await overview();
+  const [ov, assistants] = await Promise.all([overview(), api("/api/assistants").catch(() => [])]);
+  const model = (role) => ((assistants.find((x) => x.role === role) || {}).model_id || "");
   renderSteps(ov, "improve");
   page("narrow");
   const tick = async () => {
@@ -1220,13 +1237,14 @@ async function viewRetest(jobId) {
       <a class="btn primary large" href="#/compare/${enc(j.before)}/${enc(j.after)}" style="align-self:flex-start">See the comparison${ICON.arrow}</a>`;
     if (j.status === "cancelled") foot = "<p>Stopped. What finished is kept under Earlier tests.</p>";
     if (j.status === "error") foot = `<p class="error">The re-test stopped with an error: ${esc(j.error)}</p>`;
+    const two = j.assistant === "candidate";  // two assistants, not a change of setup
     $view.innerHTML = `<div class="stack" style="gap:28px">
-      <div class="stack tight"><h1>Testing the change on new cases</h1>
-        <p class="muted" style="font-size:17px">${esc(SETUP[j.setup] || j.setup)}, against the assistant as it is today.</p></div>
+      <div class="stack tight"><h1>${two ? "The two assistants on new cases" : "Testing the change on new cases"}</h1>
+        <p class="muted" style="font-size:17px">${two ? `The fine-tuned assistant (${esc(model("candidate"))}) against the assistant as it is today (${esc(model("assistant"))}), on the same cases.` : `${esc(SETUP[j.setup] || j.setup)}, against the assistant as it is today.`}</p></div>
       <ol class="card" style="list-style:none;padding:8px 28px;margin:0">
         ${line("cases", "New cases generated", j.seed ? `Set #${j.seed} from your credit policy, by the <a href="/sdd/" target="_blank" rel="noopener">Synthetic Data Designer</a>. ${j.shared_with_other_packs ? `${j.shared_with_other_packs} match earlier cases.` : "None appears in an earlier test."}` : "Cases the assistant has never seen")}
         ${line("before", "The assistant as it is today", state("before") === "now" ? `${j.done} of ${j.total} memos` : "Writes a memo for every case; each is checked against the rules")}
-        ${line("after", "The assistant with the change", state("after") === "now" ? `${j.done} of ${j.total} memos` : "The same cases, with the figures your systems calculate")}
+        ${line("after", two ? "The fine-tuned assistant" : "The assistant with the change", state("after") === "now" ? `${j.done} of ${j.total} memos` : two ? "The same cases, the same instructions and documents" : "The same cases, with the figures your systems calculate")}
         ${line("compare", "The two side by side", "Case by case: did the change help, and did anything get worse?")}
       </ol>${foot}</div>`;
     const stop = document.getElementById("stop");
@@ -1287,26 +1305,52 @@ const COMPARE = {
 const CMP_STATUS = { improved: "Better", regressed: "Worse", possibly_worse: "Possibly worse", no_clear_change: "No clear change", not_comparable: "Not comparable" };
 
 async function viewCompare(before, after) {
-  const [c, ov] = await Promise.all([api(`/api/compare?before=${enc(before)}&after=${enc(after)}`), overview()]);
+  const [c, ov, cases] = await Promise.all([api(`/api/compare?before=${enc(before)}&after=${enc(after)}`), overview(),
+    api(`/api/compare/cases?before=${enc(before)}&after=${enc(after)}`).catch(() => [])]);
   renderSteps(ov, "history");
   page("narrow");
   const [words, cls] = COMPARE[c.verdict] || [c.verdict, "b-grey"];
   const p = (v) => (v == null ? "—" : `${Math.round(100 * v)}%`);
+  // two assistants side by side: each column is named after its model
+  const models = c.changed.find((x) => x.what === "assistant model");
+  const [A, B] = models ? [models.before, models.after] : ["Before", "After"];
   $view.innerHTML = `<div class="stack">
     <a class="link back" href="#/history">${ICON.back}Earlier tests</a>
     <section class="card stack mid"><span class="badge big ${cls}">${esc(words)}</span>
       <h1 style="font-size:30px">${esc(when(c.before.started_at || c.before.finished_at))} compared with ${esc(when(c.after.started_at || c.after.finished_at))}</h1>
       ${c.changed.filter((x) => x.what === "assistant setup").map((x) => `<p><b>The change:</b> ${esc(SETUP[x.before] || x.before)} → ${esc(SETUP[x.after] || x.after)}.</p>`).join("")}
+      ${c.changed.filter((x) => x.what === "assistant model").map((x) => `<p><b>The change:</b> the assistant's model, ${esc(x.before)} → ${esc(x.after)}.</p>`).join("")}
       ${c.changed.some((x) => x.what === "pack") ? "" : `<p class="muted">Both on the same cases${packSeed(c.after.pack) ? `: new set #${packSeed(c.after.pack)}, never used before` : ""}, compared case by case.</p>`}
-      ${c.changed.filter((x) => !["assistant setup", "engine commit"].includes(x.what)).length ? `<p class="muted small">Also different between the two: ${c.changed.filter((x) => !["assistant setup", "engine commit"].includes(x.what)).map((x) => esc(x.what)).join(", ")}.</p>` : ""}
+      ${c.changed.filter((x) => !MAIN_CHANGES.includes(x.what)).length ? `<p class="muted small">Also different between the two: ${c.changed.filter((x) => !MAIN_CHANGES.includes(x.what)).map((x) => esc(x.what)).join(", ")}.</p>` : ""}
       ${c.warnings.map((w) => `<p class="note-box amber small">${esc(w)}</p>`).join("")}</section>
-    <section class="card"><table><thead><tr><th>Check</th><th>Before</th><th>After</th><th>Change</th></tr></thead><tbody>
+    <section class="card"><table><thead><tr><th>Check</th><th>${esc(A)}</th><th>${esc(B)}</th><th>Change</th></tr></thead><tbody>
       ${c.checks.map((k) => `<tr><td>${esc(CHECK[k.check] || k.check)}</td><td>${p(k.before)}</td><td>${p(k.after)}</td>
         <td style="font-weight:600;color:${k.status === "improved" ? "var(--green)" : k.status === "regressed" || k.status === "possibly_worse" ? "var(--red)" : "var(--ink-2)"}">${esc(CMP_STATUS[k.status] || k.status)}</td></tr>`).join("")}
     </tbody></table></section>
-    ${c.causes.length ? `<section class="card stack mid"><h2>Mistakes by type</h2><table><thead><tr><th>Mistake</th><th>Before</th><th>After</th></tr></thead><tbody>
+    ${c.causes.length ? `<section class="card stack mid"><h2>Mistakes by type</h2><table><thead><tr><th>Mistake</th><th>${esc(A)}</th><th>${esc(B)}</th></tr></thead><tbody>
       ${c.causes.map((k) => `<tr><td>${esc(k.label)}</td><td>${k.before}</td><td>${k.after}</td></tr>`).join("")}</tbody></table></section>` : ""}
+    ${cases.length ? caseByCase(cases, A, B) : ""}
   </div>`;
+}
+
+// Every case, memo beside memo: which checks each one failed, and the memos themselves.
+const MAIN_CHANGES = ["assistant setup", "assistant model", "assistant model fingerprint", "assistant endpoint", "engine commit"];
+function caseByCase(cases, A = "Before", B = "After") {
+  const verdict = (m) => (m.failed.length ? `<span class="badge b-red">${plural(m.failed.length, "check")} failed</span> <span class="small muted">${m.failed.map((k) => esc(CHECK[k] || k)).join(", ")}</span>` : `<span class="badge b-green">All checks passed</span>`);
+  const side = (label, memos) => `<div class="stack tight" style="min-width:0"><span class="eyebrow">${label}</span>
+    ${memos.map((m) => `<div class="stack tight">${memos.length > 1 ? `<span class="tiny muted">Run ${m.repeat + 1}</span>` : ""}${verdict(m)}
+      <details><summary class="small">Read the memo</summary><div class="memo-text" style="font-size:14px">${esc(m.memo)}</div></details></div>`).join("")}</div>`;
+  const moved = (c) => c.clean.after - c.clean.before;
+  const order = [...cases].sort((x, y) => moved(y) - moved(x) || x.item_id.localeCompare(y.item_id));
+  const better = cases.filter((c) => moved(c) > 0).length, worse = cases.filter((c) => moved(c) < 0).length;
+  return `<section class="card stack mid"><h2>Case by case</h2>
+    <p class="muted">${plural(better, "case")} better, ${plural(worse, "case")} worse, ${plural(cases.length - better - worse, "case")} the same. Better first.</p>
+    ${order.map((c) => `<details class="finding"><summary class="row wrap" style="gap:10px;cursor:pointer">
+        <b>${esc(c.item_id.split(":")[2] || c.item_id)}</b>
+        <span class="small muted">no mistake found: ${esc(A)} ${c.clean.before} of ${c.before.length}, ${esc(B)} ${c.clean.after} of ${c.after.length}</span>
+        ${moved(c) > 0 ? '<span class="badge b-green">Better</span>' : moved(c) < 0 ? '<span class="badge b-red">Worse</span>' : ""}</summary>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin-top:12px">
+        ${side(esc(A), c.before)}${side(esc(B), c.after)}</div></details>`).join("")}</section>`;
 }
 
 // ----------------------------------------------------------------- routing

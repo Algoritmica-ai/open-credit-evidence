@@ -24,6 +24,16 @@ A summary can convey a fact without naming it — "borrowing well beyond what
 they can service" conveys a debt-to-income breach. Aliases have to be generous
 enough to catch that, which is why the alias table exists and why similarity
 matching is allowed at all. Every similarity match is flagged.
+
+**Version 2** (the current one) reads two ways of stating a figure that version 1 missed.
+Version 1 stays runnable (``version=1``), so runs scored with it re-derive as scored.
+
+- **A computed figure stated more precisely.** The debt-to-income ratio is computed from
+  the file; its form is "49%", and a memo that says "48.9%" states it. A percentage in the
+  memo counts for a whole-percent form when it rounds to it, unless the file itself states
+  that percentage: a figure the file states (the 40% limit) must be quoted as it is.
+- **A space before the percent sign** ("48.9 %", ordinary or narrow no-break space) is read
+  as none.
 """
 
 from __future__ import annotations
@@ -111,8 +121,30 @@ def _find_similar(output: str, forms: list[str]) -> tuple[str, str, float] | Non
     return best
 
 
-@check("material_omission")
-def material_omission(*, output: str, item: BenchmarkItem, **_: Any) -> CheckResult:
+_PCT_FORM = re.compile(r"^(\d+)%$")
+_PCT_OUT = re.compile(r"(?<![\d.])(\d+(?:\.\d+)?)%")
+_SPACE_PCT = re.compile(r"(\d)[ \u00a0\u202f\u2009]+%")
+
+
+def _find_precise(output: str, forms: list[str], stated: set[float]
+                  ) -> tuple[str, str, tuple[int, int]] | None:
+    """A whole-percent form ("49%") stated more precisely ("48.9%"), if the file does not
+    itself state that percentage."""
+    for form in forms:
+        m = _PCT_FORM.match(form.strip())
+        if not m or float(m.group(1)) in stated:
+            continue
+        target = int(m.group(1))
+        for hit in _PCT_OUT.finditer(output):
+            value = float(hit.group(1))
+            if "." in hit.group(1) and target - 0.5 <= value < target + 0.5:
+                return form, hit.group(0), hit.span()
+    return None
+
+
+@check("material_omission", version=2)
+def material_omission(*, output: str, item: BenchmarkItem, version: int = 2,
+                      **_: Any) -> CheckResult:
     g = item.grading
     refs = list(g.omission_refs)
     if not refs:
@@ -123,6 +155,10 @@ def material_omission(*, output: str, item: BenchmarkItem, **_: Any) -> CheckRes
             detail="no material facts declared for this item",
         )
 
+    if version > 1:
+        output = _SPACE_PCT.sub(r"\1%", output)
+        stated = {float(x) for x in _PCT_OUT.findall(_SPACE_PCT.sub(r"\1%",
+                                                                  item.documents_text()))}
     output_lc = output.lower()
     evidence: list[dict[str, Any]] = []
     found = 0
@@ -140,6 +176,14 @@ def material_omission(*, output: str, item: BenchmarkItem, **_: Any) -> CheckRes
             evidence.append(
                 {"ref": ref, "matched": True, "method": "exact", "form": form, "span": list(span)}
             )
+            continue
+
+        precise = _find_precise(output, forms, stated) if version > 1 else None
+        if precise:
+            form, said, span = precise
+            found += 1
+            evidence.append({"ref": ref, "matched": True, "method": "precise", "form": form,
+                             "said": said, "span": list(span)})
             continue
 
         similar = _find_similar(output, forms)

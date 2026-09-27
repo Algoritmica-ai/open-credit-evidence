@@ -12,7 +12,10 @@ Three stages, each resumable, all writing into ``training/<name>/``:
 2. **teach**: the teacher model (``EVIDENCE_TEACHER_*``, Nemotron 3 Ultra by default)
    writes each memo from exactly what the assistant is given: the task prompt as the
    system message, the documents as the user message. It may think first; only its final
-   answer is kept. Every attempt is recorded in ``teacher.jsonl`` with its check results.
+   answer is kept. A memo that fails a check is tried again with the teacher shown its
+   first memo and what the checks found (the fine-tuned model is trained on the case and
+   the final memo only). Every attempt is recorded in ``teacher.jsonl`` with its check
+   results.
 3. **build**: the memos that pass all six checks and fit the assistant's answer budget
    become supervised fine-tuning data, split by case into ``sft/train.jsonl`` and
    ``sft/val.jsonl`` (chat messages). ``manifest.json`` says where every number came
@@ -26,6 +29,7 @@ import os
 import random
 import threading
 import time
+import urllib.error
 import urllib.request
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
@@ -46,6 +50,7 @@ CASES_PER_SEED = 250
 MAX_MEMO_CHARS = 3200
 VAL_SHARE = 0.05
 TEACHER_MAX_TOKENS = 16000  # thinking first, then the memo
+RETRY_WAITS = (5, 15, 45, 120)  # seconds, when the teacher is busy (429) or failing (5xx)
 
 
 def _now() -> str:
@@ -123,14 +128,25 @@ def final_answer(message: dict[str, Any]) -> str:
     return text.strip()
 
 
-def ask_teacher(system: str, user: str) -> dict[str, Any]:
-    """One call to the teacher: thinking on, its recommended sampling."""
+REPAIR = ("Your memo was checked against the case file and failed:\n{failures}\n\n"
+          "Write the memo again. Use only figures the documents state, or that follow from "
+          "them in one step of arithmetic. Reply with the memo only.")
+
+
+def ask_teacher(system: str, user: str, previous: dict[str, Any] | None = None
+                ) -> dict[str, Any]:
+    """One call to the teacher: thinking on, its recommended sampling. ``previous`` is the
+    memo that failed and what the checks found: the teacher is asked to write it again."""
     from evidence.adapters.nvidia_build import _bypass_proxy, endpoint_for
 
     ep = endpoint_for("teacher")
+    messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
+    if previous:
+        messages += [{"role": "assistant", "content": previous["memo"]},
+                     {"role": "user", "content": REPAIR.format(
+                         failures="\n".join(f"- {f}" for f in previous["failed"]))}]
     body = {"model": ep.model_id, "max_tokens": TEACHER_MAX_TOKENS, "temperature": 0.6,
-            "top_p": 0.95, "messages": [{"role": "system", "content": system},
-                                        {"role": "user", "content": user}],
+            "top_p": 0.95, "messages": messages,
             "chat_template_kwargs": {"enable_thinking": True}}
     headers = {"Content-Type": "application/json"}
     key = os.environ.get("EVIDENCE_TEACHER_API_KEY") or (
@@ -144,8 +160,15 @@ def ask_teacher(system: str, user: str) -> dict[str, Any]:
     req = urllib.request.Request(ep.base_url + "/chat/completions", method="POST",
                                  data=json.dumps(body).encode(), headers=headers)
     t0 = time.time()
-    with opener.open(req, timeout=900) as r:
-        reply = json.loads(r.read())
+    for wait in (*RETRY_WAITS, None):  # a hosted endpoint limits the rate: wait, try again
+        try:
+            with opener.open(req, timeout=900) as r:
+                reply = json.loads(r.read())
+            break
+        except urllib.error.HTTPError as exc:
+            if wait is None or exc.code not in (429, 500, 502, 503, 504):
+                raise
+            time.sleep(wait)
     msg = reply["choices"][0]["message"]
     usage = reply.get("usage") or {}
     return {"memo": final_answer(msg), "model": reply.get("model") or ep.model_id,
@@ -155,7 +178,7 @@ def ask_teacher(system: str, user: str) -> dict[str, Any]:
 
 
 def teach(name: str, *, setup: str = "as_is", attempts: int = 2, workers: int = 8,
-          limit: int | None = None, ask: Callable[[str, str], dict[str, Any]] = ask_teacher,
+          limit: int | None = None, ask: Callable[..., dict[str, Any]] = ask_teacher,
           log: Callable[[str], None] = print) -> dict[str, int]:
     """Stage 2: a teacher memo for every case, up to ``attempts`` tries until one passes."""
     path = ROOT / name / "teacher.jsonl"
@@ -164,18 +187,25 @@ def teach(name: str, *, setup: str = "as_is", attempts: int = 2, workers: int = 
         for line in path.read_text(encoding="utf-8").splitlines():
             r = json.loads(line)
             done.setdefault(r["item_id"], []).append(r)
+    def tried(item_id: str) -> int:  # a call that failed is not an attempt
+        return sum(1 for r in done.get(item_id, []) if "error" not in r)
+
     todo = [i for i in cases(name, setup)
             if not any(r["kept"] for r in done.get(i.item_id, []))
-            and len(done.get(i.item_id, [])) < attempts][:limit]
+            and tried(i.item_id) < attempts][:limit]
     lock = threading.Lock()
     counts = {"cases": len(todo), "kept": 0, "failed_checks": 0, "too_long": 0, "errors": 0}
 
     def one(item: BenchmarkItem) -> None:
-        for attempt in range(len(done.get(item.item_id, [])), attempts):
+        last = next((r for r in reversed(done.get(item.item_id, []))
+                     if r.get("failed") and r.get("memo")), None)
+        for attempt in range(tried(item.item_id), attempts):
             row: dict[str, Any] = {"item_id": item.item_id, "setup": setup,
-                                   "attempt": attempt, "at": _now()}
+                                   "attempt": attempt, "at": _now(),
+                                   "repair": bool(last)}
             try:
-                row |= ask(item.prompt, item.documents_text())
+                row |= (ask(item.prompt, item.documents_text(), last) if last
+                        else ask(item.prompt, item.documents_text()))
             except Exception as exc:  # noqa: BLE001 — recorded, the case is retried next time
                 row |= {"error": f"{type(exc).__name__}: {exc}"[:300], "kept": False}
                 with lock:
@@ -196,6 +226,7 @@ def teach(name: str, *, setup: str = "as_is", attempts: int = 2, workers: int = 
                     log(f"  {n} memos written: {counts['kept']} kept")
             if row["kept"]:
                 return
+            last = row if failed else None  # a memo too long is simply tried again
 
     with ThreadPoolExecutor(max(1, workers)) as ex:
         list(ex.map(one, todo))
