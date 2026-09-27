@@ -3,15 +3,15 @@
 """The capability checker: what a model can do, measured with NVIDIA NeMo Evaluator.
 
 A credit memo test shows how the assistant does at its job. Before a changed or
-fine-tuned assistant replaces the current one, two more questions need an answer: did
-the change break anything else, and is the improvement real or noise? This module runs
-NVIDIA's open-source NeMo Evaluator (``nel``) over a suite of benchmarks and answers both:
+fine-tuned assistant replaces the current one, the question is whether the improvement is
+real or noise. This module runs NVIDIA's open-source NeMo Evaluator (``nel``) over
+**credit memos** (``evidence/nemo/credit_memo.py``): our six checks decide each memo; a
+judge on another model scores its usefulness beside them, never in their place.
 
-- **Arithmetic** (``gsm8k``), the assistant's main weakness in our tests;
-- **Maths in eleven languages, German included** (``mgsm``);
-- **Knowledge and reasoning** (``mmlu_pro``);
-- **Credit memos** (``evidence/nemo/credit_memo.py``): our six checks decide each memo;
-  a judge on another model scores its usefulness beside them, never in their place.
+Three general benchmarks are parked, not run unless asked for (``--suite general``):
+arithmetic (``gsm8k``), maths in eleven languages (``mgsm``) and knowledge (``mmlu_pro``).
+The assistant works on tabular case files, and the six checks already test the arithmetic
+it does on them.
 
 ``run`` measures one model and keeps the result in a folder of its own, sealed like a
 test and anchored when anchoring is on. ``gate`` sets a candidate against a baseline
@@ -49,8 +49,9 @@ BENCHMARKS: dict[str, tuple[str, int, int]] = {
     "mmlu-pro": ("Knowledge and reasoning across 14 subjects (MMLU-Pro)", 100, 20),
     "credit-memo": ("Credit memos: the six checks decide; a judge scores usefulness", 0, 10),
 }
-SUITES = {"standard": list(BENCHMARKS), "quick": list(BENCHMARKS),
-          "general": ["gsm8k", "mgsm", "mmlu-pro"]}
+PARKED = ["gsm8k", "mgsm", "mmlu-pro"]  # run only when asked for: --suite general or all
+SUITES = {"standard": ["credit-memo"], "quick": ["credit-memo"], "general": PARKED,
+          "all": [*PARKED, "credit-memo"]}
 FILES = {"credit-memo": CREDIT_BENCH, "mmlu-pro": KNOWLEDGE_BENCH}
 # Built-in benchmarks left out, and why (NeMo Evaluator 0.3.0).
 GAPS = {
@@ -146,7 +147,10 @@ def run(name: str, model: Target, *, suite: str = "standard", judge: Target | No
     out.mkdir(parents=True)
     cfg = config(model, out / "nel", suite=suite, judge=judge, repeats=repeats)
     (out / "config.yaml").write_text(json.dumps(cfg, indent=2) + "\n", encoding="utf-8")
+    from evidence.checks import check_versions
+
     meta = {"name": name, "suite": suite, "model": model.model, "url": model.url,
+            "check_versions": check_versions(),
             "thinking": model.thinking, "judge": judge.model if judge else None,
             "pack": str(pack), "setup": setup, "repeats": repeats,
             "started_at": datetime.now(UTC).isoformat(timespec="seconds")}
@@ -313,7 +317,11 @@ def report(s: dict[str, Any]) -> str:
     if s.get("error"):
         lines += ["", "## NeMo Evaluator stopped with an error", "", "```", s["error"], "```",
                   "", "The full output is in `nel.log`."]
+    parked = [b for b in PARKED if b not in s["benchmarks"]]
     lines += ["", "## Not measured", ""] + [f"- `{k}`: {v}." for k, v in s["gaps"].items()]
+    if parked:
+        lines.append("- " + ", ".join(f"`{b}`" for b in parked) + ": parked (general "
+                     "benchmarks); `--suite general` or `--suite all` runs them.")
     return "\n".join(lines) + "\n"
 
 

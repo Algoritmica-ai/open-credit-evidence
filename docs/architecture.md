@@ -53,7 +53,7 @@ Each step, what it produces and where it lives:
 | 5 | Review | Memos are sorted into lanes (both the checks and the AI reviewers flagged / one of them / neither). A person answers each finding: is the memo wrong here? The screen sets the case file's figures beside the memo and each finding; the coach answers only when asked | `review/records.jsonl`: answers, reasons, corrections, first answers, the coach conversation | `review.py`, `facts.py`, `coach.py` |
 | 6 | Improve | Model risk settles disagreements; people write the corrected wording of confirmed mistakes; the feedback pack is built from settled answers only | `feedback/`: corrected memos, before-and-after pairs, finding labels, rule-check fixes, and the fine-tuning handover zip | `review.py` (`labels`, `to_correct`, `build_feedback`, `build_handover`) |
 | 7 | Prove it | A change (the bank's own, such as handing the assistant its computed figures, or a fine-tuned model) is tested on new cases: as it is and with the change, same cases, compared case by case | Two sealed runs and a comparison: ACCEPT / REJECT / INCONCLUSIVE / NO EFFECT | `evidence/compare.py`; the re-test job in `web/app.py` |
-| 7b | Nothing else broke | The capability checker runs NVIDIA NeMo Evaluator on the current and the changed model: arithmetic, maths in eleven languages, knowledge, and the credit memo benchmark (the six checks decide; a judge is recorded beside them); `nel compare` and `nel gate` decide GO / NO-GO / INCONCLUSIVE under a release policy ([capabilities](capabilities.md)) | Sealed, anchored result folders and a gate report | `capabilities.py`, `nemo/` |
+| 7b | The improvement is real | The capability checker runs NVIDIA NeMo Evaluator on the current and the changed model over the credit memo benchmark, where the six checks decide and a judge is recorded beside them (general benchmarks parked; `--suite all` adds arithmetic, maths in eleven languages and knowledge); `nel compare` and `nel gate` decide GO / NO-GO / INCONCLUSIVE under a release policy ([capabilities](capabilities.md)) | Sealed, anchored result folders and a gate report | `capabilities.py`, `nemo/` |
 
 What keeps the evidence honest:
 
@@ -162,9 +162,21 @@ is attributable to retrieval rather than to the model.
 
 ```
 checksums.sha256 → every file re-hashed; missing, changed and unlisted files named
---recompute       → every deterministic check re-run from the transcripts and
-                    compared with results.jsonl
+--recompute       → every deterministic check re-run from the transcripts, at the
+                    versions the run was scored with, and compared with results.jsonl
 ```
+
+### Check versions and re-checks
+
+A check that changes what it passes gets a new version (`evidence checks` lists them).
+A run records the versions it was scored with in `manifest.json` (`check_versions`;
+a run from before versions were recorded used version 1 of every check). Earlier
+versions stay runnable, so a sealed run always re-derives exactly as it was scored.
+
+`evidence recheck RUN` shows what the current versions would change on a sealed run, an
+engine run or a capability checker run, without touching it. It re-scores every memo
+with the run's versions and with the current ones, and writes `recheck.md` and
+`recheck.json` into a sealed folder under `rechecks/`.
 
 ## Marking a briefing
 
@@ -178,7 +190,7 @@ briefing text + item
 | Check | Question | Passes when |
 |---|---|---|
 | `material_omission` | Did it state every fact the decision turned on? | All required facts found: exact, or by constrained similarity (flagged for audit) |
-| `numeric_fidelity` | Is every number in the briefing in the file, or one arithmetic step from it — never a monthly figure over an annual one? | No ungrounded number |
+| `numeric_fidelity` (version 2) | Is every number in the briefing in the file, or one arithmetic step from it — never a monthly figure over an annual one? Only money the file states is calculated with: not scores, postal codes, policy versions or the ends of a range | No ungrounded number |
 | `comparison_fidelity` | Does every comparison it states hold ("652 is below 600")? | No false comparison between two figures |
 | `claim_consistency` | Does its own figure support the breach it claims ("exceeds 40%" … "33.2%")? | No limit claim contradicted by a figure it states |
 | `decoy_citation` | Did it cite a field with no bearing on the outcome as a reason? | No decoy in a sentence with a reasoning cue; the age of a credit file or account is not the age band |

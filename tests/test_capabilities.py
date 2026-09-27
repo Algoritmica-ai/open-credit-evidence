@@ -68,8 +68,11 @@ def nel(tmp_path):
 def test_the_config_measures_the_model_as_the_engine_runs_it(tmp_path):
     model = cap.Target(url="https://integrate.api.nvidia.com/v1", model="lightning",
                        key_env="NVIDIA_API_KEY")
-    cfg = cap.config(model, tmp_path, suite="quick",
-                     judge=cap.Target(url="http://node:8204/v1", model="super"))
+    judge = cap.Target(url="http://node:8204/v1", model="super")
+    quick = cap.config(model, tmp_path, suite="quick", judge=judge)
+    # the general benchmarks are parked: by default only the credit memos are measured
+    assert [b["name"] for b in quick["benchmarks"]] == [str(cap.CREDIT_BENCH)]
+    cfg = cap.config(model, tmp_path, suite="all", judge=judge)
     m = cfg["services"]["model"]
     assert m["url"].endswith("/v1/chat/completions") and m["api_key"] == "${NVIDIA_API_KEY}"
     assert m["generation"]["temperature"] == 0.0
@@ -78,7 +81,8 @@ def test_the_config_measures_the_model_as_the_engine_runs_it(tmp_path):
     names = [b["name"] for b in cfg["benchmarks"]]
     assert names[:2] == ["gsm8k", "mgsm"] and names[2].endswith("knowledge.py")
     credit = next(b for b in cfg["benchmarks"] if b["name"].endswith("credit_memo.py"))
-    assert credit["scoring"]["metrics"][0]["type"] == "judge" and credit["max_problems"] == 10
+    assert credit["scoring"]["metrics"][0]["type"] == "judge" and "max_problems" not in credit
+    assert quick["benchmarks"][0]["max_problems"] == 10  # quick: 10 cases; else the whole set
     no_judge = cap.config(model, tmp_path, suite="general")
     assert "judge" not in no_judge["services"] and len(no_judge["benchmarks"]) == 3
     with pytest.raises(ValueError):
@@ -87,7 +91,7 @@ def test_the_config_measures_the_model_as_the_engine_runs_it(tmp_path):
 
 def test_a_run_is_summarised_sealed_and_says_where_the_judge_was_fooled(tmp_path, nel):
     out = cap.run("lightning", cap.Target(url="http://node:8200/v1", model="lightning"),
-                  suite="quick", judge=cap.Target(url="http://node:8204/v1", model="super"),
+                  suite="all", judge=cap.Target(url="http://node:8204/v1", model="super"),
                   pack=Path("packs/underwriter-de"), root=tmp_path, nel=nel)
     s = json.loads((out / "capabilities.json").read_text())
     cm = s["benchmarks"]["credit-memo"]
@@ -100,6 +104,15 @@ def test_a_run_is_summarised_sealed_and_says_where_the_judge_was_fooled(tmp_path
     assert "a judge alone would have passed them" in text and "German maths alone: 50.0%" in text
     assert "`xstest`" in text  # what is not measured, and why
     assert verify_run(out).ok and s["run"]["nel_exit"] == 0
+    assert s["run"]["check_versions"]["numeric_fidelity"] == 2
+
+
+def test_parked_benchmarks_are_listed_as_not_measured(tmp_path, nel):
+    out = cap.run("lightning", cap.Target(url="http://node:8200/v1", model="lightning"),
+                  suite="quick", pack=Path("packs/underwriter-de"), root=tmp_path, nel=nel)
+    s = json.loads((out / "capabilities.json").read_text())
+    assert list(s["benchmarks"]) == ["credit-memo"]
+    assert "`gsm8k`, `mgsm`, `mmlu-pro`: parked" in (out / "report.md").read_text()
 
 
 def test_a_gate_is_written_in_plain_words_and_sealed(tmp_path, nel):

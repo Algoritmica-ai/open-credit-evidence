@@ -20,7 +20,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from evidence.checks import available_checks
+from evidence.checks import available_checks, check_versions
 from evidence.evidence import verify_run, write_evidence
 from evidence.evidence.readers import READERS
 from evidence.pack import load_pack
@@ -415,8 +415,22 @@ def _cmd_review(a: argparse.Namespace) -> int:
 
 
 def _cmd_checks(_: argparse.Namespace) -> int:
-    for name in available_checks():
-        print(name)
+    for name, version in check_versions(available_checks()).items():
+        print(f"{name}  version {version}")
+    return 0
+
+
+def _cmd_recheck(a: argparse.Namespace) -> int:
+    from evidence.recheck import recheck
+
+    out = recheck(Path(a.run), load_pack(a.pack) if a.pack else None, root=Path(a.out))
+    r = json.loads((out / "recheck.json").read_text(encoding="utf-8"))
+    print(f"{r['memos']} memos re-scored; no mistake found in {r['clean']['before']} before, "
+          f"{r['clean']['after']} now")
+    for name, s in r["checks"].items():
+        if s["passed_now"] or s["failed_now"]:
+            print(f"  {name}: {s['passed_now']} now pass, {s['failed_now']} now fail")
+    print(f"written to {out}")
     return 0
 
 
@@ -480,7 +494,8 @@ def main(argv: list[str] | None = None) -> int:
                          help="measure a model with NVIDIA NeMo Evaluator; gate a candidate")
     cp_.add_argument("action", choices=["run", "gate", "show"])
     cp_.add_argument("dirs", nargs="*", help="gate: BASELINE CANDIDATE; show: a result folder")
-    cp_.add_argument("--suite", default="standard", choices=["standard", "quick", "general"])
+    cp_.add_argument("--suite", default="standard",
+                     choices=["standard", "quick", "general", "all"])
     cp_.add_argument("--model-url", help="the model's base URL ending in /v1 (default: the "
                      "assistant's endpoint)")
     cp_.add_argument("--model-id")
@@ -550,6 +565,13 @@ def main(argv: list[str] | None = None) -> int:
     w.add_argument("--port", type=int, default=8765)
     w.add_argument("--root", help="directory holding packs/ and runs/ (default: current)")
     w.set_defaults(fn=_cmd_ui)
+
+    rc = sub.add_parser("recheck", help="what the current checks would change on a sealed "
+                                         "run (engine or capability run); the run is untouched")
+    rc.add_argument("run")
+    rc.add_argument("--pack", help="the run's pack (default packs/<its pack id>)")
+    rc.add_argument("--out", default="rechecks", help="where the re-check folder goes")
+    rc.set_defaults(fn=_cmd_recheck)
 
     c = sub.add_parser("checks", help="list registered deterministic checks")
     c.set_defaults(fn=_cmd_checks)

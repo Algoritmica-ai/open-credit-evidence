@@ -22,3 +22,4 @@ __pycache__/
 /.sdd-workspace/
 /runs/test-numbers.json
 /capabilities/
+/rechecks/
