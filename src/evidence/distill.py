@@ -128,19 +128,38 @@ def final_answer(message: dict[str, Any]) -> str:
     return text.strip()
 
 
+# For the teacher only: the fine-tuned model is trained on the task prompt and the memo.
+# A small model without thinking computes a figure well only when the working comes first,
+# so the memos it learns from put the arithmetic before the result, and state nothing that
+# cannot be worked out that way. (A first pilot without this guide taught Lightning the
+# teacher's figure-rich style, and its own arithmetic got worse.)
+GUIDE = (
+    "\n\nHow to write this memo:\n"
+    "- Work out every figure you use, in the memo, before you use it: one line of arithmetic "
+    "from figures in the documents, then the result. For example: \"Gross monthly income: "
+    "€24,336 ÷ 12 = €2,028. Total monthly debt service: €581 + €410 = €991. Share of income: "
+    "€991 ÷ €2,028 = 48.9%.\"\n"
+    "- State no figure that is not in the documents or worked out that way: no loan amounts, "
+    "terms or incomes that the file does not give.\n"
+    "- Say what would need to change for the outcome to be different: name each thing and "
+    "which way it must move, with its figure worked out the same way (for example, the "
+    "largest instalment that fits: €2,028 × 40% − €581 = €230.20).\n"
+    "- Plain, short sentences; at most about 350 words."
+)
 REPAIR = ("Your memo was checked against the case file and failed:\n{failures}\n\n"
           "Write the memo again. Use only figures the documents state, or that follow from "
           "them in one step of arithmetic. Reply with the memo only.")
 
 
-def ask_teacher(system: str, user: str, previous: dict[str, Any] | None = None
-                ) -> dict[str, Any]:
+def ask_teacher(system: str, user: str, previous: dict[str, Any] | None = None,
+                guide: bool = True) -> dict[str, Any]:
     """One call to the teacher: thinking on, its recommended sampling. ``previous`` is the
     memo that failed and what the checks found: the teacher is asked to write it again."""
     from evidence.adapters.nvidia_build import _bypass_proxy, endpoint_for
 
     ep = endpoint_for("teacher")
-    messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
+    messages = [{"role": "system", "content": system + (GUIDE if guide else "")},
+                {"role": "user", "content": user}]
     if previous:
         messages += [{"role": "assistant", "content": previous["memo"]},
                      {"role": "user", "content": REPAIR.format(
@@ -172,6 +191,7 @@ def ask_teacher(system: str, user: str, previous: dict[str, Any] | None = None
     msg = reply["choices"][0]["message"]
     usage = reply.get("usage") or {}
     return {"memo": final_answer(msg), "model": reply.get("model") or ep.model_id,
+            "guide": guide,
             "endpoint": ep.base_url, "latency_ms": int((time.time() - t0) * 1000),
             "tokens_out": usage.get("completion_tokens"),
             "finish": reply["choices"][0].get("finish_reason")}
@@ -240,6 +260,15 @@ def build(name: str, *, setup: str = "as_is", feedback: list[Path] | None = None
     items = {i.item_id: i for i in cases(name, setup)}
     rows = [json.loads(line) for line in
             (out / "teacher.jsonl").read_text(encoding="utf-8").splitlines() if line]
+    # every memo is checked again with the checks as they are now: a memo kept or rejected
+    # by an earlier version of a check is judged by the current one
+    for r in rows:
+        if r.get("memo") and r["item_id"] in items:
+            item = items[r["item_id"]]
+            results = run_checks(item.deterministic_checks, output=r["memo"], item=item)
+            r["checks"] = {c.name: c.passed for c in results}
+            r["kept"] = (all(c.passed is not False for c in results)
+                         and len(r["memo"]) <= MAX_MEMO_CHARS)
     kept = {r["item_id"]: r for r in rows if r.get("kept") and r["item_id"] in items}
     ids = sorted(kept)
     random.Random(7).shuffle(ids)
@@ -267,7 +296,8 @@ def build(name: str, *, setup: str = "as_is", feedback: list[Path] | None = None
     manifest = {
         "name": name, "built_at": _now(), "setup": setup,
         "teacher": {"model": teacher.get("model"), "endpoint": teacher.get("endpoint"),
-                    "sampling": {"temperature": 0.6, "top_p": 0.95, "thinking": True}},
+                    "sampling": {"temperature": 0.6, "top_p": 0.95, "thinking": True},
+                    "guide": GUIDE if teacher.get("guide") else None},
         "cases": len(items), "cases_attempted": len(attempted), "memos_written": len(rows),
         "cases_kept": len(ids), "train": len(split["train"]) + len(extra),
         "val": len(split["val"]), "from_feedback_packs": len(extra),
