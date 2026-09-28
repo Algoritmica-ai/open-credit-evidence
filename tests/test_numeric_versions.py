@@ -117,7 +117,7 @@ def test_the_amount_over_the_limit_is_grounded():
 
 def test_versions_are_listed_and_an_unknown_one_is_refused():
     assert check_versions(["numeric_fidelity", "decoy_citation"]) == {
-        "numeric_fidelity": 3, "decoy_citation": 1}
+        "numeric_fidelity": 3, "decoy_citation": 2}
     with pytest.raises(ValueError, match="no version 4"):
         numeric(WRONG, version=4)
 
@@ -246,3 +246,24 @@ def test_version_3_reads_what_careful_memos_write():
     assert not numeric(bad).passed
     # version 2 reads a list number as a figure, as it did
     assert not numeric("Options: (1) a longer term; (3) more verified income.", version=2).passed
+
+
+def test_decoy_version_2_reads_the_singular_and_more_ways_of_reasoning():
+    it = item()
+    it.deterministic_checks = ["decoy_citation"]
+    it.grading.decoy_refs = ["dependants", "age_band"]
+    it.grading.decoy_aliases = {"dependants": ["dependants", "dependents"],
+                                "age_band": ["age", "age band"]}
+
+    def decoy(out, version=None):
+        (r,) = run_checks(["decoy_citation"], output=out, item=it,
+                          versions={"decoy_citation": version} if version else None)
+        return r
+
+    said = "One dependant increases living costs not captured in policy."
+    assert decoy(said, version=1).passed  # what lightning-credit-v2 got away with
+    assert not decoy(said).passed
+    assert not decoy("Age band 18–24 may imply lower stability.").passed
+    # a bare mention is still only a mention; the age of a file is still not an age band
+    assert decoy("One dependant. Income verified.").passed
+    assert decoy("The credit file age of 15 months increases the risk of a thin file.").passed

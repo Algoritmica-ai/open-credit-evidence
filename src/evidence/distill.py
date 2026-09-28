@@ -17,9 +17,11 @@ Three stages, each resumable, all writing into ``training/<name>/``:
    the final memo only). Every attempt is recorded in ``teacher.jsonl`` with its check
    results.
 3. **build**: the memos that pass all six checks and fit the assistant's answer budget
-   become supervised fine-tuning data, split by case into ``sft/train.jsonl`` and
-   ``sft/val.jsonl`` (chat messages). ``manifest.json`` says where every number came
-   from. The folder is sealed, and anchored when anchoring is on.
+   become supervised fine-tuning data. A clause that mentions a field with no bearing on
+   the decision (a decoy: dependants, age band, postcode, the loan's purpose) is taken out,
+   and the memo is kept only if it still passes all six checks. The data is split by case into
+   ``sft/train.jsonl`` and ``sft/val.jsonl`` (chat messages). ``manifest.json`` says
+   where every number came from. The folder is sealed, and anchored when anchoring is on.
 """
 
 from __future__ import annotations
@@ -27,6 +29,7 @@ from __future__ import annotations
 import json
 import os
 import random
+import re
 import threading
 import time
 import urllib.error
@@ -59,6 +62,50 @@ def _now() -> str:
 
 def _application(item: BenchmarkItem) -> str:
     return next((c.content for c in item.context if c.renderer == "application_form"), "")
+
+
+_CLAUSES = re.compile(r"(?<=[.;!?])[ \t]+|\n")
+
+
+def _decoy_aliases(results: list[Any], item: BenchmarkItem | None = None) -> list[str]:
+    """Every word for each decoy field the memo mentions (decoy_citation's evidence): the
+    field's aliases, singular and plural, not only the word the memo happened to use."""
+    from evidence.checks.decoy import _variants
+
+    refs = {e["ref"]: e.get("alias") for c in results if c.name == "decoy_citation"
+            for e in c.evidence or [] if e.get("mentioned")}
+    words: set[str] = set()
+    for ref, alias in refs.items():
+        aliases = (item.grading.decoy_aliases.get(ref) if item else None) or [alias or ref]
+        words |= {v for a in aliases if a for v in _variants(a)}
+    return sorted(words)
+
+
+def without_clauses(memo: str, words: list[str]) -> str:
+    """The memo without the clauses (sentences, ``;``-parts, lines) that mention any of
+    ``words``. A bullet or line left empty is dropped with its marker."""
+    lines = []
+    for line in memo.split("\n"):
+        marker = re.match(r"^\s*(?:[-*•]|\d+[.)])\s+", line)
+        body = line[marker.end():] if marker else line
+        parts = re.split(r"(?<=[.;!?])[ \t]+", body)
+        keep = [x for x in parts
+                if not any(re.search(rf"\b{re.escape(w)}\b", x, re.I) for w in words)]
+        if keep == parts:
+            lines.append(line)
+        elif any(x.strip(" ;.") for x in keep):
+            text = " ".join(keep).strip()
+            text = re.sub(r";\s*$", ".", text)
+            lines.append((marker.group(0) if marker else "") + text)
+    # a heading whose section is now empty goes too
+    heading = re.compile(r"^\s*(?:#+\s.*|\*\*[^*]+\*\*:?)\s*$")
+    out: list[str] = []
+    for i, line in enumerate(lines):
+        rest = next((x for x in lines[i + 1:] if x.strip()), None)
+        if heading.match(line) and (rest is None or heading.match(rest)):
+            continue
+        out.append(line)
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(out)).strip()
 
 
 def taken(*, training: bool = True) -> tuple[set[int], set[str]]:
@@ -262,6 +309,12 @@ def build(name: str, *, setup: str = "as_is", feedback: list[Path] | None = None
             (out / "teacher.jsonl").read_text(encoding="utf-8").splitlines() if line]
     # every memo is checked again with the checks as they are now: a memo kept or rejected
     # by an earlier version of a check is judged by the current one
+    # A memo that only mentions a decoy passes decoy_citation, which fails only a decoy
+    # used as a reason; but a model trained on such memos learns to bring the field up, and
+    # then to reason with it (lightning-credit-v2 did: "two dependants increase
+    # living-cost pressure"). So the clauses that mention one are taken out, and the memo is
+    # kept only if it still passes every check and mentions no decoy.
+    stripped = dropped_for_decoys = 0
     for r in rows:
         if r.get("memo") and r["item_id"] in items:
             item = items[r["item_id"]]
@@ -269,6 +322,14 @@ def build(name: str, *, setup: str = "as_is", feedback: list[Path] | None = None
             r["checks"] = {c.name: c.passed for c in results}
             r["kept"] = (all(c.passed is not False for c in results)
                          and len(r["memo"]) <= MAX_MEMO_CHARS)
+            aliases = _decoy_aliases(results, item)
+            if r["kept"] and aliases:
+                memo = without_clauses(r["memo"], aliases)
+                again = run_checks(item.deterministic_checks, output=memo, item=item)
+                if all(c.passed is not False for c in again) and not _decoy_aliases(again):
+                    r["memo"], stripped = memo, stripped + 1
+                else:
+                    r["kept"], dropped_for_decoys = False, dropped_for_decoys + 1
     kept = {r["item_id"]: r for r in rows if r.get("kept") and r["item_id"] in items}
     ids = sorted(kept)
     random.Random(7).shuffle(ids)
@@ -305,6 +366,8 @@ def build(name: str, *, setup: str = "as_is", feedback: list[Path] | None = None
         "failed_by_check": _failed_by_check(rows),
         "check_versions": check_versions(),
         "max_memo_chars": MAX_MEMO_CHARS,
+        "decoy_clauses_taken_out": stripped,
+        "left_out_for_mentioning_a_decoy": dropped_for_decoys,
         "shared_with_test_packs": leaked,
         "feedback_from_test_packs": sorted({_run_pack(h) for h in feedback or []}),
         "case_packs": sorted(p.parent.name for p in (out / "cases").glob("*/items.jsonl")),
@@ -359,7 +422,10 @@ def _readme(m: dict[str, Any]) -> str:
             f"Memos written by `{m['teacher']['model']}` (thinking on) for {m['cases']} new "
             f"cases, as the assistant receives them ({m['setup']}). A memo is kept only if "
             f"it passes all six checks and fits the assistant's answer budget "
-            f"({m['max_memo_chars']} characters).\n\n"
+            f"({m['max_memo_chars']} characters). In {m['decoy_clauses_taken_out']} memos the "
+            f"clauses that mention a field with no bearing on the decision were taken out; "
+            f"{m['left_out_for_mentioning_a_decoy']} were left out because they no longer "
+            f"passed.\n\n"
             f"- Cases kept: {m['cases_kept']} of {m['cases_attempted']} "
             f"({m['kept_share']:.0%})\n"
             f"- Training examples: {m['train']} (of which {m['from_feedback_packs']} "

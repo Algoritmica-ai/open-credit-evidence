@@ -108,3 +108,38 @@ def _handover(tmp_path) -> Path:
         {"role": "system", "content": "s"}, {"role": "user", "content": "u"},
         {"role": "assistant", "content": "corrected"}], "item_id": "x"}) + "\n")
     return h
+
+
+def test_a_memo_that_mentions_a_decoy_is_not_training_data(ws, monkeypatch):
+    """It passes the checks (a mention is not a reason), but a model trained on it learns to
+    bring the field up."""
+    def checks(names, *, output, item, versions=None):
+        mention = [{"ref": "dependants", "cited": False, "mentioned": "dependants" in output}]
+        return [CheckResult(name=n, passed=output.startswith("PASS"), score=1.0, detail="",
+                            evidence=mention if n == "decoy_citation" else [])
+                for n in names]
+
+    monkeypatch.setattr(distill, "run_checks", checks)
+    distill.make_cases("t", 4, "underwriter-de", log=lambda _: None)
+    items = distill.cases("t")
+    memo = {i.documents_text(): GOOD + (". Three dependants." if n < 2 else "")
+            for n, i in enumerate(items)}
+    distill.teach("t", ask=lambda s, u: {"memo": memo[u], "model": "stand-in"}, workers=1,
+                  log=lambda _: None)
+    out = distill.build("t", log=lambda _: None)
+    m = json.loads((out / "manifest.json").read_text())
+    assert m["decoy_clauses_taken_out"] == 2 and m["cases_kept"] == 4
+    train = (out / "sft/train.jsonl").read_text() + (out / "sft/val.jsonl").read_text()
+    assert "dependants" not in train and train.count(GOOD) == 4
+
+
+def test_the_clauses_that_mention_a_decoy_are_taken_out():
+    memo = ("**Applicant**\n- Self-employed 121 months; income verified; one dependant.\n"
+            "- Age 65+, contract employee.\n\nDebt service is 51.1%. Two dependants add "
+            "pressure. The limit is 40%.")
+    out = distill.without_clauses(memo, ["dependant", "dependants", "age"])
+    assert out == ("**Applicant**\n- Self-employed 121 months; income verified.\n\n"
+                   "Debt service is 51.1%. The limit is 40%.")
+    # a heading whose only line went goes with it
+    memo = "**For the applicant**\n- One dependant.\n\n**Against**\n- Ratio 51%."
+    assert distill.without_clauses(memo, ["dependant"]) == "**Against**\n- Ratio 51%."
