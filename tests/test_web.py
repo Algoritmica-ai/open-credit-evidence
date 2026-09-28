@@ -541,3 +541,59 @@ def test_the_synthetic_data_designer_starts_with_the_ui(client):
     recipes = client.get("/sdd/api/meta").json()["packs"]
     assert "credit_underwriting" in recipes  # the recipe the test cases come from
     assert client.get("/sdd/api/packs/credit_underwriting").status_code == 200
+
+
+def test_two_assistants_on_the_same_new_cases_memo_beside_memo(client, monkeypatch):
+    """A fine-tuned assistant (the candidate) against the assistant: new cases like a pack's,
+    both write a memo for each, and the comparison pairs them case by case."""
+    monkeypatch.setenv("EVIDENCE_CANDIDATE_MODEL", "")
+    assert [a["role"] for a in client.get("/api/assistants").json()] == ["assistant"]
+    assert client.post("/api/run", json={"pack": "underwriter-sample", "limit": 1,
+                                         "assistant": "candidate"}).status_code == 400
+    monkeypatch.setenv("EVIDENCE_CANDIDATE_BASE_URL", "http://127.0.0.1:9/v1")
+    monkeypatch.setenv("EVIDENCE_CANDIDATE_MODEL", "lightning-credit-v1")
+    listed = client.get("/api/assistants").json()
+    assert [(a["role"], a["model_id"]) for a in listed][1] == ("candidate", "lightning-credit-v1")
+
+    def fake_fresh(from_pack, keep=None):
+        pid = "underwriter-sample-s5151"
+        _with_bank_figures(web.PACKS / from_pack, web.PACKS / pid, pid)
+        return {"pack_id": pid, "seed": 5151, "from": from_pack, "items": 20,
+                "shared_with_other_packs": 0, "seconds": 0.1, "links": web.SDD_LINKS}
+
+    roles = []
+
+    def chat(role, system, user, **_):
+        roles.append(role)
+        memo = ("Debt service 47% exceeds the 40% policy limit." if role == "candidate"
+                else "The applicant looks fine.")
+        return ChatResponse(memo, "lightning-credit-v1" if role == "candidate" else "stub",
+                            "p", {"seed": 7}, 3, 5, 5, "a", "http://stub/v1")
+
+    monkeypatch.setattr(web, "make_fresh_pack", fake_fresh)
+    monkeypatch.setattr("evidence.runner.chat", chat)
+    job = client.post("/api/retest", json={"from_pack": "underwriter-sample", "cases": 3,
+                                           "repeats": 1, "assistant": "candidate",
+                                           "setup": "with_figures"}).json()
+    for _ in range(400):
+        j = client.get(f"/api/run/{job['job_id']}").json()
+        if j["status"] != "running":
+            break
+        time.sleep(0.05)
+    assert j["status"] == "done" and j["assistant"] == "candidate", j
+    b = client.get(f"/api/runs/{j['before']}").json()["manifest"]
+    a = client.get(f"/api/runs/{j['after']}").json()["manifest"]
+    assert (b["sut"]["role"], a["sut"]["role"]) == ("assistant", "candidate")
+    # the same documents to both: here with the figures the bank's systems compute
+    assert (b["setup"], a["setup"]) == ("with_figures", "with_figures")
+    assert roles.count("candidate") == roles.count("assistant") == 20
+    c = client.get("/api/compare", params={"before": j["before"], "after": j["after"]}).json()
+    assert {"what": "assistant model", "before": "stub", "after": "lightning-credit-v1"} in [
+        {k: x[k] for k in ("what", "before", "after")} for x in c["changed"]]
+    cases = client.get("/api/compare/cases", params={"before": j["before"],
+                                                     "after": j["after"]}).json()
+    assert len(cases) == 20 and {len(x["before"]) for x in cases} == {1}
+    first = cases[0]
+    assert first["before"][0]["memo"] == "The applicant looks fine."
+    assert "material_omission" in first["before"][0]["failed"]
+    assert first["clean"]["before"] == 0

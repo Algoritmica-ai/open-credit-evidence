@@ -117,9 +117,9 @@ def test_the_amount_over_the_limit_is_grounded():
 
 def test_versions_are_listed_and_an_unknown_one_is_refused():
     assert check_versions(["numeric_fidelity", "decoy_citation"]) == {
-        "numeric_fidelity": 2, "decoy_citation": 1}
-    with pytest.raises(ValueError, match="no version 3"):
-        numeric(WRONG, version=3)
+        "numeric_fidelity": 4, "decoy_citation": 2}
+    with pytest.raises(ValueError, match="no version 5"):
+        numeric(WRONG, version=5)
 
 
 MEMOS = [
@@ -167,7 +167,7 @@ def test_a_recheck_shows_what_the_new_version_changes_and_leaves_the_run_alone(t
     before = (run / "results.jsonl").read_text()
     out = recheck(run, pack, root=tmp_path / "rechecks")
     r = json.loads((out / "recheck.json").read_text())
-    assert r["changed_checks"] == {"numeric_fidelity": [1, 2]} and r["unreproduced"] == 0
+    assert r["changed_checks"] == {"numeric_fidelity": [1, 4]} and r["unreproduced"] == 0
     assert r["clean"] == {"before": 1, "after": 1}
     assert r["now_clean"] == ["t:case_review:APP000128:complete#0"]
     assert r["now_flagged"] == ["t:case_review:APP000128:complete#1"]
@@ -176,3 +176,101 @@ def test_a_recheck_shows_what_the_new_version_changes_and_leaves_the_run_alone(t
     assert "Memos now found right (1)" in md
     assert (run / "results.jsonl").read_text() == before
     assert (out / "checksums.sha256").is_file()
+
+
+def test_omission_reads_a_computed_ratio_stated_more_precisely():
+    it = item()
+    it.deterministic_checks = ["material_omission"]
+    it.grading.omission_refs = ["dti_ratio", "policy_limit_dti"]
+    it.grading.omission_labels = {"dti_ratio": "debt-to-income ratio of 51% exceeds the 40% "
+                                               "policy limit",
+                                  "policy_limit_dti": "the 40% debt-to-income policy limit"}
+    it.grading.omission_aliases = {"dti_ratio": ["51%", "exceeds the 40%"],
+                                   "policy_limit_dti": ["40%"]}
+
+    def omission(out, version=None):
+        (r,) = run_checks(["material_omission"], output=out, item=it,
+                          versions={"material_omission": version} if version else None)
+        return r
+
+    precise = "Debt service is **51.1 % of gross monthly income**, over the 40\u202f% ceiling."
+    assert not omission(precise, version=1).passed  # what Ultra's memos lost to
+    r = omission(precise)
+    assert r.passed, r.detail
+    assert r.evidence[0]["method"] == "precise" and r.evidence[0]["said"] == "51.1%"
+    # a figure the file states is not stood in for by a nearby one
+    assert not omission("Debt service is 51%; the limit is 40.2%.").passed
+    assert not omission("Debt service is 51.6%, over the 40% limit.").passed  # rounds to 52
+
+
+WORKED = ("Gross monthly income: €31,043 ÷ 12 = €2,586.92. Debt service: €633 + €688 = €1,321. "
+          "Share: €1,321 ÷ €2,586.92 = 51.1%. Allowed: €2,586.92 × 0.40 = €1,034.77. "
+          "Largest instalment: €1,034.77 − €633 = €401.77, so it must fall by "
+          "€688 − €401.77 = €286.23. Over the 36 months: €401.77 × 36 = €14,463.72.")
+
+
+def test_working_written_out_is_followed_step_by_step():
+    assert not numeric(WORKED, version=2).passed  # two steps, and 0.40 for 40%
+    r = numeric(WORKED)
+    assert r.passed, r.detail
+    how = {e["value"]: (e["method"], e.get("derivation")) for e in r.evidence}
+    assert how["€14,463.72"] == ("worked", "€401.77 × 36 = €14,463.72")  # two steps out
+    assert how["0.40"] == ("derived", "40% as a decimal")
+
+
+def test_working_that_does_not_add_up_fails_even_when_the_figure_exists():
+    # €1,321 is in the file's working, but €633 + €698 is not €1,321
+    r = numeric("Debt service: €633 + €698 = €1,321, above the 40% limit.")
+    assert not r.passed
+    e = next(e for e in r.evidence if e["value"] == "€1,321")
+    assert e["method"] == "worked wrongly" and "but it is 1,331" in e["derivation"]
+    # a result built on a figure from nowhere is not grounded by its working
+    assert not numeric("A loan of €3,700 over 60 months: €3,700 ÷ 60 = €61.67.").passed
+    # a gap in points written as an equation
+    assert numeric("Debt service is 51.1%: 51.1% − 40% = 11.1 percentage points over.").passed
+
+
+def test_version_3_reads_what_careful_memos_write():
+    # a chain, partly worked in the middle: (a × r) − b = c − b = d
+    chain = ("Gross monthly income: €31,043 ÷ 12 = €2,586.92. Largest instalment: "
+             "(€2,586.92 × 40%) − €633 = €1,034.77 − €633 = €401.77.")
+    assert numeric(chain).passed, numeric(chain).detail
+    # the limit as a decimal, a list number, the income shortfall, a gap in months
+    assert numeric("Allowed: €2,586.92 × 0.40, i.e. 40% of income.").passed
+    assert numeric("Options: (1) a longer term; (3) more verified income.").passed
+    assert numeric("Income would need to rise by €716 a month to meet the 40% limit.").passed
+    assert numeric("The file is 66 months old; 158 months in role, 92 more months than the "
+                   "file.").passed
+    # a chain whose last step is wrong still fails
+    bad = "Largest instalment: (€2,586.92 × 40%) − €633 = €1,034.77 − €633 = €411.77."
+    assert not numeric(bad).passed
+    # version 2 reads a list number as a figure, as it did
+    assert not numeric("Options: (1) a longer term; (3) more verified income.", version=2).passed
+
+
+def test_decoy_version_2_reads_the_singular_and_more_ways_of_reasoning():
+    it = item()
+    it.deterministic_checks = ["decoy_citation"]
+    it.grading.decoy_refs = ["dependants", "age_band"]
+    it.grading.decoy_aliases = {"dependants": ["dependants", "dependents"],
+                                "age_band": ["age", "age band"]}
+
+    def decoy(out, version=None):
+        (r,) = run_checks(["decoy_citation"], output=out, item=it,
+                          versions={"decoy_citation": version} if version else None)
+        return r
+
+    said = "One dependant increases living costs not captured in policy."
+    assert decoy(said, version=1).passed  # what lightning-credit-v2 got away with
+    assert not decoy(said).passed
+    assert not decoy("Age band 18–24 may imply lower stability.").passed
+    # a bare mention is still only a mention; the age of a file is still not an age band
+    assert decoy("One dependant. Income verified.").passed
+    assert decoy("The credit file age of 15 months increases the risk of a thin file.").passed
+
+
+def test_version_4_reads_an_equation_in_brackets():
+    memo = ("The instalment must fall to €401.77 or less: over the 36 months "
+            "(€401.77 × 36 = €14,463.72).")
+    assert not numeric(memo, version=3).passed
+    assert numeric(memo).passed, numeric(memo).detail

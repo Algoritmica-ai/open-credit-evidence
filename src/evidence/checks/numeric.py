@@ -59,7 +59,25 @@ found grounded as "2026.1 − 1067": the policy version minus the postal code.
   grounded figures state. A number followed by "percentage points" is grounded only that
   way.
 
-Version 1 stays runnable (``version=1``), so runs scored with it re-derive as scored.
+**Version 3** (the current one) reads working written out in the briefing. A memo that
+shows its arithmetic ("€2,733 × 0.40 = €1,093. Largest instalment: €1,093 − €519 = €574.")
+states results one step from figures that are themselves worked out. Version 2 followed
+one step from the file and failed such memos although every step was right.
+
+- An equation in the briefing (``a × b = c``, with ×, ÷, +, − and brackets) grounds its
+  result when every figure on its left is grounded (in the file, a percentage of the file
+  written as a decimal such as 0.40, 12 or 100, or an earlier grounded figure of the
+  briefing) and the arithmetic holds at the precision the result is stated to.
+- An equation whose arithmetic does not hold fails its result, whatever its operands, and
+  even when the result could be derived some other way: "€868 ÷ €2,198.67 = 42.6%" is a
+  wrong figure with its working shown.
+
+**Version 4** reads an equation in brackets: "reduce the instalment to €525.10
+(€2,605.25 × 40% − €507 = €525.10)". Version 3 took the opening bracket as part of the
+left side, found it unbalanced, and passed the equation by.
+
+Versions 1 to 3 stay runnable (``version=``), so runs scored with them re-derive as
+scored.
 """
 
 from __future__ import annotations
@@ -135,6 +153,7 @@ def _numbers(text: str) -> list[tuple[float, int, str, str, str]]:
         kind = ("pts" if _POINTS.match(clean[end : end + 30])
                 else "pct" if m.group(4) else "amt" if m.group(1)
                 else "lbl" if _LABEL_BEFORE.search(clean[max(0, start - 14) : start])
+                else "enum" if clean[start - 1 : start] == "(" and clean[end : end + 1] == ")"
                 else "num")
         window = clean[max(0, start - 60) : min(len(clean), end + 60)].replace("\n", " ")
         out.append((_parse(m), _decimals(m), raw, kind, window.strip()))
@@ -181,7 +200,7 @@ def _periods(text: str) -> dict[float, str | None]:
 
 def _derivations(
     doc: list[float], pcts: list[float], period: dict[float, str | None] | None = None,
-    *, counts: list[float] | None = None, ranked: bool = False,
+    *, counts: list[float] | None = None, ranked: bool = False, shortfall: bool = False,
 ) -> list[tuple[float, str, str]]:
     """Every one-step derivation an underwriter would plausibly make: (value, kind, expr).
 
@@ -264,6 +283,15 @@ def _derivations(
             if is_not(a, "year") and is_not(b, "year"):
                 add((a + b) / (r / 100) * 12, "amt", f"({a:g} + {b:g}) / {r:g}% × 12", 1)
             add((a + b) / (r / 100), "amt", f"({a:g} + {b:g}) / {r:g}%", 1)
+            if not shortfall:
+                continue
+            # how far income falls short of that, monthly and annual (version 3)
+            for c in annual:
+                if is_not(a, "year") and is_not(b, "year") and is_not(c, "month"):
+                    add((a + b) / (r / 100) - c / 12, "amt",
+                        f"({a:g} + {b:g}) / {r:g}% − {c:g} / 12", 1)
+                    add((a + b) / (r / 100) * 12 - c, "amt",
+                        f"({a:g} + {b:g}) / {r:g}% × 12 − {c:g}", 1)
     # Months expressed as years (a file age or tenure), bare numbers only.
     for m in doc if counts is None else counts:
         if 12 <= m < _AMOUNT_MIN * 10 and m == int(m):
@@ -298,13 +326,132 @@ def _years(raw: str, value: float, context: str, months: list[float]) -> str | N
     return None
 
 
-@check("numeric_fidelity", version=2)
-def numeric_fidelity(*, output: str, item: BenchmarkItem, version: int = 2,
+_OPERATOR = {"×": "*", "x": "*", "*": "*", "÷": "/", "/": "/", "+": "+", "−": "-", "-": "-",
+             "–": "-"}
+_OPERAND = r"\(?\s*[£$€]?\s?\d[\d,]*(?:\.\d+)?\s?%?\s*\)?"
+_EXPR = rf"{_OPERAND}(?:\s*[×x*÷/+−–-]\s*{_OPERAND})*"
+_LHS = re.compile(rf"({_OPERAND}(?:\s*[×x*÷/+−–-]\s*{_OPERAND})+)\s*$")
+_RHS = re.compile(rf"^\s*[~]?\s*({_EXPR})")
+_TOKEN = re.compile(r"[£$€]?\s?(\d[\d,]*(?:\.\d+)?)\s?(%?)|([×x*÷/+−–()-])")
+
+
+def _parse_expr(text: str) -> tuple[float, list[tuple[float, int, bool]]] | None:
+    """The value of ``text`` (numbers, + − × ÷, brackets; a percentage as its fraction) and
+    its numbers as (value, decimals, is a percentage)."""
+    expr, numbers, depth = [], [], 0
+    for t in _TOKEN.finditer(text):
+        if t.group(3):
+            op = _OPERATOR.get(t.group(3), t.group(3))
+            depth += 1 if op == "(" else -1 if op == ")" else 0
+            expr.append(op)
+        else:
+            v = float(t.group(1).replace(",", ""))
+            numbers.append((v, len(t.group(1).split(".")[1]) if "." in t.group(1) else 0,
+                            bool(t.group(2))))
+            expr.append(repr(v / 100 if t.group(2) else v))
+    if depth != 0 or not numbers:
+        return None
+    try:
+        return eval("".join(expr), {"__builtins__": {}}), numbers  # noqa: S307 — digits, + - * / ( )
+    except (SyntaxError, ZeroDivisionError):
+        return None
+
+
+def _unwrap(expr: str) -> str:
+    """An expression without the brackets of a bracketed equation around it: the left side
+    "(€2,605.25 × 40% − €507" and the right side "€525.10)" of
+    "(€2,605.25 × 40% − €507 = €525.10)"."""
+    while expr.count("(") > expr.count(")") and expr.lstrip().startswith("("):
+        expr = expr.lstrip()[1:]
+    while expr.count(")") > expr.count("(") and expr.rstrip().endswith(")"):
+        expr = expr.rstrip()[:-1]
+    return expr
+
+
+def _equations(text: str, version: int = 3) -> list[dict[str, Any]]:
+    """Every ``left = right`` the briefing writes out, chains (``a = b = c``) step by step.
+    ``right`` is one figure (the result) or an expression (a partly worked step)."""
+    clean = text.replace("**", "").replace("\u202f", " ").replace("\u00a0", " ")
+    out = []
+    for eq in re.finditer(r"\s(=|≈)\s", clean):
+        lhs = _LHS.search(clean[max(0, eq.start() - 160) : eq.start()])
+        rhs = _RHS.match(clean[eq.end() : eq.end() + 80])
+        if not lhs or not rhs:
+            continue
+        left_text, right_text = ((_unwrap(lhs.group(1)), _unwrap(rhs.group(1))) if version > 3
+                                 else (lhs.group(1), rhs.group(1)))
+        left, right = _parse_expr(left_text), _parse_expr(right_text)
+        if not left or not right:
+            continue
+        (lv, operands), (rv, results) = left, right
+        if len(results) == 1:  # one figure: a percentage written as one, or a gap in points
+            v, d, pct = results[0]
+            if pct or all(p for _, _, p in operands):
+                lv *= 100
+            rv, prec = (v, d)
+        else:
+            prec = min(d for _, d, _ in results)
+        out.append({"text": f"{lhs.group(1).strip()} {eq.group(1)} {rhs.group(1).strip()}",
+                    "operands": operands, "results": results, "left": lv, "right": rv,
+                    "precision": prec, "about": eq.group(1) == "≈"})
+    return out
+
+
+def _worked(output: str, known: set[float], version: int = 3) -> dict[str, Any]:
+    """The equations of the briefing, checked in the order they can be: each one that adds up
+    and whose left side is grounded grounds the figures on its right for the next ones; one
+    that does not add up is wrong whatever its operands."""
+    eqs = _equations(output, version)
+    verified: dict[tuple[float, int], str] = {}
+    wrong: dict[tuple[float, int], str] = {}
+    operand_ok: set[tuple[float, int]] = set()
+    done: set[int] = set()
+    changed = True
+    while changed:
+        changed = False
+        for i, e in enumerate(eqs):
+            if i in done:
+                continue
+            first = (e["results"][0][0], e["results"][0][1])
+            # "≈" allows the rounding of a stated approximation: 1% or the last digit
+            holds = _close(e["left"], e["right"], e["precision"]) or (
+                e["about"] and abs(e["left"] - e["right"]) <= max(0.01 * abs(e["right"]), 1))
+            if not holds:
+                wrong[first] = (f"{e['text']}, but it is "
+                                f"{e['left']:,.{max(e['precision'], 2)}f}")
+                done.add(i)
+                changed = True
+            elif all(_matches(v, d, sorted(known)) for v, d, _ in e["operands"]):
+                for v, d, pct in e["results"]:
+                    verified[(v, d)] = e["text"]
+                    known |= {v, v / 100} if pct else {v}
+                operand_ok |= {(v, d) for v, d, _ in e["operands"]}
+                done.add(i)
+                changed = True
+    return {"verified": verified, "wrong": wrong, "operands": operand_ok}
+
+
+_UNIT_AFTER = r"\s+(?:more\s+|further\s+)?(?:months?|points?|years?|days?)\b"
+
+
+def _gap(raw: str, value: float, context: str, bare: list[float]) -> str | None:
+    """A count of months, points, years or days that is the gap between two numbers of the
+    file ("9 more months" to clear a 12-month window; "below the 600 threshold by 9 points")."""
+    if value != int(value) or not re.search(rf"(?<![\d.,]){re.escape(raw)}{_UNIT_AFTER}",
+                                            context, re.I):
+        return None
+    return next((f"{a:g} − {b:g}" for a, b in itertools.permutations(bare, 2)
+                 if a > b and a - b == value), None)
+
+
+@check("numeric_fidelity", version=4)
+def numeric_fidelity(*, output: str, item: BenchmarkItem, version: int = 4,
                      **_: Any) -> CheckResult:
     doc_numbers = _numbers(item.documents_text())
-    if version == 1:  # gaps in points and labels were ordinary numbers
-        doc_numbers = [(v, d, r, "num" if k in ("pts", "lbl") else k, c)
-                       for v, d, r, k, c in doc_numbers]
+    # what earlier versions read as ordinary numbers: gaps in points and labels (version 1),
+    # list numbers such as "(3)" (versions 1 and 2)
+    plain = {1: ("pts", "lbl", "enum"), 2: ("enum",)}.get(version, ())
+    doc_numbers = [(v, d, r, "num" if k in plain else k, c) for v, d, r, k, c in doc_numbers]
     doc_values = sorted({v for v, _, _, _, _ in doc_numbers})
     doc_pcts = sorted({v for v, _, _, k, _ in doc_numbers if k == "pct"})
     doc_plain = sorted({v for v, _, _, k, _ in doc_numbers if k != "pct"})
@@ -312,10 +459,8 @@ def numeric_fidelity(*, output: str, item: BenchmarkItem, version: int = 2,
     # file; an amount only by a non-percentage. Bare numbers may match either.
     pool = {"pct": doc_pcts, "amt": doc_plain, "num": doc_values, "pts": doc_pcts}
     claims = _numbers(output)
-    if version == 1:
-        claims = [(v, d, r, "num" if k in ("pts", "lbl") else k, c) for v, d, r, k, c in claims]
-    else:
-        claims = [c for c in claims if c[3] != "lbl"]
+    claims = [(v, d, r, "num" if k in plain else k, c) for v, d, r, k, c in claims
+              if k not in ("lbl", "enum") or k in plain]
     if not claims:
         return CheckResult(
             name="numeric_fidelity", passed=True, score=1.0, detail="briefing states no numbers"
@@ -330,7 +475,8 @@ def numeric_fidelity(*, output: str, item: BenchmarkItem, version: int = 2,
                   for x in (m.group(2), m.group(3))}
         money = sorted({v for v, _, _, k, _ in doc_numbers if k == "amt"} - limits)
         counts = sorted({float(m) for m in _MONTHS.findall(item.documents_text())})
-        derived = _derivations(money, doc_pcts, periods, counts=counts, ranked=True)
+        derived = _derivations(money, doc_pcts, periods, counts=counts, ranked=True,
+                               shortfall=version > 2)
     evidence: list[dict[str, Any]] = []
     gaps: list[tuple[dict[str, Any], float, int]] = []  # gaps in points, grounded last
     ungrounded: list[str] = []
@@ -358,6 +504,12 @@ def numeric_fidelity(*, output: str, item: BenchmarkItem, version: int = 2,
             )
             if not hit and version > 1 and kind == "num":
                 hit = _years(raw, value, context, counts)
+            if not hit and version > 2 and kind == "num":
+                if 0 < value < 1 and any(abs(value * 100 - p) < 1e-9 for p in doc_pcts):
+                    hit = f"{value * 100:g}% as a decimal"
+                else:
+                    hit = _gap(raw, value, context, sorted(
+                        {v for v, _, _, k, _ in doc_numbers if k == "num" and v == int(v)}))
             if hit:
                 record.update(grounded=True, method="derived", derivation=hit)
             else:
@@ -377,6 +529,27 @@ def numeric_fidelity(*, output: str, item: BenchmarkItem, version: int = 2,
         else:
             record.update(grounded=False, method=None)
             ungrounded.append(record["value"])
+
+    if version >= 3:  # working written out in the briefing, checked step by step
+        known = set(doc_values) | {p / 100 for p in doc_pcts} | {12.0, 100.0}
+        for e in evidence:
+            m = _NUM.search(e["value"])
+            if e.get("grounded") and m:
+                known |= {_parse(m), _parse(m) / 100} if m.group(4) else {_parse(m)}
+        w = _worked(output, known, version)
+        for e in evidence:
+            m = _NUM.search(e["value"])
+            if not m:
+                continue
+            key = (_parse(m), _decimals(m))
+            if key in w["wrong"]:
+                e.update(grounded=False, method="worked wrongly", derivation=w["wrong"][key])
+                if e["value"] not in ungrounded:
+                    ungrounded.append(e["value"])
+            elif not e.get("grounded") and (key in w["verified"] or key in w["operands"]):
+                e.update(grounded=True, method="worked",
+                         derivation=w["verified"].get(key, "an operand of verified working"))
+                ungrounded.remove(e["value"])
 
     total = len(evidence)
     score = (total - len(ungrounded)) / total

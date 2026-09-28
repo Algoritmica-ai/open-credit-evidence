@@ -48,6 +48,7 @@ def _cmd_run(a: argparse.Namespace) -> int:
         corpus=None if a.corpus == "none" else a.corpus,
         panel=bool(a.panel),
         workers=a.workers,
+        setup=a.setup,
     )
     print(f"sut      {manifest['sut']['model_id']}  {manifest['sut']['endpoint']}")
     res = write_evidence(out, pack.obligations)
@@ -420,6 +421,25 @@ def _cmd_checks(_: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_distill(a: argparse.Namespace) -> int:
+    from evidence import distill
+
+    if a.stage in ("cases", "all"):
+        print(f"{distill.make_cases(a.name, a.n, a.from_pack)} cases in "
+              f"{distill.ROOT / a.name / 'cases'}")
+    if a.stage in ("teach", "all"):
+        from evidence.adapters.nvidia_build import endpoint_for
+
+        ep = endpoint_for("teacher")
+        print(f"teacher {ep.model_id} at {ep.base_url}")
+        print(distill.teach(a.name, setup=a.setup, attempts=a.attempts, workers=a.workers,
+                            limit=a.limit))
+    if a.stage in ("build", "all"):
+        distill.build(a.name, setup=a.setup, feedback=[Path(f) for f in a.feedback],
+                      quote_only=a.quote_only)
+    return 0
+
+
 def _cmd_recheck(a: argparse.Namespace) -> int:
     from evidence.recheck import recheck
 
@@ -450,6 +470,9 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--panel-workers", type=int, default=4,
                    help="briefings the panel reviews at once")
     r.add_argument("--limit", type=int, help="only the first N items")
+    r.add_argument("--setup", default="as_is", choices=["as_is", "with_figures"],
+                   help="what the assistant is given: the case file only, or with the "
+                        "figures the bank's systems compute (packs that carry them)")
     r.add_argument("--workers", type=int,
                    help="memos written and judged at once (default EVIDENCE_WORKERS, else 8)")
     r.add_argument(
@@ -565,6 +588,26 @@ def main(argv: list[str] | None = None) -> int:
     w.add_argument("--port", type=int, default=8765)
     w.add_argument("--root", help="directory holding packs/ and runs/ (default: current)")
     w.set_defaults(fn=_cmd_ui)
+
+    ds = sub.add_parser("distill", help="training data for a fine-tuned assistant: new cases, "
+                                         "memos by a teacher model, kept if the checks pass")
+    ds.add_argument("stage", choices=["cases", "teach", "build", "all"])
+    ds.add_argument("--name", required=True, help="the folder under training/")
+    ds.add_argument("--n", type=int, default=2000, help="cases to generate (stage cases)")
+    ds.add_argument("--from-pack", default="underwriter-de",
+                    help="the test pack whose recipe and market the cases follow")
+    ds.add_argument("--setup", default="as_is", choices=["as_is", "with_figures"],
+                    help="what the assistant is given, and so the teacher too")
+    ds.add_argument("--attempts", type=int, default=2, help="teacher tries per case")
+    ds.add_argument("--workers", type=int, default=8, help="teacher calls in parallel")
+    ds.add_argument("--limit", type=int, help="teach at most this many cases (a pilot)")
+    ds.add_argument("--quote-only", action="store_true",
+                    help="build: take out clauses stating a figure the teacher worked out "
+                         "rather than quoted (the model then quotes, not calculates)")
+    ds.add_argument("--feedback", nargs="*", default=[],
+                    help="feedback/handover folders whose corrected memos join the training "
+                         "set (they come from a test: compare the model on other cases)")
+    ds.set_defaults(fn=_cmd_distill)
 
     rc = sub.add_parser("recheck", help="what the current checks would change on a sealed "
                                          "run (engine or capability run); the run is untouched")
