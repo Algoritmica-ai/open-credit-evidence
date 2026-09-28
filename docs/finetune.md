@@ -60,6 +60,9 @@ re-derive with the versions they were scored with; `evidence checks` lists them)
 
 - `numeric_fidelity` 3 and 4 read working written out in a memo, chains and brackets
   included, and fail an equation that does not add up;
+- `numeric_fidelity` 5 calculates with money amounts of any size: version 4 left out amounts
+  under €100, so "€646 + €67 = €713" on a €2,000 loan was failed although it is right. It
+  changes no result on set #33159; on the 26 September run, 4 memos move from fail to pass;
 - `decoy_citation` 2 reads the singular ("one dependant") and more ways of reasoning with a
   field ("increases living costs"). Re-scored with it, v1 cited a decoy in half its memos;
 - `material_omission` 2 reads a computed figure stated more precisely ("48.9%" for 49%).
