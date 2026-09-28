@@ -2,14 +2,21 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2026 Algoritmica GmbH
 #
-# The three model servers as ONE SLURM job, so the GPUs they hold are accounted
-# to the team. Docker containers started by hand sit outside SLURM: sacct shows
+# The model servers as ONE SLURM job, so the GPUs they hold are accounted
+# to the team: the assistant (Lightning), the judge and a second judge (Super, for
+# the judge panel), the embedder, and the fine-tuned assistant (a second Lightning
+# NIM, full precision with LoRA, serving the adapters in /data/team08/loras). Docker containers started by hand sit outside SLURM: sacct shows
 # nothing for them and the cluster sees the team as idle. This job holds its
 # GPUs for its whole lifetime and stops the containers when it ends.
 #
 #   sbatch ~/open-credit-evidence/scripts/cluster/servers.sbatch
 #   squeue --me            # the job stays RUNNING while the servers are up
-#   scancel <jobid>        # stops all three
+#   scancel <jobid>        # stops them all
+#
+# The partition allows 7 days. To keep the servers up longer, queue the next job to
+# start when this one ends:  sbatch --dependency=afterany:<jobid> servers.sbatch
+# CANDIDATE_MODEL (default lightning-credit-fig-v2) is the adapter the engine uses as
+# the fine-tuned assistant: sbatch --export=ALL,CANDIDATE_MODEL=<name> servers.sbatch
 #
 # It also runs stream_relay.py, a small Python process in front of the judge for
 # NemoClaw agents (the judge NIM refuses streamed tool calls; OpenClaw streams
@@ -32,6 +39,10 @@ module load docker
 free_port() { local p=$1; while ss -tln | grep -q ":${p} "; do p=$((p+1)); done; echo "$p"; }
 LIGHTNING_PORT=$(free_port 8200); JUDGE_PORT=$(free_port $((LIGHTNING_PORT+1))); EMBED_PORT=$(free_port $((JUDGE_PORT+1)))
 RELAY_PORT=$(free_port $((EMBED_PORT+1)))
+JUDGE2_PORT=$(free_port 8205); FT_PORT=$(free_port 8210); FT_BACKEND=$(free_port $((FT_PORT+1)))
+CANDIDATE_MODEL=${CANDIDATE_MODEL:-lightning-credit-fig-v2}
+FT_PROFILE=508fb3f74f19aac6956f8441229c7bde06461f5916b81ffe983e93b422b72366  # vllm-bf16-tp1-pp1-feat_lora
+UPSTREAMS=$HOME/.config/stream-relay/upstreams  # the relay's second judge
 RELAY="$HOME/open-credit-evidence/scripts/cluster/stream_relay.py"
 # All three roles are NVIDIA NIMs, pinned to fixed releases (never a moving tag).
 NIM_IMAGE=nvcr.io/nim/nvidia/nemotron-3.5-lightning-30b-a3b:2.0.9-variant
@@ -46,12 +57,12 @@ source ~/.ngc_key 2>/dev/null || true
 
 # A whole node is the team's allocation and the only thing SLURM can actually
 # guarantee: containers started by hand on a "free" node hold GPUs SLURM knows
-# nothing about. Use the four GPUs with the least memory in use: one each for the
-# assistant and the embedder, two for the judge.
+# nothing about. Use the seven GPUs with the least memory in use: one each for the
+# assistant, the embedder and the fine-tuned assistant, two for each judge.
 mapfile -t FREE < <(docker run --rm --gpus all --entrypoint nvidia-smi "$JUDGE_IMAGE" \
   --query-gpu=index,memory.used --format=csv,noheader,nounits \
   | tr -d ' ' | awk -F, -v ids="$CUDA_VISIBLE_DEVICES" 'BEGIN{split(ids,a,","); for(i in a) ok[a[i]]=1} ok[$1]{print $2","$1}' \
-  | sort -n | head -4 | cut -d, -f2)
+  | sort -n | head -7 | cut -d, -f2)
 echo "allocation $CUDA_VISIBLE_DEVICES -> using GPUs ${FREE[*]}; ports $LIGHTNING_PORT $JUDGE_PORT $EMBED_PORT"
 for g in "${FREE[@]}"; do
   used=$(docker run --rm --gpus "\"device=$g\"" --entrypoint nvidia-smi "$JUDGE_IMAGE" --query-gpu=memory.used --format=csv,noheader,nounits | tr -d ' ')
@@ -61,7 +72,8 @@ done
 RELAY_PID=
 cleanup() {
   [[ -n "$RELAY_PID" ]] && kill "$RELAY_PID" 2>/dev/null
-  docker stop team08-lightning team08-judge team08-embed >/dev/null 2>&1; echo "servers stopped"
+  docker stop team08-lightning team08-judge team08-embed team08-judge2 team08-lightning-ft \
+    >/dev/null 2>&1; : > "$UPSTREAMS"; echo "servers stopped"
 }
 start_relay() {
   python3 "$RELAY" --upstream "http://127.0.0.1:$JUDGE_PORT" --port "$RELAY_PORT" \
@@ -70,7 +82,8 @@ start_relay() {
 }
 trap cleanup EXIT
 
-docker rm -f team08-lightning team08-judge team08-embed >/dev/null 2>&1
+docker rm -f team08-lightning team08-judge team08-embed team08-judge2 team08-lightning-ft \
+  >/dev/null 2>&1
 mkdir -p /data/team08/nim-cache/nemotron-3-embed-1b && chmod -R g+rwx /data/team08/nim-cache
 PROXY_ENV=(-e HTTP_PROXY="$PROXY" -e HTTPS_PROXY="$PROXY" -e http_proxy="$PROXY" -e https_proxy="$PROXY"
            -e NO_PROXY="localhost,127.0.0.1" -e no_proxy="localhost,127.0.0.1")
@@ -95,17 +108,39 @@ docker run -d --name team08-embed --gpus "\"device=${FREE[2]}\"" --shm-size=4GB 
   -u "$(id -u)" -p "$EMBED_PORT:8000" -e NGC_API_KEY "${PROXY_ENV[@]}" \
   -v /data/team08/nim-cache/nemotron-3-embed-1b:/model "$EMBED_IMAGE" >/dev/null
 
+# The second judge: the same image and settings, for the judge panel (the relay sends
+# the panel's requests to both judges in turn).
+docker run -d --name team08-judge2 --gpus "\"device=${FREE[4]},${FREE[5]}\"" --shm-size=16GB \
+  -u "$(id -u)" -p "$JUDGE2_PORT:8000" -e NGC_API_KEY "${PROXY_ENV[@]}" -e NIM_MODEL_PROFILE="$JUDGE_PROFILE" \
+  -e NIM_SERVED_MODEL_NAME=nemotron-3-super -e NIM_MAX_MODEL_LEN=65536 -e NIM_ENABLE_AUTO_TOOL_CHOICE=1 \
+  -v /data/team08/nim-cache:/opt/nim/.cache "$JUDGE_IMAGE" >/dev/null
+
+# The fine-tuned assistant: Lightning in full precision with LoRA, serving the base model
+# (the fair control) and every adapter in /data/team08/loras under its folder's name. On
+# the host network its vLLM backend needs a port of its own (8001 is the assistant's).
+PW=/data/team08/runs/passwd.$(id -u); (cat /etc/passwd; getent passwd "$(id -u)") > "$PW"
+docker run -d --name team08-lightning-ft --gpus "\"device=${FREE[6]}\"" --shm-size=16GB --network host \
+  -u "$(id -u)" -e HOME=/tmp -v "$PW:/etc/passwd:ro" -e NGC_API_KEY -e NIM_MODEL_PROFILE="$FT_PROFILE" \
+  -e NIM_SERVED_MODEL_NAME=nvidia/nemotron-3.5-lightning \
+  -e NIM_SERVER_PORT="$FT_PORT" -e NIM_BACKEND_PORT="$FT_BACKEND" \
+  -e NIM_PEFT_SOURCE=/opt/nim/loras -e NIM_PEFT_REFRESH_INTERVAL=60 \
+  -e NIM_MAX_LORA_RANK=64 -e NIM_MAX_GPU_LORAS=4 "${PROXY_ENV[@]}" \
+  -v /data/team08/nim-cache:/opt/nim/.cache -v /data/team08/loras:/opt/nim/loras:ro "$NIM_IMAGE" >/dev/null
+
 for i in $(seq 1 180); do
   a=$(curl -s --noproxy '*' --max-time 3 "http://127.0.0.1:${LIGHTNING_PORT}/v1/models" | grep -c lightning)
   j=$(curl -s --noproxy '*' --max-time 3 "http://127.0.0.1:${JUDGE_PORT}/v1/models" | grep -c nemotron-3-super)
   e=$(curl -s --noproxy '*' --max-time 3 "http://127.0.0.1:${EMBED_PORT}/v1/models" | grep -c embed)
-  echo "$(date +%H:%M:%S) lightning=$a judge=$j embed=$e"
-  [[ $a -gt 0 && $j -gt 0 && $e -gt 0 ]] && break
+  j2=$(curl -s --noproxy '*' --max-time 3 "http://127.0.0.1:${JUDGE2_PORT}/v1/models" | grep -c nemotron-3-super)
+  f=$(curl -s --noproxy '*' --max-time 3 "http://127.0.0.1:${FT_PORT}/v1/models" | grep -c "$CANDIDATE_MODEL")
+  echo "$(date +%H:%M:%S) lightning=$a judge=$j embed=$e judge2=$j2 fine-tuned=$f"
+  [[ $a -gt 0 && $j -gt 0 && $e -gt 0 && $j2 -gt 0 && $f -gt 0 ]] && break
   sleep 10
 done
+mkdir -p "$(dirname "$UPSTREAMS")"; echo "http://127.0.0.1:$JUDGE2_PORT" > "$UPSTREAMS"
 IP=$(getent hosts "$(hostname)" | awk '{print $1}')
 start_relay
-echo "READY on $(hostname) ($IP): assistant :$LIGHTNING_PORT  judge :$JUDGE_PORT  embed :$EMBED_PORT  relay :$RELAY_PORT"
+echo "READY on $(hostname) ($IP): assistant :$LIGHTNING_PORT  judge :$JUDGE_PORT  embed :$EMBED_PORT  judge2 :$JUDGE2_PORT  fine-tuned :$FT_PORT ($CANDIDATE_MODEL)  relay :$RELAY_PORT"
 cat > /data/team08/runs/servers.env <<ENV
 # written by SLURM job $SLURM_JOB_ID on $(hostname) at $(date -Is)
 EVIDENCE_ASSISTANT_BASE_URL=http://$IP:$LIGHTNING_PORT/v1
@@ -114,6 +149,12 @@ EVIDENCE_JUDGE_BASE_URL=http://$IP:$JUDGE_PORT/v1
 EVIDENCE_JUDGE_MODEL=nemotron-3-super
 EVIDENCE_EMBED_BASE_URL=http://$IP:$EMBED_PORT/v1
 EVIDENCE_EMBED_MODEL=nvidia/nemotron-3-embed-1b
+# the fine-tuned assistant (the candidate); the same server also serves the base model
+# in full precision as nvidia/nemotron-3.5-lightning
+EVIDENCE_CANDIDATE_BASE_URL=http://$IP:$FT_PORT/v1
+EVIDENCE_CANDIDATE_MODEL=$CANDIDATE_MODEL
+# the second judge, for the judge panel (EVIDENCE_PANEL_* reach it through the relay)
+# http://$IP:$JUDGE2_PORT/v1
 # NemoClaw only (streamed tool calls), not read by the engine:
 # openshell provider update vllm-local --config OPENAI_BASE_URL=http://host.openshell.internal:$RELAY_PORT/v1
 ENV
@@ -131,7 +172,8 @@ python3 "$HOME/open-credit-evidence/scripts/cluster/fingerprint_models.py" \
 # the job ended and took the other two down with it. Each server is restarted at
 # most MAX_RESTARTS times; after that the job ends rather than loop on a fault.
 MAX_RESTARTS=5
-declare -A RESTARTS=([team08-lightning]=0 [team08-judge]=0 [team08-embed]=0 [relay]=0)
+declare -A RESTARTS=([team08-lightning]=0 [team08-judge]=0 [team08-embed]=0 [team08-judge2]=0
+                     [team08-lightning-ft]=0 [relay]=0)
 while true; do
   sleep 60
   # The models matter more than the relay: a relay that keeps failing is left
@@ -148,7 +190,7 @@ while true; do
     fi
   fi
   running=$(docker ps --format '{{.Names}}') || { echo "$(date -Is) docker ps failed"; continue; }
-  for c in team08-lightning team08-judge team08-embed; do
+  for c in team08-lightning team08-judge team08-embed team08-judge2 team08-lightning-ft; do
     grep -qx "$c" <<<"$running" && continue
     if (( RESTARTS[$c] >= MAX_RESTARTS )); then
       echo "$(date -Is) $c stopped again after $MAX_RESTARTS restarts; ending the job"
