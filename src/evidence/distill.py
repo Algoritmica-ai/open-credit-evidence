@@ -81,16 +81,20 @@ def _decoy_aliases(results: list[Any], item: BenchmarkItem | None = None) -> lis
     return sorted(words)
 
 
-def without_clauses(memo: str, words: list[str]) -> str:
+def without_clauses(memo: str, words: list[str], figures: list[str] | None = None) -> str:
     """The memo without the clauses (sentences, ``;``-parts, lines) that mention any of
-    ``words``. A bullet or line left empty is dropped with its marker."""
+    ``words`` or state any of ``figures`` (as written, e.g. "€236.08"). A bullet or line
+    left empty is dropped with its marker."""
+    figures = figures or []
     lines = []
     for line in memo.split("\n"):
         marker = re.match(r"^\s*(?:[-*•]|\d+[.)])\s+", line)
         body = line[marker.end():] if marker else line
         parts = re.split(r"(?<=[.;!?])[ \t]+", body)
         keep = [x for x in parts
-                if not any(re.search(rf"\b{re.escape(w)}\b", x, re.I) for w in words)]
+                if not any(re.search(rf"\b{re.escape(w)}\b", x, re.I) for w in words)
+                and not any(re.search(rf"(?<![\d.,]){re.escape(f)}(?![\d])", x)
+                            for f in figures)]
         if keep == parts:
             lines.append(line)
         elif any(x.strip(" ;.") for x in keep):
@@ -320,9 +324,27 @@ def teach(name: str, *, setup: str = "as_is", attempts: int = 2, workers: int = 
     return counts
 
 
+# Worked-out figures kept by ``quote_only``: restatements, not arithmetic.
+_RESTATED = re.compile(r"months / 12|as a decimal")
+
+
+def worked_figures(results: list[Any]) -> list[str]:
+    """The figures of a memo that are not in the documents but worked out (derived, or in
+    written-out working), except restatements such as months as years."""
+    return sorted({e["value"] for c in results if c.name == "numeric_fidelity"
+                   for e in c.evidence or []
+                   if e.get("grounded") and e.get("method") in ("derived", "worked")
+                   and not _RESTATED.search(e.get("derivation") or "")})
+
+
 def build(name: str, *, setup: str = "as_is", feedback: list[Path] | None = None,
-          log: Callable[[str], None] = print) -> Path:
-    """Stage 3: the kept memos as chat-format fine-tuning data, split by case; sealed."""
+          quote_only: bool = False, log: Callable[[str], None] = print) -> Path:
+    """Stage 3: the kept memos as chat-format fine-tuning data, split by case; sealed.
+
+    ``quote_only`` also takes out the clauses that state a figure the teacher worked out
+    rather than quoted (a model without thinking copies the habit, not the arithmetic:
+    lightning-credit-fig-v1 wrote "€877, which is €236.08 above the threshold (€752.37)").
+    """
     out = ROOT / name
     items = {i.item_id: i for i in cases(name, setup)}
     rows = [json.loads(line) for line in
@@ -343,10 +365,12 @@ def build(name: str, *, setup: str = "as_is", feedback: list[Path] | None = None
             r["kept"] = (all(c.passed is not False for c in results)
                          and len(r["memo"]) <= MAX_MEMO_CHARS)
             aliases = _decoy_aliases(results, item)
-            if r["kept"] and aliases:
-                memo = without_clauses(r["memo"], aliases)
+            worked = worked_figures(results) if quote_only else []
+            if r["kept"] and (aliases or worked):
+                memo = without_clauses(r["memo"], aliases, worked)
                 again = run_checks(item.deterministic_checks, output=memo, item=item)
-                if all(c.passed is not False for c in again) and not _decoy_aliases(again):
+                if (all(c.passed is not False for c in again) and not _decoy_aliases(again)
+                        and not (quote_only and worked_figures(again))):
                     r["memo"], stripped = memo, stripped + 1
                 else:
                     r["kept"], dropped_for_decoys = False, dropped_for_decoys + 1
@@ -388,6 +412,7 @@ def build(name: str, *, setup: str = "as_is", feedback: list[Path] | None = None
         "check_versions": check_versions(),
         "max_memo_chars": MAX_MEMO_CHARS,
         "decoy_clauses_taken_out": stripped,
+        "quote_only": quote_only,
         "left_out_for_mentioning_a_decoy": dropped_for_decoys,
         "shared_with_test_packs": leaked,
         "feedback_from_test_packs": sorted({_run_pack(h) for h in feedback or []}),

@@ -435,7 +435,8 @@ def _cmd_distill(a: argparse.Namespace) -> int:
         print(distill.teach(a.name, setup=a.setup, attempts=a.attempts, workers=a.workers,
                             limit=a.limit))
     if a.stage in ("build", "all"):
-        distill.build(a.name, setup=a.setup, feedback=[Path(f) for f in a.feedback])
+        distill.build(a.name, setup=a.setup, feedback=[Path(f) for f in a.feedback],
+                      quote_only=a.quote_only)
     return 0
 
 
@@ -600,6 +601,9 @@ def main(argv: list[str] | None = None) -> int:
     ds.add_argument("--attempts", type=int, default=2, help="teacher tries per case")
     ds.add_argument("--workers", type=int, default=8, help="teacher calls in parallel")
     ds.add_argument("--limit", type=int, help="teach at most this many cases (a pilot)")
+    ds.add_argument("--quote-only", action="store_true",
+                    help="build: take out clauses stating a figure the teacher worked out "
+                         "rather than quoted (the model then quotes, not calculates)")
     ds.add_argument("--feedback", nargs="*", default=[],
                     help="feedback/handover folders whose corrected memos join the training "
                          "set (they come from a test: compare the model on other cases)")

@@ -143,3 +143,11 @@ def test_the_clauses_that_mention_a_decoy_are_taken_out():
     # a heading whose only line went goes with it
     memo = "**For the applicant**\n- One dependant.\n\n**Against**\n- Ratio 51%."
     assert distill.without_clauses(memo, ["dependant"]) == "**Against**\n- Ratio 51%."
+
+
+def test_quote_only_takes_out_the_clauses_with_worked_out_figures():
+    memo = ("Debt service is 51.1% against the 40% limit. It is €236.08 above the threshold "
+            "(€1,880.92 × 40% = €752.37). Reduce the instalment. In role 158 months (13 years).")
+    out = distill.without_clauses(memo, [], ["€236.08", "€752.37"])
+    assert out == ("Debt service is 51.1% against the 40% limit. Reduce the instalment. "
+                   "In role 158 months (13 years).")
