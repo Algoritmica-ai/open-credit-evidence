@@ -72,7 +72,11 @@ one step from the file and failed such memos although every step was right.
   even when the result could be derived some other way: "€868 ÷ €2,198.67 = 42.6%" is a
   wrong figure with its working shown.
 
-Versions 1 and 2 stay runnable (``version=``), so runs scored with them re-derive as
+**Version 4** reads an equation in brackets: "reduce the instalment to €525.10
+(€2,605.25 × 40% − €507 = €525.10)". Version 3 took the opening bracket as part of the
+left side, found it unbalanced, and passed the equation by.
+
+Versions 1 to 3 stay runnable (``version=``), so runs scored with them re-derive as
 scored.
 """
 
@@ -353,7 +357,18 @@ def _parse_expr(text: str) -> tuple[float, list[tuple[float, int, bool]]] | None
         return None
 
 
-def _equations(text: str) -> list[dict[str, Any]]:
+def _unwrap(expr: str) -> str:
+    """An expression without the brackets of a bracketed equation around it: the left side
+    "(€2,605.25 × 40% − €507" and the right side "€525.10)" of
+    "(€2,605.25 × 40% − €507 = €525.10)"."""
+    while expr.count("(") > expr.count(")") and expr.lstrip().startswith("("):
+        expr = expr.lstrip()[1:]
+    while expr.count(")") > expr.count("(") and expr.rstrip().endswith(")"):
+        expr = expr.rstrip()[:-1]
+    return expr
+
+
+def _equations(text: str, version: int = 3) -> list[dict[str, Any]]:
     """Every ``left = right`` the briefing writes out, chains (``a = b = c``) step by step.
     ``right`` is one figure (the result) or an expression (a partly worked step)."""
     clean = text.replace("**", "").replace("\u202f", " ").replace("\u00a0", " ")
@@ -363,7 +378,9 @@ def _equations(text: str) -> list[dict[str, Any]]:
         rhs = _RHS.match(clean[eq.end() : eq.end() + 80])
         if not lhs or not rhs:
             continue
-        left, right = _parse_expr(lhs.group(1)), _parse_expr(rhs.group(1))
+        left_text, right_text = ((_unwrap(lhs.group(1)), _unwrap(rhs.group(1))) if version > 3
+                                 else (lhs.group(1), rhs.group(1)))
+        left, right = _parse_expr(left_text), _parse_expr(right_text)
         if not left or not right:
             continue
         (lv, operands), (rv, results) = left, right
@@ -380,11 +397,11 @@ def _equations(text: str) -> list[dict[str, Any]]:
     return out
 
 
-def _worked(output: str, known: set[float]) -> dict[str, Any]:
+def _worked(output: str, known: set[float], version: int = 3) -> dict[str, Any]:
     """The equations of the briefing, checked in the order they can be: each one that adds up
     and whose left side is grounded grounds the figures on its right for the next ones; one
     that does not add up is wrong whatever its operands."""
-    eqs = _equations(output)
+    eqs = _equations(output, version)
     verified: dict[tuple[float, int], str] = {}
     wrong: dict[tuple[float, int], str] = {}
     operand_ok: set[tuple[float, int]] = set()
@@ -427,8 +444,8 @@ def _gap(raw: str, value: float, context: str, bare: list[float]) -> str | None:
                  if a > b and a - b == value), None)
 
 
-@check("numeric_fidelity", version=3)
-def numeric_fidelity(*, output: str, item: BenchmarkItem, version: int = 3,
+@check("numeric_fidelity", version=4)
+def numeric_fidelity(*, output: str, item: BenchmarkItem, version: int = 4,
                      **_: Any) -> CheckResult:
     doc_numbers = _numbers(item.documents_text())
     # what earlier versions read as ordinary numbers: gaps in points and labels (version 1),
@@ -519,7 +536,7 @@ def numeric_fidelity(*, output: str, item: BenchmarkItem, version: int = 3,
             m = _NUM.search(e["value"])
             if e.get("grounded") and m:
                 known |= {_parse(m), _parse(m) / 100} if m.group(4) else {_parse(m)}
-        w = _worked(output, known)
+        w = _worked(output, known, version)
         for e in evidence:
             m = _NUM.search(e["value"])
             if not m:

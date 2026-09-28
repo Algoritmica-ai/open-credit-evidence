@@ -117,9 +117,9 @@ def test_the_amount_over_the_limit_is_grounded():
 
 def test_versions_are_listed_and_an_unknown_one_is_refused():
     assert check_versions(["numeric_fidelity", "decoy_citation"]) == {
-        "numeric_fidelity": 3, "decoy_citation": 2}
-    with pytest.raises(ValueError, match="no version 4"):
-        numeric(WRONG, version=4)
+        "numeric_fidelity": 4, "decoy_citation": 2}
+    with pytest.raises(ValueError, match="no version 5"):
+        numeric(WRONG, version=5)
 
 
 MEMOS = [
@@ -167,7 +167,7 @@ def test_a_recheck_shows_what_the_new_version_changes_and_leaves_the_run_alone(t
     before = (run / "results.jsonl").read_text()
     out = recheck(run, pack, root=tmp_path / "rechecks")
     r = json.loads((out / "recheck.json").read_text())
-    assert r["changed_checks"] == {"numeric_fidelity": [1, 3]} and r["unreproduced"] == 0
+    assert r["changed_checks"] == {"numeric_fidelity": [1, 4]} and r["unreproduced"] == 0
     assert r["clean"] == {"before": 1, "after": 1}
     assert r["now_clean"] == ["t:case_review:APP000128:complete#0"]
     assert r["now_flagged"] == ["t:case_review:APP000128:complete#1"]
@@ -267,3 +267,10 @@ def test_decoy_version_2_reads_the_singular_and_more_ways_of_reasoning():
     # a bare mention is still only a mention; the age of a file is still not an age band
     assert decoy("One dependant. Income verified.").passed
     assert decoy("The credit file age of 15 months increases the risk of a thin file.").passed
+
+
+def test_version_4_reads_an_equation_in_brackets():
+    memo = ("The instalment must fall to €401.77 or less: over the 36 months "
+            "(€401.77 × 36 = €14,463.72).")
+    assert not numeric(memo, version=3).passed
+    assert numeric(memo).passed, numeric(memo).detail
