@@ -193,19 +193,35 @@ GUIDE = (
     "largest instalment that fits: €2,028 × 40% − €581 = €230.20).\n"
     "- Plain, short sentences; at most about 350 words."
 )
+# With the figures the bank's systems compute, the teacher quotes them rather than working
+# them out again: the fine-tuned model learns to use them, not to recompute them.
+GUIDE_FIGURES = (
+    "\n\nHow to write this memo:\n"
+    "- The bank's systems have already computed the key figures (the table \"Figures from "
+    "the Bank's Systems\"). Quote them exactly as given; do not work them out again.\n"
+    "- Any other figure you state must be in the documents, or follow from them in one line "
+    "of arithmetic written before its result: for example, the largest instalment that fits: "
+    "€2,028 × 40% − €581 = €230.20.\n"
+    "- State no figure the documents do not give or that is not worked out that way: no loan "
+    "amounts, terms or incomes of your own, and no what-if scenarios.\n"
+    "- Say what would need to change for the outcome to be different: name each thing and "
+    "which way it must move.\n"
+    "- Plain, short sentences; at most about 350 words."
+)
+GUIDES = {"as_is": GUIDE, "with_figures": GUIDE_FIGURES}
 REPAIR = ("Your memo was checked against the case file and failed:\n{failures}\n\n"
           "Write the memo again. Use only figures the documents state, or that follow from "
           "them in one step of arithmetic. Reply with the memo only.")
 
 
 def ask_teacher(system: str, user: str, previous: dict[str, Any] | None = None,
-                guide: bool = True) -> dict[str, Any]:
+                guide: str = "as_is") -> dict[str, Any]:
     """One call to the teacher: thinking on, its recommended sampling. ``previous`` is the
     memo that failed and what the checks found: the teacher is asked to write it again."""
     from evidence.adapters.nvidia_build import _bypass_proxy, endpoint_for
 
     ep = endpoint_for("teacher")
-    messages = [{"role": "system", "content": system + (GUIDE if guide else "")},
+    messages = [{"role": "system", "content": system + GUIDES.get(guide, "")},
                 {"role": "user", "content": user}]
     if previous:
         messages += [{"role": "assistant", "content": previous["memo"]},
@@ -262,6 +278,10 @@ def teach(name: str, *, setup: str = "as_is", attempts: int = 2, workers: int = 
             and tried(i.item_id) < attempts][:limit]
     lock = threading.Lock()
     counts = {"cases": len(todo), "kept": 0, "failed_checks": 0, "too_long": 0, "errors": 0}
+
+    if ask is ask_teacher:  # the writing guide for what the assistant is given
+        def ask(*args: Any) -> dict[str, Any]:
+            return ask_teacher(*args, guide=setup)
 
     def one(item: BenchmarkItem) -> None:
         last = next((r for r in reversed(done.get(item.item_id, []))
@@ -358,7 +378,8 @@ def build(name: str, *, setup: str = "as_is", feedback: list[Path] | None = None
         "name": name, "built_at": _now(), "setup": setup,
         "teacher": {"model": teacher.get("model"), "endpoint": teacher.get("endpoint"),
                     "sampling": {"temperature": 0.6, "top_p": 0.95, "thinking": True},
-                    "guide": GUIDE if teacher.get("guide") else None},
+                    "guide": GUIDES.get("as_is" if teacher.get("guide") is True
+                                        else teacher.get("guide") or "")},
         "cases": len(items), "cases_attempted": len(attempted), "memos_written": len(rows),
         "cases_kept": len(ids), "train": len(split["train"]) + len(extra),
         "val": len(split["val"]), "from_feedback_packs": len(extra),

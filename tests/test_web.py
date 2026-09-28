@@ -573,7 +573,8 @@ def test_two_assistants_on_the_same_new_cases_memo_beside_memo(client, monkeypat
     monkeypatch.setattr(web, "make_fresh_pack", fake_fresh)
     monkeypatch.setattr("evidence.runner.chat", chat)
     job = client.post("/api/retest", json={"from_pack": "underwriter-sample", "cases": 3,
-                                           "repeats": 1, "assistant": "candidate"}).json()
+                                           "repeats": 1, "assistant": "candidate",
+                                           "setup": "with_figures"}).json()
     for _ in range(400):
         j = client.get(f"/api/run/{job['job_id']}").json()
         if j["status"] != "running":
@@ -583,7 +584,8 @@ def test_two_assistants_on_the_same_new_cases_memo_beside_memo(client, monkeypat
     b = client.get(f"/api/runs/{j['before']}").json()["manifest"]
     a = client.get(f"/api/runs/{j['after']}").json()["manifest"]
     assert (b["sut"]["role"], a["sut"]["role"]) == ("assistant", "candidate")
-    assert (b["setup"], a["setup"]) == ("as_is", "as_is")  # the same documents to both
+    # the same documents to both: here with the figures the bank's systems compute
+    assert (b["setup"], a["setup"]) == ("with_figures", "with_figures")
     assert roles.count("candidate") == roles.count("assistant") == 20
     c = client.get("/api/compare", params={"before": j["before"], "after": j["after"]}).json()
     assert {"what": "assistant model", "before": "stub", "after": "lightning-credit-v1"} in [

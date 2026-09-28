@@ -235,7 +235,8 @@ async function viewNew(preselect) {
         ? assistants.map((x) => `<option value="${esc(x.role)}">${esc(x.label)} (${esc(x.model_id)})</option>`).join("")
           + `<option value="both">Both, side by side on new cases</option>`
         : `<option value="assistant">Credit memo assistant (${esc(a.model)})</option>`}</select>
-      <p class="tiny muted" id="assistantnote">${a.where === "on-prem" ? "Runs on your own servers." : "Runs on NVIDIA's cloud."}</p></fieldset>
+      <p class="tiny muted" id="assistantnote">${a.where === "on-prem" ? "Runs on your own servers." : "Runs on NVIDIA's cloud."}</p>
+      <label class="row small" style="gap:8px;margin-top:6px"><input type="checkbox" id="figures">Give it the figures your systems already calculate (the ratios and limits), as well as the case file</label></fieldset>
     <fieldset><legend>2. Which rules must its memos follow?</legend><div class="stack tight" id="rules"></div></fieldset>
     <fieldset><legend>3. Which test cases?</legend><div class="stack tight" id="cases"></div>
       <div class="row wrap" style="gap:12px"><button class="btn" id="fresh">${ICON.plus}Generate new cases</button>
@@ -302,12 +303,13 @@ async function viewNew(preselect) {
     if (!pack) return;
     ev.target.disabled = true;
     try {
+      const setup = document.getElementById("figures").checked ? "with_figures" : "as_is";
       if (pick.value === "both") {
-        const j = await api("/api/retest", { from_pack: pack, cases: size.cases, repeats: size.repeats, assistant: "candidate" });
+        const j = await api("/api/retest", { from_pack: pack, cases: size.cases, repeats: size.repeats, assistant: "candidate", setup });
         location.hash = `#/retest/${enc(j.job_id)}`;
         return;
       }
-      const j = await api("/api/run", { pack, repeats: size.repeats, limit: size.cases, judge: true, setup: "as_is", panel: true, assistant: pick.value });
+      const j = await api("/api/run", { pack, repeats: size.repeats, limit: size.cases, judge: true, setup, panel: true, assistant: pick.value });
       location.hash = `#/running/${enc(j.job_id)}`;
     } catch (e) {
       document.getElementById("msg").textContent = e.message;
@@ -1240,7 +1242,7 @@ async function viewRetest(jobId) {
     const two = j.assistant === "candidate";  // two assistants, not a change of setup
     $view.innerHTML = `<div class="stack" style="gap:28px">
       <div class="stack tight"><h1>${two ? "The two assistants on new cases" : "Testing the change on new cases"}</h1>
-        <p class="muted" style="font-size:17px">${two ? `The fine-tuned assistant (${esc(model("candidate"))}) against the assistant as it is today (${esc(model("assistant"))}), on the same cases.` : `${esc(SETUP[j.setup] || j.setup)}, against the assistant as it is today.`}</p></div>
+        <p class="muted" style="font-size:17px">${two ? `The fine-tuned assistant (${esc(model("candidate"))}) against the assistant as it is today (${esc(model("assistant"))}), on the same cases${j.setup === "with_figures" ? ", both given the figures your systems calculate" : ""}.` : `${esc(SETUP[j.setup] || j.setup)}, against the assistant as it is today.`}</p></div>
       <ol class="card" style="list-style:none;padding:8px 28px;margin:0">
         ${line("cases", "New cases generated", j.seed ? `Set #${j.seed} from your credit policy, by the <a href="/sdd/" target="_blank" rel="noopener">Synthetic Data Designer</a>. ${j.shared_with_other_packs ? `${j.shared_with_other_packs} match earlier cases.` : "None appears in an earlier test."}` : "Cases the assistant has never seen")}
         ${line("before", "The assistant as it is today", state("before") === "now" ? `${j.done} of ${j.total} memos` : "Writes a memo for every case; each is checked against the rules")}

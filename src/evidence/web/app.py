@@ -709,8 +709,10 @@ def _retest_worker(job_id: str, from_run: str, setup: str, candidate: bool = Fal
                        shared_with_other_packs=fresh["shared_with_other_packs"])
         stamp = datetime.now(UTC).strftime("%Y-%m-%dT%H%M%SZ")
         runs_made = {}
-        after = ("after", "as_is", "candidate") if candidate else ("after", setup, "assistant")
-        steps = (("before", "as_is", "assistant"), after)
+        # two assistants get the same documents (``setup``); a change of setup is tested on
+        # the one assistant, as it is and with the change
+        steps = ((("before", setup, "assistant"), ("after", setup, "candidate")) if candidate
+                 else (("before", "as_is", "assistant"), ("after", setup, "assistant")))
         for name, which, role in steps:
             if job.get("cancel"):
                 break
@@ -766,9 +768,11 @@ def retest(payload: dict[str, Any] = _BODY) -> dict[str, Any]:
         from_run = _safe_name(str(payload.get("from_run", "")), "run")
         _run_dir(from_run)
     candidate = payload.get("assistant") == "candidate"
-    setup = "as_is" if candidate else str(payload.get("setup", "with_figures"))
+    setup = str(payload.get("setup", "as_is" if candidate else "with_figures"))
     if candidate:
         _assistant_role("candidate")
+        if setup not in SETUPS:
+            raise HTTPException(400, f"setup must be one of {sorted(SETUPS)}")
     elif setup not in SETUPS or setup == "as_is":
         raise HTTPException(400, f"setup must be one of {sorted(set(SETUPS) - {'as_is'})}")
     job_id = uuid.uuid4().hex[:12]
