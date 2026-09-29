@@ -38,7 +38,7 @@ Grounding order for each number in the output:
 Numbers that are structurally not claims are skipped: list markers, years,
 dates, and reference codes. The check passes only when nothing is ungrounded.
 
-**Version 2** (the current one) tightened grounding, after a memo's wrong figure was
+**Version 2** tightened grounding, after a memo's wrong figure was
 found grounded as "2026.1 − 1067": the policy version minus the postal code.
 
 - Amount arithmetic takes only amounts the file states as money (with a currency sign),
@@ -59,7 +59,7 @@ found grounded as "2026.1 − 1067": the policy version minus the postal code.
   grounded figures state. A number followed by "percentage points" is grounded only that
   way.
 
-**Version 3** (the current one) reads working written out in the briefing. A memo that
+**Version 3** reads working written out in the briefing. A memo that
 shows its arithmetic ("€2,733 × 0.40 = €1,093. Largest instalment: €1,093 − €519 = €574.")
 states results one step from figures that are themselves worked out. Version 2 followed
 one step from the file and failed such memos although every step was right.
@@ -76,7 +76,14 @@ one step from the file and failed such memos although every step was right.
 (€2,605.25 × 40% − €507 = €525.10)". Version 3 took the opening bracket as part of the
 left side, found it unbalanced, and passed the equation by.
 
-Versions 1 to 3 stay runnable (``version=``), so runs scored with them re-derive as
+**Version 5** (the current one) calculates with money amounts of any size. From version 2
+the operands of amount arithmetic are only the amounts the file states as money, so the
+€100 floor that kept counts and age bands out of version 1's arithmetic had nothing left to
+keep out; it only dropped small instalments. "€646 + €67 = €713" (an indicative instalment
+of €67 on a €2,000 loan) and the 41.5% debt-service ratio built on it were failed as figures
+not in the file. Months shown as years are unchanged.
+
+Versions 1 to 4 stay runnable (``version=``), so runs scored with them re-derive as
 scored.
 """
 
@@ -105,6 +112,8 @@ _MONTH_AFTER = re.compile(rf"^\s*{_MONTH}\b", re.I)
 # and must not combine into coincidental matches.
 _AMOUNT_MIN = 100.0
 _ANNUAL_MIN = 600.0
+# From version 5 any money amount above zero is an operand (the file states €0 commitments).
+_MONEY_MIN = 0.01
 # Relative slack for derived values: absorbs chained rounding, not wrong sums.
 _DERIVED_REL_TOL = 0.0015
 
@@ -201,6 +210,7 @@ def _periods(text: str) -> dict[float, str | None]:
 def _derivations(
     doc: list[float], pcts: list[float], period: dict[float, str | None] | None = None,
     *, counts: list[float] | None = None, ranked: bool = False, shortfall: bool = False,
+    amount_min: float = _AMOUNT_MIN,
 ) -> list[tuple[float, str, str]]:
     """Every one-step derivation an underwriter would plausibly make: (value, kind, expr).
 
@@ -210,7 +220,8 @@ def _derivations(
     already monthly, twelvefolds only of what is not already annual.
 
     ``doc`` are the operands of amount arithmetic; ``counts`` (``doc`` if not given) the
-    numbers that may be months. ``ranked`` orders the result by how usual each kind of
+    numbers that may be months. ``amount_min`` is the smallest amount used as an operand.
+    ``ranked`` orders the result by how usual each kind of
     derivation is for an underwriter, then by operand size; otherwise by operand size.
     """
     period = period or {}
@@ -225,7 +236,7 @@ def _derivations(
     def is_not(x: float, tag: str) -> bool:
         return p(x) != tag
 
-    amounts = [a for a in doc if a >= _AMOUNT_MIN]
+    amounts = [a for a in doc if a >= amount_min]
     annual = [a for a in doc if a >= _ANNUAL_MIN]
     rates = [r for r in pcts if 0 < r <= 100]
     d: list[tuple[float, str, str]] = []
@@ -444,8 +455,8 @@ def _gap(raw: str, value: float, context: str, bare: list[float]) -> str | None:
                  if a > b and a - b == value), None)
 
 
-@check("numeric_fidelity", version=4)
-def numeric_fidelity(*, output: str, item: BenchmarkItem, version: int = 4,
+@check("numeric_fidelity", version=5)
+def numeric_fidelity(*, output: str, item: BenchmarkItem, version: int = 5,
                      **_: Any) -> CheckResult:
     doc_numbers = _numbers(item.documents_text())
     # what earlier versions read as ordinary numbers: gaps in points and labels (version 1),
@@ -476,7 +487,8 @@ def numeric_fidelity(*, output: str, item: BenchmarkItem, version: int = 4,
         money = sorted({v for v, _, _, k, _ in doc_numbers if k == "amt"} - limits)
         counts = sorted({float(m) for m in _MONTHS.findall(item.documents_text())})
         derived = _derivations(money, doc_pcts, periods, counts=counts, ranked=True,
-                               shortfall=version > 2)
+                               shortfall=version > 2,
+                               amount_min=_MONEY_MIN if version > 4 else _AMOUNT_MIN)
     evidence: list[dict[str, Any]] = []
     gaps: list[tuple[dict[str, Any], float, int]] = []  # gaps in points, grounded last
     ungrounded: list[str] = []

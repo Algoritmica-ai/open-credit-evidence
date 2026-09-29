@@ -190,7 +190,7 @@ briefing text + item
 | Check | Question | Passes when |
 |---|---|---|
 | `material_omission` | Did it state every fact the decision turned on? | All required facts found: exact, or by constrained similarity (flagged for audit) |
-| `numeric_fidelity` (version 2) | Is every number in the briefing in the file, or one arithmetic step from it — never a monthly figure over an annual one? Only money the file states is calculated with: not scores, postal codes, policy versions or the ends of a range | No ungrounded number |
+| `numeric_fidelity` (version 5) | Is every number in the briefing in the file, or one arithmetic step from it — never a monthly figure over an annual one? Only money the file states is calculated with, of any size: not scores, counts, postal codes, policy versions or the ends of a range. Working written out in the briefing is checked step by step | No ungrounded number |
 | `comparison_fidelity` | Does every comparison it states hold ("652 is below 600")? | No false comparison between two figures |
 | `claim_consistency` | Does its own figure support the breach it claims ("exceeds 40%" … "33.2%")? | No limit claim contradicted by a figure it states |
 | `decoy_citation` | Did it cite a field with no bearing on the outcome as a reason? | No decoy in a sentence with a reasoning cue; the age of a credit file or account is not the age band |

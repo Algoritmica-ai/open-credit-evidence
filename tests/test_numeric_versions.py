@@ -117,9 +117,62 @@ def test_the_amount_over_the_limit_is_grounded():
 
 def test_versions_are_listed_and_an_unknown_one_is_refused():
     assert check_versions(["numeric_fidelity", "decoy_citation"]) == {
-        "numeric_fidelity": 4, "decoy_citation": 2}
-    with pytest.raises(ValueError, match="no version 5"):
-        numeric(WRONG, version=5)
+        "numeric_fidelity": 5, "decoy_citation": 2}
+    with pytest.raises(ValueError, match="no version 6"):
+        numeric(WRONG, version=6)
+
+
+# APP000009 of the 26 September end-to-end run: a €2,000 loan with a €67 instalment
+SMALL_LOAN = (
+    "# Personal Loan Application\n\n**Reference:** APP000009\n\n"
+    "| Gross annual income | €20,616 |\n| Existing monthly credit commitments | €646 |\n"
+    "| Dependants | 2 |\n| Amount | €2,000 |\n| Term | 36 months |\n"
+    "| Indicative monthly instalment | €67 |\n"
+)
+
+
+def small_loan() -> BenchmarkItem:
+    docs = [ItemContext(renderer="application_form", variant="complete", content=SMALL_LOAN),
+            ItemContext(renderer="lending_policy", variant="complete", content=POLICY)]
+    return BenchmarkItem(item_id="t:case_review:APP000009:complete", pack="t",
+                         domain="credit_underwriting", task="case_review", prompt="Summarise.",
+                         context=docs, deterministic_checks=["numeric_fidelity"],
+                         grading=GradingSpec(disposition="refer"))
+
+
+def test_an_instalment_under_100_is_calculated_with():
+    out = ("The existing monthly credit commitments are €646. Adding the proposed instalment of "
+           "€67 results in total monthly debt service of €713, approximately 41.5% of gross "
+           "monthly income.")
+    (old,) = run_checks(["numeric_fidelity"], output=out, item=small_loan(),
+                        versions={"numeric_fidelity": 4})
+    assert not old.passed and "€713" in old.detail and "41.5%" in old.detail
+    (new,) = run_checks(["numeric_fidelity"], output=out, item=small_loan())
+    assert new.passed, new.detail
+    how = {e["value"]: e.get("derivation") for e in new.evidence}
+    assert how["€713"] == "67 + 646"
+    assert how["41.5%"] == "(67 + 646) / (20616 / 12) × 100"
+
+
+def test_a_wrong_sum_with_a_small_instalment_is_still_wrong():
+    (r,) = run_checks(["numeric_fidelity"], item=small_loan(),
+                      output="Total monthly debt service is €731, 42.5% of gross monthly income.")
+    assert not r.passed and "€731" in r.detail and "42.5%" in r.detail
+
+
+def test_counts_are_still_not_operands():
+    # 2 dependants and 36 months are not money: €648 = €646 + 2 is not a derivation
+    (r,) = run_checks(["numeric_fidelity"], item=small_loan(),
+                      output="Debt service would be €648 with the dependants added.")
+    assert not r.passed and "€648" in r.detail
+
+
+def test_a_zero_amount_in_the_file_does_not_break_the_check():
+    docs = [ItemContext(renderer="application_form", variant="complete",
+                        content=SMALL_LOAN.replace("€646", "€0"))]
+    it = small_loan().model_copy(update={"context": docs})
+    (r,) = run_checks(["numeric_fidelity"], item=it, output="Debt service is €67 a month.")
+    assert r.passed, r.detail
 
 
 MEMOS = [
@@ -167,7 +220,7 @@ def test_a_recheck_shows_what_the_new_version_changes_and_leaves_the_run_alone(t
     before = (run / "results.jsonl").read_text()
     out = recheck(run, pack, root=tmp_path / "rechecks")
     r = json.loads((out / "recheck.json").read_text())
-    assert r["changed_checks"] == {"numeric_fidelity": [1, 4]} and r["unreproduced"] == 0
+    assert r["changed_checks"] == {"numeric_fidelity": [1, 5]} and r["unreproduced"] == 0
     assert r["clean"] == {"before": 1, "after": 1}
     assert r["now_clean"] == ["t:case_review:APP000128:complete#0"]
     assert r["now_flagged"] == ["t:case_review:APP000128:complete#1"]

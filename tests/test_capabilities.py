@@ -104,7 +104,7 @@ def test_a_run_is_summarised_sealed_and_says_where_the_judge_was_fooled(tmp_path
     assert "a judge alone would have passed them" in text and "German maths alone: 50.0%" in text
     assert "`xstest`" in text  # what is not measured, and why
     assert verify_run(out).ok and s["run"]["nel_exit"] == 0
-    assert s["run"]["check_versions"]["numeric_fidelity"] == 4
+    assert s["run"]["check_versions"]["numeric_fidelity"] == 5
 
 
 def test_parked_benchmarks_are_listed_as_not_measured(tmp_path, nel):
