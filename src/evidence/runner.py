@@ -24,9 +24,10 @@ from typing import Any
 
 from evidence import __version__
 from evidence.adapters.nvidia_build import BUILD_HOST, chat, endpoint_for
+from evidence.adapters.rag import as_prompt, retrieve_per_document
 from evidence.checks import check_versions, run_checks
 from evidence.contracts.item import BenchmarkItem
-from evidence.contracts.transcript import SUTPins, Transcript
+from evidence.contracts.transcript import Retrieved, SUTPins, Transcript
 from evidence.corpus import Corpus
 from evidence.fingerprint import model_fingerprint
 from evidence.judge import judge_readability
@@ -97,11 +98,28 @@ def _fingerprint(role: str, log: Callable[[str], None]) -> dict[str, Any]:
     return fp
 
 
-def call_assistant(item: BenchmarkItem, run_id: str, repeat: int,
-                   fingerprint: str | None = None, role: str = "assistant") -> Transcript:
+def call_assistant(
+    item: BenchmarkItem,
+    run_id: str,
+    repeat: int,
+    fingerprint: str | None = None,
+    role: str = "assistant",
+    *,
+    retrieval: bool = False,
+    k_per_doc: int = 2,
+) -> Transcript:
     """One recorded call. The assistant sees the task prompt and every document. ``role``
-    is ``assistant`` or ``candidate`` (a second assistant, such as a fine-tuned one)."""
-    user = item.documents_text()
+    is ``assistant`` or ``candidate`` (a second assistant, such as a fine-tuned one).
+
+    When ``retrieval`` is True, the assistant receives only retrieved chunks instead of
+    the full documents. The retrieved chunks are recorded on the transcript.
+    """
+    retrieved: list[Retrieved] = []
+    if retrieval:
+        retrieved = retrieve_per_document(item.prompt, item.context, k_per_doc=k_per_doc)
+        user = as_prompt(retrieved)
+    else:
+        user = item.documents_text()
     started = _now()
     r = chat(role, system=item.prompt, user=user, max_tokens=ASSISTANT_MAX_TOKENS)
     sut = SUTPins(
@@ -115,6 +133,7 @@ def call_assistant(item: BenchmarkItem, run_id: str, repeat: int,
         sut=sut,
         system_prompt=item.prompt,
         user_prompt=user,
+        retrieved=retrieved,
         output=r.text,
         latency_ms=r.latency_ms,
         tokens_in=r.tokens_in,
@@ -140,6 +159,8 @@ def run_pack(
     workers: int | None = None,
     setup: str = "as_is",
     assistant: str = "assistant",
+    retrieval: bool = False,
+    k_per_doc: int = 2,
 ) -> dict[str, Any]:
     """Execute the pack. Returns the run manifest; writes transcripts and results.jsonl.
 
@@ -167,6 +188,12 @@ def run_pack(
     run stops cleanly: what was completed is scored and sealed, the manifest
     records ``cancelled: true`` and the real transcript count, and a later run
     into the same directory resumes from the transcripts on disk.
+
+    ``retrieval`` enables RAG: when True, the assistant sees only retrieved chunks
+    instead of full documents. Retrieval is per-document (top ``k_per_doc`` from
+    each context document), so every source contributes. The retrieved chunks are
+    recorded on the transcript so omissions caused by retrieval can be distinguished
+    from model errors.
     """
     judge = judge and not panel
     if setup == "with_figures" and not any(it.has_bank_figures() for it in pack.items):
@@ -251,6 +278,8 @@ def run_pack(
     # Fingerprint each model once, before the calls fan out across threads.
     if any(not transcript_path(out, it.item_id, rep).is_file() for it, rep in jobs):
         fp_for(assistant)
+        if retrieval:
+            fp_for("embed")  # RAG retrieval embeds the query
     if any(wants_judge(it) and (it.item_id, rep) not in prior_judge for it, rep in jobs):
         fp_for("judge")
         if corpus_obj is not None:
@@ -270,7 +299,10 @@ def run_pack(
             if path.is_file():
                 t = Transcript.model_validate_json(path.read_text(encoding="utf-8"))
             else:
-                t = call_assistant(item, run_id, rep, fp_for(assistant), assistant)
+                t = call_assistant(
+                    item, run_id, rep, fp_for(assistant), assistant,
+                    retrieval=retrieval, k_per_doc=k_per_doc,
+                )
                 path.write_text(t.model_dump_json(indent=2), encoding="utf-8")
                 called = True
             names = checks if checks is not None else item.deterministic_checks
@@ -412,6 +444,7 @@ def run_pack(
         "sut": sut_block,
         "judge": judge_block,
         "setup": setup,
+        "retrieval": {"enabled": retrieval, "k_per_doc": k_per_doc} if retrieval else None,
         **({"single_judge": "skipped: the three-agent panel reviews these briefings"}
            if panel else {}),
         "checks": checks if checks is not None else pack.checks_declared(),
