@@ -37,7 +37,8 @@ def _cmd_run(a: argparse.Namespace) -> int:
     print(f"pack     {pack.pack_id} v{pack.version}  {len(pack.items)} items")
     print(f"checks   {', '.join(checks or pack.checks_declared())}")
     judge = "off" if a.no_judge else "the panel's Reader" if a.panel else "on"
-    print(f"repeats  {a.repeats}   judge {judge}   out {out}")
+    rag = f"on (k={a.k_per_doc}/doc)" if a.retrieval else "off"
+    print(f"repeats  {a.repeats}   judge {judge}   retrieval {rag}   out {out}")
     manifest = run_pack(
         pack,
         out,
@@ -49,6 +50,8 @@ def _cmd_run(a: argparse.Namespace) -> int:
         panel=bool(a.panel),
         workers=a.workers,
         setup=a.setup,
+        retrieval=a.retrieval,
+        k_per_doc=a.k_per_doc,
     )
     print(f"sut      {manifest['sut']['model_id']}  {manifest['sut']['endpoint']}")
     res = write_evidence(out, pack.obligations)
@@ -479,6 +482,18 @@ def main(argv: list[str] | None = None) -> int:
         "--corpus",
         default="EU",
         help="regulation corpus the judge retrieves from (jurisdiction code, or 'none')",
+    )
+    r.add_argument(
+        "--retrieval",
+        action="store_true",
+        help="use RAG: retrieve per-document chunks instead of handing full documents to the "
+             "assistant; retrieved chunks are recorded on the transcript",
+    )
+    r.add_argument(
+        "--k-per-doc",
+        type=int,
+        default=2,
+        help="with --retrieval: how many chunks to retrieve from each case document (default: 2)",
     )
     r.set_defaults(fn=_cmd_run)
 
